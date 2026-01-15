@@ -44,6 +44,36 @@ export const addSale = async (req: Request, res: Response) => {
                 [sale_id, product_id, rate, quantity, total_amount]
             );
 
+            // Get product cost rules with category and asset info
+            const costRulesResult = await client.query(
+                `SELECT 
+                    pcr.category_id,
+                    pcr.value,
+                    pcr.mode,
+                    pcr.asset_id,
+                    c.cost_behavior as allocation_type
+                FROM product_cost_rules pcr
+                JOIN categories c ON pcr.category_id = c.id
+                WHERE pcr.product_id = $1 AND pcr.product_id IS NOT NULL AND c.business_id = $2`,
+                [product_id, business_id]
+            );
+
+            // Insert sale_allocations for each cost rule
+            for (const rule of costRulesResult.rows) {
+                let amount;
+                if (rule.mode === 'fixed') {
+                    amount = rule.value; // Fixed amount in Rs
+                } else {
+                    amount = (rule.value / 100) * total_amount; // Percentage
+                }
+                
+                await client.query(
+                    `INSERT INTO sale_allocations (sale_id, category_id, asset_id, allocation_type, amount)
+                     VALUES ($1, $2, $3, $4, $5)`,
+                    [sale_id, rule.category_id, rule.asset_id, rule.allocation_type, amount]
+                );
+            }
+
             await client.query('COMMIT');
             res.status(201).json(saleResult.rows[0]);
         } catch (error) {

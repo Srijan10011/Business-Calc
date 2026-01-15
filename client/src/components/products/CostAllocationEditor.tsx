@@ -55,6 +55,13 @@ export default function CostAllocationEditor() {
             const token = localStorage.getItem('token');
             const productId = window.location.pathname.split('/').pop();
             
+            if (!productId) {
+                alert('Error: Product ID not found in URL');
+                return;
+            }
+            
+            console.log('Sending product_id:', productId);
+            
             if (!rule.category || !rule.type || !rule.value) {
                 console.error('Missing required fields');
                 return;
@@ -91,7 +98,8 @@ export default function CostAllocationEditor() {
                     body: JSON.stringify({
                         name: rule.category,
                         cost_behaviour: rule.type,
-                        type: 'outgoing'
+                        type: 'outgoing',
+                        product_id: productId
                     }),
                 });
 

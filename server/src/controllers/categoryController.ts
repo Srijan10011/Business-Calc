@@ -3,7 +3,7 @@ import pool from '../db';
 
 export const checkCategory = async (req: Request, res: Response) => {
     try {
-        const { name, cost_behaviour } = req.body;
+        const { name, cost_behaviour, product_id } = req.body;
         const user_id = req.user?.id;
 
         if (!name || !cost_behaviour) {
@@ -28,8 +28,8 @@ export const checkCategory = async (req: Request, res: Response) => {
 
         // Check if category exists
         const existingCategory = await pool.query(
-            'SELECT id FROM categories WHERE business_id = $1 AND name = $2 AND cost_behavior = $3',
-            [business_id, name, cost_behaviour]
+            'SELECT id FROM categories WHERE business_id = $1 AND name = $2 AND cost_behavior = $3 ANd product_id = $4 ',
+            [business_id, name, cost_behaviour, product_id]
         );
 
         if (existingCategory.rows.length > 0) {
@@ -45,7 +45,7 @@ export const checkCategory = async (req: Request, res: Response) => {
 
 export const createCategory = async (req: Request, res: Response) => {
     try {
-        const { name, cost_behaviour, type } = req.body;
+        const { name, cost_behaviour, type, product_id } = req.body;
         const user_id = req.user?.id;
 
         if (!name || !cost_behaviour || !type) {
@@ -68,12 +68,12 @@ export const createCategory = async (req: Request, res: Response) => {
 
         const business_id = businessResult.rows[0].business_id;
 
-        // Create new category
+        // Create new category with product_id
         const result = await pool.query(
-            `INSERT INTO categories (business_id, name, type, cost_behavior)
-             VALUES ($1, $2, $3, $4)
+            `INSERT INTO categories (business_id, name, type, cost_behavior, product_id)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING id`,
-            [business_id, name, type, cost_behaviour]
+            [business_id, name, type, cost_behaviour, product_id]
         );
 
         res.status(201).json({ id: result.rows[0].id });

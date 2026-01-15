@@ -44,7 +44,8 @@ function CostAllocationEditor() {
                 },
                 body: JSON.stringify({
                     name: rule.category,
-                    cost_behaviour: rule.type
+                    cost_behaviour: rule.type,
+		    product_id: productId
                 }),
             });
 
@@ -66,7 +67,9 @@ function CostAllocationEditor() {
                     body: JSON.stringify({
                         name: rule.category,
                         cost_behaviour: rule.type,
-                        type: 'outgoing'
+                        type: 'outgoing',
+			product_id: productId
+
                     }),
                 });
 

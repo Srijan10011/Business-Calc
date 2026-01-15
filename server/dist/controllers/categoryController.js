@@ -17,7 +17,7 @@ const db_1 = __importDefault(require("../db"));
 const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { name, cost_behaviour } = req.body;
+        const { name, cost_behaviour, product_id } = req.body;
         const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
         if (!name || !cost_behaviour) {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour' });
@@ -32,7 +32,7 @@ const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         }
         const business_id = businessResult.rows[0].business_id;
         // Check if category exists
-        const existingCategory = yield db_1.default.query('SELECT id FROM categories WHERE business_id = $1 AND name = $2 AND cost_behavior = $3', [business_id, name, cost_behaviour]);
+        const existingCategory = yield db_1.default.query('SELECT id FROM categories WHERE business_id = $1 AND name = $2 AND cost_behavior = $3 ANd product_id = $4 ', [business_id, name, cost_behaviour, product_id]);
         if (existingCategory.rows.length > 0) {
             return res.json({ exists: true, id: existingCategory.rows[0].id });
         }
@@ -49,7 +49,7 @@ exports.checkCategory = checkCategory;
 const createCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const { name, cost_behaviour, type } = req.body;
+        const { name, cost_behaviour, type, product_id } = req.body;
         const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
         if (!name || !cost_behaviour || !type) {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour, type' });
@@ -63,10 +63,10 @@ const createCategory = (req, res) => __awaiter(void 0, void 0, void 0, function*
             return res.status(400).json({ message: 'User not associated with any business' });
         }
         const business_id = businessResult.rows[0].business_id;
-        // Create new category
-        const result = yield db_1.default.query(`INSERT INTO categories (business_id, name, type, cost_behavior)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id`, [business_id, name, type, cost_behaviour]);
+        // Create new category with product_id
+        const result = yield db_1.default.query(`INSERT INTO categories (business_id, name, type, cost_behavior, product_id)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id`, [business_id, name, type, cost_behaviour, product_id]);
         res.status(201).json({ id: result.rows[0].id });
     }
     catch (error) {
