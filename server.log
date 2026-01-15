@@ -1,0 +1,26 @@
+⚡️[server]: Minimal Express Server is running at http://localhost:5000
+Minimal application initialization complete. Server should now be active.
+=== LOGIN ATTEMPT ===
+Email: q@gmail.com
+password authentication failed for user "postgres"
+=== LOGIN ATTEMPT ===
+Email: q@gmail.com
+password authentication failed for user "postgres"
+=== LOGIN ATTEMPT ===
+Email: q@gmail.com
+password authentication failed for user "postgres"
+=== LOGIN ATTEMPT ===
+Email: test@gmail.com
+password authentication failed for user "postgres"
+=== LOGIN ATTEMPT ===
+Email: test@gmail.com
+password authentication failed for user "postgres"
+=== LOGIN ATTEMPT ===
+Email: c@gmail.com
+password authentication failed for user "postgres"
+=== LOGIN ATTEMPT ===
+Email: q@gmail.com
+password authentication failed for user "postgres"
+=== LOGIN ATTEMPT ===
+Email: q@gmail.com
+password authentication failed for user "postgres"
