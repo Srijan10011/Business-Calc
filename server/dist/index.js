@@ -22,6 +22,7 @@ const categoryRoutes_1 = __importDefault(require("./routes/categoryRoutes"));
 const productCostRuleRoutes_1 = __importDefault(require("./routes/productCostRuleRoutes"));
 const accountRoutes_1 = __importDefault(require("./routes/accountRoutes"));
 const auth_1 = __importDefault(require("./routes/auth"));
+const salesRoutes_1 = __importDefault(require("./routes/salesRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = 5000;
@@ -55,6 +56,7 @@ app.use('/api/categories', categoryRoutes_1.default);
 app.use('/api/product-cost-rules', productCostRuleRoutes_1.default);
 app.use('/api/accounts', accountRoutes_1.default);
 app.use('/api/auth', auth_1.default);
+app.use('/api/sales', salesRoutes_1.default);
 const server = app.listen(port, () => {
     console.log(`⚡️[server]: Minimal Express Server is running at http://localhost:${port}`);
     console.log('Minimal application initialization complete. Server should now be active.');

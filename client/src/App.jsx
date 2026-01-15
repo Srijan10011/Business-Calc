@@ -4,7 +4,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import DashboardLayout from './layout/DashboardLayout';
 import Dashboard from './pages/Dashboard';
-import Sales from './pages/Sales';
+import Sales from './pages/Sales.tsx';
 import Customers from './pages/Customers';
 import Inventory from './pages/Inventory';
 import Finance from './pages/Finance';
