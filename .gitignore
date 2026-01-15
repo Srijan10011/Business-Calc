@@ -4,6 +4,3 @@ build/
 *.log
 .env
 .DS_Store
-*.js
-*.js.map
-!server/src/**/*.js
