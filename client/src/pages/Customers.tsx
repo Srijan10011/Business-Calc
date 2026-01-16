@@ -13,62 +13,28 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import Title from '../components/dashboard/Title';
 import { Link as RouterLink } from 'react-router-dom';
-import AddCustomerModal from '../components/customers/AddCustomerModal'; // Import the new modal
-
-// Generate Customer Data
-function createData(
-  id: string,
-  name: string,
-  phone: string,
-  address: string, // Added address
-  totalPurchases: string,
-  outstandingCredit: string,
-  lastPurchase: string,
-) {
-  return { id, name, phone, address, totalPurchases, outstandingCredit, lastPurchase };
-}
-
-const rows = [
-  createData(
-    'cust-001',
-    'John Smith',
-    '+1 123 456 7890',
-    '123 Main St, Anytown', // Placeholder address
-    '₹25,000',
-    '₹5,000',
-    '13 Jan, 2026',
-  ),
-  createData(
-    'cust-002',
-    'Jane Doe',
-    '+1 987 654 3210',
-    '456 Oak Ave, Somewhere', // Placeholder address
-    '₹15,000',
-    '₹0',
-    '10 Jan, 2026',
-  ),
-  createData(
-    'cust-003',
-    'ACME Corp',
-    '+1 555 123 4567',
-    '789 Pine Ln, Nowhere', // Placeholder address
-    '₹125,000',
-    '₹10,000',
-    '05 Jan, 2026',
-  ),
-  createData(
-    'cust-004',
-    'Tech Solutions',
-    '+1 222 333 4444',
-    '101 Elm Blvd, Anyplace', // Placeholder address
-    '₹80,000',
-    '₹2,000',
-    '01 Jan, 2026',
-  ),
-];
+import AddCustomerModal from '../components/customers/AddCustomerModal';
+import axios from 'axios';
 
 export default function Customers() {
-  const [open, setOpen] = React.useState(false); // For Add Customer Modal
+  const [open, setOpen] = React.useState(false);
+  const [customers, setCustomers] = React.useState([]);
+
+  const fetchCustomers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/customers', {
+        headers: { 'x-auth-token': token }
+      });
+      setCustomers(response.data);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   const handleOpen = () => {
       setOpen(true);
@@ -76,6 +42,7 @@ export default function Customers() {
 
   const handleClose = () => {
       setOpen(false);
+      fetchCustomers();
   };
 
   return (
@@ -96,14 +63,14 @@ export default function Customers() {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Phone</TableCell>
-              <TableCell>Address</TableCell> {/* New Address Column */}
+              <TableCell>Address</TableCell>
               <TableCell>Total Purchases</TableCell>
               <TableCell>Outstanding Credit</TableCell>
               <TableCell>Last Purchase</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
+            {customers.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>
                     <RouterLink to={`/customers/${row.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -111,16 +78,16 @@ export default function Customers() {
                     </RouterLink>
                 </TableCell>
                 <TableCell>{row.phone}</TableCell>
-                <TableCell>{row.address}</TableCell> {/* Display Address */}
-                <TableCell>{row.totalPurchases}</TableCell>
-                <TableCell>{row.outstandingCredit}</TableCell>
-                <TableCell>{row.lastPurchase}</TableCell>
+                <TableCell>{row.address}</TableCell>
+                <TableCell>₹{row.total_purchases}</TableCell>
+                <TableCell>₹{row.outstanding_credit}</TableCell>
+                <TableCell>{row.last_purchase ? new Date(row.last_purchase).toLocaleDateString() : 'N/A'}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Paper>
-      <AddCustomerModal open={open} onClose={handleClose} /> {/* Integrate the modal */}
+      <AddCustomerModal open={open} onClose={handleClose} />
     </React.Fragment>
   );
 }

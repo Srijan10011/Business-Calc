@@ -22,7 +22,19 @@ export const getCustomers = async (req: Request, res: Response) => {
         const business_id = businessResult.rows[0].business_id;
 
         const result = await pool.query(
-            'SELECT * FROM customers WHERE business_id = $1 ORDER BY created_at DESC',
+            `SELECT 
+                c.id,
+                c.name,
+                c.phone,
+                c.address,
+                COALESCE(SUM(s.total_amount), 0) as total_purchases,
+                COALESCE(SUM(CASE WHEN LOWER(s.payment_type) = 'credit' THEN s.total_amount ELSE 0 END), 0) as outstanding_credit,
+                MAX(s.created_at) as last_purchase
+            FROM customers c
+            LEFT JOIN sales s ON c.id = s.customer_id
+            WHERE c.business_id = $1
+            GROUP BY c.id, c.name, c.phone, c.address
+            ORDER BY c.created_at DESC`,
             [business_id]
         );
 

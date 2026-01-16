@@ -54,6 +54,9 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
     const [products, setProducts] = React.useState<Product[]>([]);
     const [customers, setCustomers] = React.useState<Customer[]>([]);
     const [accounts, setAccounts] = React.useState<Account[]>([]);
+    const [newCustomerName, setNewCustomerName] = React.useState('');
+    const [newCustomerPhone, setNewCustomerPhone] = React.useState('');
+    const [newCustomerAddress, setNewCustomerAddress] = React.useState('');
 
     const total = rate * quantity;
 
@@ -121,6 +124,33 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
 
     const handleNewCustomerToggle = () => {
         setIsNewCustomer(prev => !prev);
+        if (!isNewCustomer) {
+            setNewCustomerName('');
+            setNewCustomerPhone('');
+            setNewCustomerAddress('');
+        }
+    };
+
+    const handleAddNewCustomer = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post('http://localhost:5000/api/customers', {
+                name: newCustomerName,
+                phone: newCustomerPhone,
+                address: newCustomerAddress
+            }, {
+                headers: { 'x-auth-token': token }
+            });
+            
+            await fetchCustomers();
+            setCustomer(response.data.id.toString());
+            setIsNewCustomer(false);
+            setNewCustomerName('');
+            setNewCustomerPhone('');
+            setNewCustomerAddress('');
+        } catch (error) {
+            console.error('Error adding customer:', error);
+        }
     };
 
     const handleSaveSale = async () => {
@@ -192,11 +222,39 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
                      <Grid item xs={12}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                             {isNewCustomer ? (
-                                <TextField
-                                    label="New Customer Name"
-                                    variant="outlined"
-                                    fullWidth
-                                />
+                                <Box sx={{ width: '100%' }}>
+                                    <TextField
+                                        label="Customer Name"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={newCustomerName}
+                                        onChange={(e) => setNewCustomerName(e.target.value)}
+                                        sx={{ mb: 2 }}
+                                    />
+                                    <TextField
+                                        label="Phone"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={newCustomerPhone}
+                                        onChange={(e) => setNewCustomerPhone(e.target.value)}
+                                        sx={{ mb: 2 }}
+                                    />
+                                    <TextField
+                                        label="Address"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={newCustomerAddress}
+                                        onChange={(e) => setNewCustomerAddress(e.target.value)}
+                                    />
+                                    <Button 
+                                        variant="contained" 
+                                        onClick={handleAddNewCustomer}
+                                        sx={{ mt: 2 }}
+                                        disabled={!newCustomerName || !newCustomerPhone || !newCustomerAddress}
+                                    >
+                                        Add Customer
+                                    </Button>
+                                </Box>
                             ) : (
                                 <FormControl fullWidth>
                                     <InputLabel id="customer-select-label">Customer</InputLabel>
@@ -228,10 +286,9 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
                     </Grid>
                     {isNewCustomer && (
                         <Grid item xs={12}>
-                            <TextField
-                                label="Phone/Email (Optional)"
-                                fullWidth
-                            />
+                            <Typography variant="caption" color="text.secondary">
+                                Fill in all fields and click "Add Customer" to save
+                            </Typography>
                         </Grid>
                     )}
                     <Grid item xs={12}>
