@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProducts = exports.addProduct = void 0;
+exports.addStock = exports.getProducts = exports.addProduct = void 0;
 const db_1 = __importDefault(require("../db"));
 const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -64,3 +64,33 @@ const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getProducts = getProducts;
+const addStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const { product_id, stock } = req.body;
+        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!product_id || stock === undefined) {
+            return res.status(400).json({ message: 'Missing required fields: product_id, stock' });
+        }
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
+        if (businessResult.rows.length === 0) {
+            return res.status(400).json({ message: 'User not associated with any business' });
+        }
+        const business_id = businessResult.rows[0].business_id;
+        const result = yield db_1.default.query(`UPDATE products SET stock = stock + $1 
+             WHERE id = $2 AND business_id = $3
+             RETURNING *`, [stock, product_id, business_id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+        res.json(result.rows[0]);
+    }
+    catch (error) {
+        console.error('Error adding stock:', error);
+        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
+    }
+});
+exports.addStock = addStock;

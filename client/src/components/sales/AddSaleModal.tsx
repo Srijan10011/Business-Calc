@@ -17,6 +17,8 @@ import {
     Typography,
     Box,
     IconButton,
+    Alert,
+    Link,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -25,12 +27,15 @@ import axios from 'axios';
 interface AddSaleModalProps {
     open: boolean;
     onClose: () => void;
+    onAddStock?: (productId: string) => void;
+    preselectedProduct?: string;
 }
 
 interface Product {
     id: number;
     name: string;
     price: number;
+    stock: number;
 }
 
 interface Customer {
@@ -43,7 +48,7 @@ interface Account {
     type: string;
 }
 
-export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
+export default function AddSaleModal({ open, onClose, onAddStock, preselectedProduct }: AddSaleModalProps) {
     const [rate, setRate] = React.useState(100);
     const [quantity, setQuantity] = React.useState(10);
     const [isNewCustomer, setIsNewCustomer] = React.useState(false);
@@ -57,8 +62,12 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
     const [newCustomerName, setNewCustomerName] = React.useState('');
     const [newCustomerPhone, setNewCustomerPhone] = React.useState('');
     const [newCustomerAddress, setNewCustomerAddress] = React.useState('');
+    const [stockError, setStockError] = React.useState(false);
 
     const total = rate * quantity;
+
+    const selectedProduct = products.find(p => p.id.toString() === product);
+    const availableStock = selectedProduct?.stock || 0;
 
     React.useEffect(() => {
         if (open) {
@@ -75,9 +84,17 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
                 headers: { 'x-auth-token': token }
             });
             setProducts(response.data);
-            if (response.data.length > 0) {
+            if (preselectedProduct) {
+                setProduct(preselectedProduct);
+                const selectedProd = response.data.find((p: Product) => p.id.toString() === preselectedProduct);
+                if (selectedProd) {
+                    setRate(selectedProd.price);
+                    setStockError(quantity > selectedProd.stock);
+                }
+            } else if (response.data.length > 0) {
                 setProduct(response.data[0].id.toString());
                 setRate(response.data[0].price);
+                setStockError(quantity > response.data[0].stock);
             }
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -120,6 +137,12 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
         if (selectedProduct) {
             setRate(selectedProduct.price);
         }
+        setStockError(false);
+    };
+
+    const handleQuantityChange = (newQuantity: number) => {
+        setQuantity(newQuantity);
+        setStockError(newQuantity > availableStock);
     };
 
     const handleNewCustomerToggle = () => {
@@ -154,6 +177,11 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
     };
 
     const handleSaveSale = async () => {
+        if (quantity > availableStock) {
+            setStockError(true);
+            return;
+        }
+        
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/sales', {
@@ -170,6 +198,12 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
             onClose();
         } catch (error) {
             console.error('Error saving sale:', error);
+        }
+    };
+
+    const handleAddStockClick = () => {
+        if (onAddStock) {
+            onAddStock(product);
         }
     };
 
@@ -210,8 +244,9 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
                             label="Quantity"
                             type="number"
                             value={quantity}
-                            onChange={(e) => setQuantity(Number(e.target.value))}
+                            onChange={(e) => handleQuantityChange(Number(e.target.value))}
                             fullWidth
+                            error={stockError}
                         />
                     </Grid>
                     <Grid item xs={12} sm={8} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -219,6 +254,16 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
                             Total: ₹{total.toLocaleString('en-IN')}
                         </Typography>
                     </Grid>
+                    {stockError && (
+                        <Grid item xs={12}>
+                            <Alert severity="error">
+                                Stock is less. Available: {availableStock}.{' '}
+                                <Link component="button" onClick={handleAddStockClick} underline="always">
+                                    Add stock?
+                                </Link>
+                            </Alert>
+                        </Grid>
+                    )}
                      <Grid item xs={12}>
                         <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                             {isNewCustomer ? (
@@ -322,7 +367,7 @@ export default function AddSaleModal({ open, onClose }: AddSaleModalProps) {
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSaveSale} variant="contained">Save Sale</Button>
+                <Button onClick={handleSaveSale} variant="contained" disabled={stockError}>Save Sale</Button>
             </DialogActions>
         </Dialog>
     );

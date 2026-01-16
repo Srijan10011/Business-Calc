@@ -5,5 +5,7 @@ const customerController_1 = require("../controllers/customerController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
 router.get('/', authMiddleware_1.authMiddleware, customerController_1.getCustomers);
+router.get('/:id', authMiddleware_1.authMiddleware, customerController_1.getCustomerById);
+router.get('/:id/sales', authMiddleware_1.authMiddleware, customerController_1.getCustomerSales);
 router.post('/', authMiddleware_1.authMiddleware, customerController_1.addCustomer);
 exports.default = router;

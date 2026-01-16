@@ -1,24 +1,12 @@
 import * as React from 'react';
-import { Box, Button, Grid, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip, Typography } from '@mui/material';
+import { Box, Button, Grid, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem } from '@mui/material';
 import Add from '@mui/icons-material/Add';
 import ArrowUpward from '@mui/icons-material/ArrowUpward';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Visibility from '@mui/icons-material/Visibility';
 import Refresh from '@mui/icons-material/Refresh';
-import Title from '../components/dashboard/Title'; // Reusing Title component
-
-// Generate Inventory Data
-function createData(id, item, stock, unit, cost, status) {
-    return { id, item, stock, unit, cost, status };
-}
-
-const rows = [
-    createData('item-001', 'Grain A', 120, 'kg', 25, 'OK'),
-    createData('item-002', 'Gas', 3, 'cyl', 900, 'LOW'),
-    createData('item-003', 'Powder B', 0, 'kg', 40, 'OUT'),
-    createData('item-004', 'Item C', 50, 'pcs', 10, 'OK'),
-    createData('item-005', 'Item D', 10, 'units', 150, 'LOW'),
-];
+import Title from '../components/dashboard/Title';
+import axios from 'axios';
 
 const statusColors = {
     OK: 'success',
@@ -27,34 +15,105 @@ const statusColors = {
 };
 
 function Inventory() {
+    const [items, setItems] = React.useState([]);
+    const [addDialog, setAddDialog] = React.useState(false);
+    const [stockDialog, setStockDialog] = React.useState(false);
+    const [stockOperation, setStockOperation] = React.useState('in');
+    const [name, setName] = React.useState('');
+    const [stock, setStock] = React.useState('');
+    const [unitCost, setUnitCost] = React.useState('');
+    const [type, setType] = React.useState('raw_material');
+    const [selectedItem, setSelectedItem] = React.useState('');
+    const [stockQuantity, setStockQuantity] = React.useState('');
+
+    React.useEffect(() => {
+        fetchItems();
+    }, []);
+
+    const fetchItems = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/inventory', {
+                headers: { 'x-auth-token': token }
+            });
+            setItems(response.data);
+        } catch (error) {
+            console.error('Error fetching inventory:', error);
+        }
+    };
+
     const handleAddItem = () => {
-        console.log("Add Item clicked");
-        // Future: Open Add Item Modal
+        setName('');
+        setStock('');
+        setUnitCost('');
+        setType('raw_material');
+        setAddDialog(true);
+    };
+
+    const handleSaveItem = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/inventory', {
+                name,
+                stock: parseInt(stock),
+                unit_cost: parseFloat(unitCost),
+                type
+            }, {
+                headers: { 'x-auth-token': token }
+            });
+            setAddDialog(false);
+            fetchItems();
+        } catch (error) {
+            console.error('Error adding inventory item:', error);
+        }
     };
 
     const handleStockIn = () => {
-        console.log("Stock In clicked");
-        // Future: Open Stock In Modal
+        setStockOperation('in');
+        setSelectedItem('');
+        setStockQuantity('');
+        setStockDialog(true);
     };
 
     const handleStockOut = () => {
-        console.log("Stock Out clicked");
-        // Future: Open Stock Out Modal
+        setStockOperation('out');
+        setSelectedItem('');
+        setStockQuantity('');
+        setStockDialog(true);
+    };
+
+    const handleStockUpdate = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(
+                `http://localhost:5000/api/inventory/${selectedItem}/stock`,
+                { quantity: parseInt(stockQuantity), operation: stockOperation },
+                { headers: { 'x-auth-token': token } }
+            );
+            setStockDialog(false);
+            fetchItems();
+        } catch (error) {
+            console.error('Error updating stock:', error);
+        }
     };
 
     const handleView = (id) => {
         console.log(`View item ${id}`);
-        // Future: Redirect to item detail page or open view modal
     };
 
     const handleRestock = (id) => {
         console.log(`Restock item ${id}`);
-        // Future: Open restock modal
     };
 
-    const totalItems = rows.length;
-    const lowStockItems = rows.filter(row => row.status === 'LOW').length;
-    const totalValue = rows.reduce((sum, row) => sum + (row.stock * row.cost), 0);
+    const getStatus = (stock) => {
+        if (stock === 0) return 'OUT';
+        if (stock < 10) return 'LOW';
+        return 'OK';
+    };
+
+    const totalItems = items.length;
+    const lowStockItems = items.filter(item => getStatus(item.stock) === 'LOW').length;
+    const totalValue = items.reduce((sum, item) => sum + (item.stock * item.unit_cost), 0);
 
     return (
         <React.Fragment>
@@ -88,33 +147,113 @@ function Inventory() {
                         <TableRow>
                             <TableCell>Item</TableCell>
                             <TableCell>Stock</TableCell>
-                            <TableCell>Unit</TableCell>
-                            <TableCell>Cost</TableCell>
+                            <TableCell>Type</TableCell>
+                            <TableCell>Unit Cost</TableCell>
                             <TableCell>Status</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {rows.map((row) => (
-                            <TableRow key={row.id}>
-                                <TableCell>{row.item}</TableCell>
-                                <TableCell>{row.stock}</TableCell>
-                                <TableCell>{row.unit}</TableCell>
-                                <TableCell>₹{row.cost.toLocaleString('en-IN')}</TableCell>
+                        {items.map((item) => {
+                            const status = getStatus(item.stock);
+                            return (
+                            <TableRow key={item.id}>
+                                <TableCell>{item.name}</TableCell>
+                                <TableCell>{item.stock}</TableCell>
+                                <TableCell>{item.type}</TableCell>
+                                <TableCell>₹{item.unit_cost.toLocaleString('en-IN')}</TableCell>
                                 <TableCell>
-                                    <Chip label={row.status} color={statusColors[row.status]} size="small"/>
+                                    <Chip label={status} color={statusColors[status]} size="small"/>
                                 </TableCell>
                                 <TableCell>
-                                    <Button onClick={() => handleView(row.id)} size="small" startIcon={<Visibility />}>View</Button>
-                                    {row.status !== 'OK' && ( // Show restock only if not OK
-                                        <Button onClick={() => handleRestock(row.id)} size="small" startIcon={<Refresh />} sx={{ ml: 1 }}>Restock</Button>
+                                    <Button onClick={() => handleView(item.id)} size="small" startIcon={<Visibility />}>View</Button>
+                                    {status !== 'OK' && (
+                                        <Button onClick={() => handleRestock(item.id)} size="small" startIcon={<Refresh />} sx={{ ml: 1 }}>Restock</Button>
                                     )}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        )})}
                     </TableBody>
                 </Table>
             </Paper>
+
+            <Dialog open={addDialog} onClose={() => setAddDialog(false)}>
+                <DialogTitle>Add Inventory Item</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Name"
+                        fullWidth
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Stock"
+                        type="number"
+                        fullWidth
+                        value={stock}
+                        onChange={(e) => setStock(e.target.value)}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Unit Cost"
+                        type="number"
+                        fullWidth
+                        value={unitCost}
+                        onChange={(e) => setUnitCost(e.target.value)}
+                    />
+                    <TextField
+                        select
+                        margin="dense"
+                        label="Type"
+                        fullWidth
+                        value={type}
+                        onChange={(e) => setType(e.target.value)}
+                    >
+                        <MenuItem value="raw_material">Raw Material</MenuItem>
+                        <MenuItem value="product">Product</MenuItem>
+                        <MenuItem value="other">Other</MenuItem>
+                    </TextField>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAddDialog(false)}>Cancel</Button>
+                    <Button onClick={handleSaveItem} variant="contained">Save</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={stockDialog} onClose={() => setStockDialog(false)}>
+                <DialogTitle>Stock {stockOperation === 'in' ? 'In' : 'Out'}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        select
+                        margin="dense"
+                        label="Item"
+                        fullWidth
+                        value={selectedItem}
+                        onChange={(e) => setSelectedItem(e.target.value)}
+                    >
+                        {items.map((item) => (
+                            <MenuItem key={item.id} value={item.id}>
+                                {item.name} (Current: {item.stock})
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                    <TextField
+                        margin="dense"
+                        label="Quantity"
+                        type="number"
+                        fullWidth
+                        value={stockQuantity}
+                        onChange={(e) => setStockQuantity(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setStockDialog(false)}>Cancel</Button>
+                    <Button onClick={handleStockUpdate} variant="contained">Update</Button>
+                </DialogActions>
+            </Dialog>
         </React.Fragment>
     );
 }

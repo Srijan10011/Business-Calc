@@ -1,20 +1,23 @@
 import { Request, Response } from 'express';
 import pool from '../db';
 
-export const addProduct = async (req: Request, res: Response) => {
+export const addInventoryItem = async (req: Request, res: Response) => {
     try {
-        const { name, price, stock, profit_margin } = req.body;
+        const { name, stock, unit_cost, type } = req.body;
         const user_id = req.user?.id;
-        
-        if (!name || price === undefined || stock === undefined || profit_margin === undefined) {
-            return res.status(400).json({ message: 'Missing required fields: name, price, stock, profit_margin' });
+
+        if (!name || stock === undefined || unit_cost === undefined || !type) {
+            return res.status(400).json({ message: 'Missing required fields: name, stock, unit_cost, type' });
+        }
+
+        if (!['raw_material', 'product', 'other'].includes(type)) {
+            return res.status(400).json({ message: 'Invalid type. Must be raw_material, product, or other' });
         }
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        // Get business_id from business_users table
         const businessResult = await pool.query(
             'SELECT business_id FROM business_users WHERE user_id = $1',
             [user_id]
@@ -27,20 +30,20 @@ export const addProduct = async (req: Request, res: Response) => {
         const business_id = businessResult.rows[0].business_id;
 
         const result = await pool.query(
-            `INSERT INTO products (business_id, name, price, stock, profit_margin)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO inventory_items (business_id, name, type, stock, unit_cost, created_at)
+             VALUES ($1, $2, $3, $4, $5, NOW())
              RETURNING *`,
-            [business_id, name, price, stock, profit_margin]
+            [business_id, name, type, stock, unit_cost]
         );
 
         res.status(201).json(result.rows[0]);
     } catch (error: any) {
-        console.error('Error adding product:', error);
+        console.error('Error adding inventory item:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
 
-export const getProducts = async (req: Request, res: Response) => {
+export const getInventoryItems = async (req: Request, res: Response) => {
     try {
         const user_id = req.user?.id;
 
@@ -48,7 +51,6 @@ export const getProducts = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        // Get business_id from business_users table
         const businessResult = await pool.query(
             'SELECT business_id FROM business_users WHERE user_id = $1',
             [user_id]
@@ -61,24 +63,29 @@ export const getProducts = async (req: Request, res: Response) => {
         const business_id = businessResult.rows[0].business_id;
 
         const result = await pool.query(
-            'SELECT * FROM products WHERE business_id = $1 ORDER BY id DESC',
+            'SELECT * FROM inventory_items WHERE business_id = $1 ORDER BY created_at DESC',
             [business_id]
         );
 
         res.json(result.rows);
     } catch (error: any) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching inventory items:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
 
-export const addStock = async (req: Request, res: Response) => {
+export const updateInventoryStock = async (req: Request, res: Response) => {
     try {
-        const { product_id, stock } = req.body;
+        const { id } = req.params;
+        const { quantity, operation } = req.body;
         const user_id = req.user?.id;
 
-        if (!product_id || stock === undefined) {
-            return res.status(400).json({ message: 'Missing required fields: product_id, stock' });
+        if (!quantity || !operation) {
+            return res.status(400).json({ message: 'Missing required fields: quantity, operation' });
+        }
+
+        if (!['in', 'out'].includes(operation)) {
+            return res.status(400).json({ message: 'Invalid operation. Must be in or out' });
         }
 
         if (!user_id) {
@@ -96,20 +103,23 @@ export const addStock = async (req: Request, res: Response) => {
 
         const business_id = businessResult.rows[0].business_id;
 
+        const stockChange = operation === 'in' ? quantity : -quantity;
+
         const result = await pool.query(
-            `UPDATE products SET stock = stock + $1 
+            `UPDATE inventory_items 
+             SET stock = stock + $1 
              WHERE id = $2 AND business_id = $3
              RETURNING *`,
-            [stock, product_id, business_id]
+            [stockChange, id, business_id]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ message: 'Inventory item not found' });
         }
 
         res.json(result.rows[0]);
     } catch (error: any) {
-        console.error('Error adding stock:', error);
+        console.error('Error updating inventory stock:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

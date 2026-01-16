@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addCustomer = exports.getCustomers = void 0;
+exports.addCustomer = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
 const db_1 = __importDefault(require("../db"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -48,6 +48,77 @@ const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.getCustomers = getCustomers;
+const getCustomerById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const { id } = req.params;
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
+        if (businessResult.rows.length === 0) {
+            return res.status(400).json({ message: 'User not associated with any business' });
+        }
+        const business_id = businessResult.rows[0].business_id;
+        const result = yield db_1.default.query(`SELECT 
+                c.id,
+                c.name,
+                c.phone,
+                c.email,
+                c.address,
+                COALESCE(SUM(s.total_amount), 0) as total_purchases,
+                COALESCE(SUM(CASE WHEN LOWER(s.payment_type) = 'credit' THEN s.total_amount ELSE 0 END), 0) as outstanding_credit,
+                MAX(s.created_at) as last_purchase
+            FROM customers c
+            LEFT JOIN sales s ON c.id = s.customer_id
+            WHERE c.business_id = $1 AND c.id = $2
+            GROUP BY c.id, c.name, c.phone, c.email, c.address`, [business_id, id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+        res.json(result.rows[0]);
+    }
+    catch (error) {
+        console.error('Error fetching customer:', error);
+        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
+    }
+});
+exports.getCustomerById = getCustomerById;
+const getCustomerSales = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const { id } = req.params;
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
+        if (businessResult.rows.length === 0) {
+            return res.status(400).json({ message: 'User not associated with any business' });
+        }
+        const business_id = businessResult.rows[0].business_id;
+        const result = yield db_1.default.query(`SELECT 
+                s.id,
+                s.total_amount,
+                s.payment_type,
+                s.created_at,
+                si.quantity,
+                si.rate,
+                p.name as product_name
+            FROM sales s
+            INNER JOIN sale_items si ON s.id = si.sale_id
+            INNER JOIN products p ON si.product_id = p.id
+            WHERE s.customer_id = $1 AND s.business_id = $2
+            ORDER BY s.created_at DESC`, [id, business_id]);
+        res.json(result.rows);
+    }
+    catch (error) {
+        console.error('Error fetching customer sales:', error);
+        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
+    }
+});
+exports.getCustomerSales = getCustomerSales;
 const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
