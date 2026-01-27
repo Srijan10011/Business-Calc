@@ -15,6 +15,7 @@ import Settings from './pages/Settings';
 import Home from './pages/Home';
 import CustomerProfile from './pages/CustomerProfile';
 import ProductDetail from './pages/ProductDetail';
+import Credits from './pages/Credits';
 import PrivateRoute from './components/PrivateRoute';
 
 const App = () => {
@@ -32,6 +33,7 @@ const App = () => {
             <Route path="/customers/:customerId" element={<CustomerProfile />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/finance" element={<Finance />} />
+            <Route path="/credits" element={<Credits />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/:productId" element={<ProductDetail />} />

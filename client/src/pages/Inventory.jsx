@@ -25,10 +25,46 @@ function Inventory() {
     const [type, setType] = React.useState('raw_material');
     const [selectedItem, setSelectedItem] = React.useState('');
     const [stockQuantity, setStockQuantity] = React.useState('');
+    const [accounts, setAccounts] = React.useState([]);
+    const [paymentAccount, setPaymentAccount] = React.useState('');
+    const [skipPayment, setSkipPayment] = React.useState(false);
+    const [partyName, setPartyName] = React.useState('');
+    const [stockPaymentAccount, setStockPaymentAccount] = React.useState('');
+    const [skipStockPayment, setSkipStockPayment] = React.useState(false);
+    const [stockPartyName, setStockPartyName] = React.useState('');
+    const [suppliers, setSuppliers] = React.useState([]);
+    const [isNewSupplier, setIsNewSupplier] = React.useState(false);
 
     React.useEffect(() => {
         fetchItems();
+        fetchAccounts();
+        fetchSuppliers();
     }, []);
+
+    const fetchSuppliers = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/credits', {
+                headers: { 'x-auth-token': token }
+            });
+            const uniqueSuppliers = [...new Set(response.data.map(p => p.party_name))];
+            setSuppliers(uniqueSuppliers);
+        } catch (error) {
+            console.error('Error fetching suppliers:', error);
+        }
+    };
+
+    const fetchAccounts = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/accounts', {
+                headers: { 'x-auth-token': token }
+            });
+            setAccounts(response.data);
+        } catch (error) {
+            console.error('Error fetching accounts:', error);
+        }
+    };
 
     const fetchItems = async () => {
         try {
@@ -47,17 +83,25 @@ function Inventory() {
         setStock('');
         setUnitCost('');
         setType('raw_material');
+        setPaymentAccount('');
+        setSkipPayment(false);
+        setPartyName('');
         setAddDialog(true);
     };
 
     const handleSaveItem = async () => {
         try {
             const token = localStorage.getItem('token');
+            const totalAmount = skipPayment ? 0 : (parseFloat(stock) * parseFloat(unitCost));
+            
             await axios.post('http://localhost:5000/api/inventory', {
                 name,
                 stock: parseInt(stock),
                 unit_cost: parseFloat(unitCost),
-                type
+                type,
+                payment_account: skipPayment ? null : paymentAccount,
+                total_amount: totalAmount,
+                party_name: partyName
             }, {
                 headers: { 'x-auth-token': token }
             });
@@ -72,6 +116,10 @@ function Inventory() {
         setStockOperation('in');
         setSelectedItem('');
         setStockQuantity('');
+        setStockPaymentAccount('');
+        setSkipStockPayment(false);
+        setStockPartyName('');
+        setIsNewSupplier(false);
         setStockDialog(true);
     };
 
@@ -84,16 +132,42 @@ function Inventory() {
 
     const handleStockUpdate = async () => {
         try {
+            // Validation for stock in operations
+            if (stockOperation === 'in' && !skipStockPayment && !stockPaymentAccount) {
+                alert('Please select an account or skip payment');
+                return;
+            }
+
+            // Validation for credit account requiring supplier name
+            const selectedAccount = accounts.find(acc => acc.account_id === stockPaymentAccount);
+            const isCredit = selectedAccount?.account_name?.toLowerCase().includes('credit');
+            if (stockOperation === 'in' && !skipStockPayment && isCredit && !stockPartyName) {
+                alert('Please select or enter a supplier name for credit transactions');
+                return;
+            }
+
             const token = localStorage.getItem('token');
+            const selectedItemData = items.find(item => item.id === selectedItem);
+            const totalAmount = (stockOperation === 'in' && !skipStockPayment) 
+                ? parseFloat(stockQuantity) * parseFloat(selectedItemData?.unit_cost || 0) 
+                : 0;
+                
             await axios.patch(
                 `http://localhost:5000/api/inventory/${selectedItem}/stock`,
-                { quantity: parseInt(stockQuantity), operation: stockOperation },
+                { 
+                    quantity: parseInt(stockQuantity), 
+                    operation: stockOperation,
+                    payment_account: (stockOperation === 'in' && !skipStockPayment) ? stockPaymentAccount : null,
+                    total_amount: totalAmount,
+                    party_name: stockPartyName
+                },
                 { headers: { 'x-auth-token': token } }
             );
             setStockDialog(false);
             fetchItems();
         } catch (error) {
             console.error('Error updating stock:', error);
+            alert('Error updating stock: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -177,45 +251,97 @@ function Inventory() {
                 </Table>
             </Paper>
 
-            <Dialog open={addDialog} onClose={() => setAddDialog(false)}>
+            <Dialog open={addDialog} onClose={() => setAddDialog(false)} maxWidth="md" fullWidth>
                 <DialogTitle>Add Inventory Item</DialogTitle>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Name"
-                        fullWidth
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Stock"
-                        type="number"
-                        fullWidth
-                        value={stock}
-                        onChange={(e) => setStock(e.target.value)}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Unit Cost"
-                        type="number"
-                        fullWidth
-                        value={unitCost}
-                        onChange={(e) => setUnitCost(e.target.value)}
-                    />
-                    <TextField
-                        select
-                        margin="dense"
-                        label="Type"
-                        fullWidth
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                    >
-                        <MenuItem value="raw_material">Raw Material</MenuItem>
-                        <MenuItem value="product">Product</MenuItem>
-                        <MenuItem value="other">Other</MenuItem>
-                    </TextField>
+                    <Grid container spacing={3} sx={{ mt: 1 }}>
+                        {/* Left Side - Item Details */}
+                        <Grid item xs={12} sm={6}>
+                            <Typography variant="h6" sx={{ mb: 2 }}>Item Details</Typography>
+                            <TextField
+                                autoFocus
+                                margin="dense"
+                                label="Name"
+                                fullWidth
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Stock"
+                                type="number"
+                                fullWidth
+                                value={stock}
+                                onChange={(e) => setStock(e.target.value)}
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Unit Cost"
+                                type="number"
+                                fullWidth
+                                value={unitCost}
+                                onChange={(e) => setUnitCost(e.target.value)}
+                            />
+                            <TextField
+                                select
+                                margin="dense"
+                                label="Type"
+                                fullWidth
+                                value={type}
+                                onChange={(e) => setType(e.target.value)}
+                            >
+                                <MenuItem value="raw_material">Raw Material</MenuItem>
+                                <MenuItem value="product">Product</MenuItem>
+                                <MenuItem value="other">Other</MenuItem>
+                            </TextField>
+                        </Grid>
+                        
+                        {/* Right Side - Payment */}
+                        <Grid item xs={12} sm={6}>
+                            <Typography variant="h6" sx={{ mb: 2 }}>Payment</Typography>
+                            <TextField
+                                select
+                                margin="dense"
+                                label="Account"
+                                fullWidth
+                                value={paymentAccount}
+                                onChange={(e) => setPaymentAccount(e.target.value)}
+                                disabled={skipPayment}
+                            >
+                                {accounts.filter(acc => ['Cash Account', 'Bank Account', 'Credit Account'].includes(acc.account_name)).map((account) => (
+                                    <MenuItem key={account.account_id} value={account.account_id}>
+                                        {account.account_name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                margin="dense"
+                                label="Total Amount"
+                                type="number"
+                                fullWidth
+                                value={skipPayment ? 0 : (parseFloat(stock || 0) * parseFloat(unitCost || 0)).toFixed(2)}
+                                disabled
+                            />
+                            {accounts.find(acc => acc.account_id === paymentAccount)?.account_name?.toLowerCase().includes('credit') && !skipPayment && (
+                                <TextField
+                                    margin="dense"
+                                    label="Party Name"
+                                    fullWidth
+                                    value={partyName}
+                                    onChange={(e) => setPartyName(e.target.value)}
+                                    placeholder="Enter supplier/vendor name"
+                                />
+                            )}
+                            <Button 
+                                variant={skipPayment ? "contained" : "outlined"}
+                                onClick={() => setSkipPayment(!skipPayment)}
+                                sx={{ mt: 2 }}
+                                fullWidth
+                            >
+                                {skipPayment ? "Payment Skipped" : "Skip Payment"}
+                            </Button>
+                        </Grid>
+                    </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setAddDialog(false)}>Cancel</Button>
@@ -223,31 +349,112 @@ function Inventory() {
                 </DialogActions>
             </Dialog>
 
-            <Dialog open={stockDialog} onClose={() => setStockDialog(false)}>
+            <Dialog open={stockDialog} onClose={() => setStockDialog(false)} maxWidth="md" fullWidth>
                 <DialogTitle>Stock {stockOperation === 'in' ? 'In' : 'Out'}</DialogTitle>
                 <DialogContent>
-                    <TextField
-                        select
-                        margin="dense"
-                        label="Item"
-                        fullWidth
-                        value={selectedItem}
-                        onChange={(e) => setSelectedItem(e.target.value)}
-                    >
-                        {items.map((item) => (
-                            <MenuItem key={item.id} value={item.id}>
-                                {item.name} (Current: {item.stock})
-                            </MenuItem>
-                        ))}
-                    </TextField>
-                    <TextField
-                        margin="dense"
-                        label="Quantity"
-                        type="number"
-                        fullWidth
-                        value={stockQuantity}
-                        onChange={(e) => setStockQuantity(e.target.value)}
-                    />
+                    <Grid container spacing={3} sx={{ mt: 1 }}>
+                        {/* Left Side - Stock Details */}
+                        <Grid item xs={12} sm={stockOperation === 'in' ? 6 : 12}>
+                            <Typography variant="h6" sx={{ mb: 2 }}>Stock Details</Typography>
+                            <TextField
+                                select
+                                margin="dense"
+                                label="Item"
+                                fullWidth
+                                value={selectedItem}
+                                onChange={(e) => setSelectedItem(e.target.value)}
+                            >
+                                {items.map((item) => (
+                                    <MenuItem key={item.id} value={item.id}>
+                                        {item.name} (Current: {item.stock})
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                margin="dense"
+                                label="Quantity"
+                                type="number"
+                                fullWidth
+                                value={stockQuantity}
+                                onChange={(e) => setStockQuantity(e.target.value)}
+                            />
+                        </Grid>
+                        
+                        {/* Right Side - Payment (only for stock in) */}
+                        {stockOperation === 'in' && (
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="h6" sx={{ mb: 2 }}>Payment</Typography>
+                                <TextField
+                                    select
+                                    margin="dense"
+                                    label="Account"
+                                    fullWidth
+                                    value={stockPaymentAccount}
+                                    onChange={(e) => setStockPaymentAccount(e.target.value)}
+                                    disabled={skipStockPayment}
+                                >
+                                    {accounts.filter(acc => ['Cash Account', 'Bank Account', 'Credit Account'].includes(acc.account_name)).map((account) => (
+                                        <MenuItem key={account.account_id} value={account.account_id}>
+                                            {account.account_name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                                <TextField
+                                    margin="dense"
+                                    label="Total Amount"
+                                    type="number"
+                                    fullWidth
+                                    value={skipStockPayment ? 0 : (parseFloat(stockQuantity || 0) * parseFloat(items.find(item => item.id === selectedItem)?.unit_cost || 0)).toFixed(2)}
+                                    disabled
+                                />
+                                {accounts.find(acc => acc.account_id === stockPaymentAccount)?.account_name?.toLowerCase().includes('credit') && !skipStockPayment && (
+                                    <>
+                                        <TextField
+                                            select
+                                            margin="dense"
+                                            label="Supplier"
+                                            fullWidth
+                                            value={isNewSupplier ? 'new' : stockPartyName}
+                                            onChange={(e) => {
+                                                if (e.target.value === 'new') {
+                                                    setIsNewSupplier(true);
+                                                    setStockPartyName('');
+                                                } else {
+                                                    setIsNewSupplier(false);
+                                                    setStockPartyName(e.target.value);
+                                                }
+                                            }}
+                                        >
+                                            {suppliers.map((supplier) => (
+                                                <MenuItem key={supplier} value={supplier}>
+                                                    {supplier}
+                                                </MenuItem>
+                                            ))}
+                                            <MenuItem value="new">+ New Supplier</MenuItem>
+                                        </TextField>
+                                        {isNewSupplier && (
+                                            <TextField
+                                                margin="dense"
+                                                label="New Supplier Name"
+                                                fullWidth
+                                                value={stockPartyName}
+                                                onChange={(e) => setStockPartyName(e.target.value)}
+                                                placeholder="Enter supplier name"
+                                            />
+                                        )}
+                                    </>
+                                )}
+                                <Button 
+                                    variant={skipStockPayment ? "contained" : "outlined"}
+                                    onClick={() => setSkipStockPayment(!skipStockPayment)}
+                                    sx={{ mt: 2 }}
+                                    fullWidth
+                                >
+                                    {skipStockPayment ? "Payment Skipped" : "Skip Payment"}
+                                </Button>
+                            </Grid>
+                        )}
+                    </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setStockDialog(false)}>Cancel</Button>

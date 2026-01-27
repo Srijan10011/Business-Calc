@@ -13,6 +13,9 @@ import inventoryRoutes from './routes/inventoryRoutes';
 import costTargetRoutes from './routes/costTargetRoutes';
 import cogsRoutes from './routes/cogsRoutes';
 import assetRoutes from './routes/assetRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
+import expenseRoutes from './routes/expenseRoutes';
+import creditRoutes from './routes/creditRoutes';
 
 dotenv.config();
 
@@ -56,6 +59,9 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/cost-targets', costTargetRoutes);
 app.use('/api/cogs', cogsRoutes);
 app.use('/api/assets', assetRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/credits', creditRoutes);
 
 const server = app.listen(port, () => {
   console.log(`⚡️[server]: Minimal Express Server is running at http://localhost:${port}`);

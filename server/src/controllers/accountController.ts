@@ -94,7 +94,7 @@ export const getTransactions = async (req: Request, res: Response) => {
             `SELECT t.transaction_id, t.created_at, t.note, t.type, t.amount, a.account_name
              FROM transactions t
              JOIN business_transactions bt ON t.transaction_id = bt.transaction_id
-             JOIN accounts a ON t.account_id = a.account_id
+             LEFT JOIN accounts a ON t.account_id = a.account_id
              WHERE bt.business_id = $1
              ORDER BY t.created_at DESC`,
             [business_id]
@@ -106,7 +106,7 @@ export const getTransactions = async (req: Request, res: Response) => {
             description: row.note,
             category: row.type,
             amount: parseFloat(row.amount),
-            account: row.account_name
+            account: row.account_name || 'COGS Expense'
         }));
 
         res.json(transactions);

@@ -47,6 +47,11 @@ export default function Finance() {
     const [cogsAccount, setCogsAccount] = React.useState('');
     const [cogsAmount, setCogsAmount] = React.useState('');
     const [cogsDirection, setCogsDirection] = React.useState('from-cogs');
+    const [payoutOpen, setPayoutOpen] = React.useState(false);
+    const [payoutCategory, setPayoutCategory] = React.useState(null);
+    const [payoutAmount, setPayoutAmount] = React.useState('');
+    const [payoutAccount, setPayoutAccount] = React.useState('');
+    const [payoutNote, setPayoutNote] = React.useState('');
 
     const fetchAccounts = async () => {
         try {
@@ -130,6 +135,32 @@ export default function Finance() {
         }
     };
 
+    const handleCogsPayoutOpen = (category) => {
+        setPayoutCategory(category);
+        setPayoutAmount('');
+        setPayoutNote('');
+        setPayoutOpen(true);
+    };
+
+    const handleCogsPayoutSubmit = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/expenses/cogs-payout', {
+                category_id: payoutCategory.category_id,
+                amount: parseFloat(payoutAmount),
+                note: payoutNote
+            }, {
+                headers: { 'x-auth-token': token }
+            });
+            setPayoutOpen(false);
+            fetchAccounts();
+            fetchTransactions();
+            fetchCOGSData();
+        } catch (error) {
+            console.error('Error processing COGS payout:', error);
+        }
+    };
+
     React.useEffect(() => {
         fetchAccounts();
         fetchTransactions();
@@ -179,6 +210,7 @@ export default function Finance() {
                         <TableRow>
                             <TableCell>Category</TableCell>
                             <TableCell align="right">Amount</TableCell>
+                            <TableCell align="right">Action</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -186,6 +218,16 @@ export default function Finance() {
                             <TableRow key={index}>
                                 <TableCell>{category.category_name}</TableCell>
                                 <TableCell align="right">₹{parseFloat(category.balance).toLocaleString('en-IN')}</TableCell>
+                                <TableCell align="right">
+                                    <Button 
+                                        size="small" 
+                                        variant="outlined" 
+                                        color="error"
+                                        onClick={() => handleCogsPayoutOpen(category)}
+                                    >
+                                        Payout
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -378,6 +420,40 @@ export default function Finance() {
                     <Button onClick={() => setCogsTransferOpen(false)}>Cancel</Button>
                     <Button onClick={handleCogsTransfer} variant="contained" disabled={!cogsCategory || !cogsAccount || !cogsAmount}>
                         Transfer
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* COGS Payout Dialog */}
+            <Dialog open={payoutOpen} onClose={() => setPayoutOpen(false)}>
+                <DialogTitle>COGS Payout - {payoutCategory?.category_name}</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        Available: ₹{payoutCategory ? parseFloat(payoutCategory.balance).toLocaleString('en-IN') : '0'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        <TextField
+                            label="Amount"
+                            type="number"
+                            value={payoutAmount}
+                            onChange={(e) => setPayoutAmount(e.target.value)}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Description"
+                            value={payoutNote}
+                            onChange={(e) => setPayoutNote(e.target.value)}
+                            fullWidth
+                            multiline
+                            rows={2}
+                            placeholder="e.g., Electricity bill payment, Office rent, etc."
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPayoutOpen(false)}>Cancel</Button>
+                    <Button onClick={handleCogsPayoutSubmit} variant="contained" color="error">
+                        Payout
                     </Button>
                 </DialogActions>
             </Dialog>

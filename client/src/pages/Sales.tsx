@@ -41,14 +41,33 @@ export default function Sales() {
     const [selectedProduct, setSelectedProduct] = React.useState('');
     const [stockAmount, setStockAmount] = React.useState('');
     const [preselectedProduct, setPreselectedProduct] = React.useState('');
+    
+    // Filter states
+    const [statusFilter, setStatusFilter] = React.useState('');
+    const [productFilter, setProductFilter] = React.useState('');
+    const [dateFromFilter, setDateFromFilter] = React.useState('');
+    const [dateToFilter, setDateToFilter] = React.useState('');
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [totalPages, setTotalPages] = React.useState(1);
+    const [totalSales, setTotalSales] = React.useState(0);
 
     const fetchSales = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/sales', {
+            const params = new URLSearchParams();
+            if (statusFilter) params.append('status', statusFilter);
+            if (productFilter) params.append('product', productFilter);
+            if (dateFromFilter) params.append('date_from', dateFromFilter);
+            if (dateToFilter) params.append('date_to', dateToFilter);
+            params.append('page', currentPage.toString());
+            params.append('limit', '20');
+            
+            const response = await axios.get(`http://localhost:5000/api/sales?${params}`, {
                 headers: { 'x-auth-token': token }
             });
-            setSales(response.data);
+            setSales(response.data.sales);
+            setTotalPages(response.data.pagination.totalPages);
+            setTotalSales(response.data.pagination.totalSales);
         } catch (error) {
             console.error('Error fetching sales:', error);
         }
@@ -88,6 +107,15 @@ export default function Sales() {
         fetchProducts();
         fetchAccounts();
     }, []);
+
+    React.useEffect(() => {
+        setCurrentPage(1); // Reset to page 1 when filters change
+        fetchSales();
+    }, [statusFilter, productFilter, dateFromFilter, dateToFilter]);
+
+    React.useEffect(() => {
+        fetchSales();
+    }, [currentPage]);
 
     const handleOpen = () => {
         setPreselectedProduct('');
@@ -166,6 +194,76 @@ export default function Sales() {
           Add Sale
         </Button>
       </Box>
+      
+      {/* Filter Section */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <TextField
+            select
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            sx={{ minWidth: 120 }}
+            size="small"
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="Paid">Paid</MenuItem>
+            <MenuItem value="Pending">Pending</MenuItem>
+          </TextField>
+          
+          <TextField
+            select
+            label="Product"
+            value={productFilter}
+            onChange={(e) => setProductFilter(e.target.value)}
+            sx={{ minWidth: 150 }}
+            size="small"
+          >
+            <MenuItem value="">All Products</MenuItem>
+            {products.map((product) => (
+              <MenuItem key={product.product_id} value={product.product_id}>
+                {product.name}
+              </MenuItem>
+            ))}
+          </TextField>
+          
+          <TextField
+            label="From Date"
+            type="date"
+            value={dateFromFilter}
+            onChange={(e) => setDateFromFilter(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+          
+          <TextField
+            label="To Date"
+            type="date"
+            value={dateToFilter}
+            onChange={(e) => setDateToFilter(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+          
+          <Button variant="outlined" onClick={fetchSales}>
+            Apply Filters
+          </Button>
+          
+          <Button 
+            variant="text" 
+            onClick={() => {
+              setStatusFilter('');
+              setProductFilter('');
+              setDateFromFilter('');
+              setDateToFilter('');
+              fetchSales();
+            }}
+          >
+            Clear
+          </Button>
+        </Box>
+      </Paper>
+      
       <Paper>
         <Table size="medium">
           <TableHead>
@@ -203,6 +301,37 @@ export default function Sales() {
             ))}
           </TableBody>
         </Table>
+        
+        {/* Pagination */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+          <Box>
+            Showing {((currentPage - 1) * 20) + 1}-{Math.min(currentPage * 20, totalSales)} of {totalSales} sales
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button 
+              disabled={currentPage === 1} 
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              Previous
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <Button
+                key={page}
+                variant={page === currentPage ? 'contained' : 'outlined'}
+                onClick={() => setCurrentPage(page)}
+                sx={{ minWidth: 40 }}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button 
+              disabled={currentPage === totalPages} 
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </Box>
+        </Box>
       </Paper>
       <AddSaleModal open={open} onClose={handleClose} onAddStock={handleAddStock} preselectedProduct={preselectedProduct} />
 

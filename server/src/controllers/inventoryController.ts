@@ -3,14 +3,16 @@ import pool from '../db';
 
 export const addInventoryItem = async (req: Request, res: Response) => {
     try {
-        const { name, stock, unit_cost, type } = req.body;
+        const { name, stock, unit_cost, type, payment_account, total_amount, party_name } = req.body;
         const user_id = req.user?.id;
 
         if (!name || stock === undefined || unit_cost === undefined || !type) {
             return res.status(400).json({ message: 'Missing required fields: name, stock, unit_cost, type' });
         }
 
-        if (!['Raw_material', 'Other'].includes(type)) {
+        const dbType = type === 'raw_material' ? 'Raw_material' : 'Other';
+
+        if (!['Raw_material', 'Other'].includes(dbType)) {
             return res.status(400).json({ message: 'Invalid type. Must be Raw_material or Other' });
         }
 
@@ -38,7 +40,7 @@ export const addInventoryItem = async (req: Request, res: Response) => {
                 `INSERT INTO inventory_info (name, stock, type, unit_cost)
                  VALUES ($1, $2, $3, $4)
                  RETURNING inventory_id, name, stock, type, unit_cost`,
-                [name, stock, type, unit_cost]
+                [name, stock, dbType, unit_cost]
             );
 
             const inventory_id = inventoryResult.rows[0].inventory_id;
@@ -49,6 +51,49 @@ export const addInventoryItem = async (req: Request, res: Response) => {
                  VALUES ($1, $2)`,
                 [inventory_id, business_id]
             );
+
+            // Handle payment if not skipped
+            if (payment_account && total_amount > 0) {
+                // Create expense transaction
+                const transactionResult = await client.query(
+                    `INSERT INTO transactions (account_id, amount, type, note)
+                     VALUES ($1, $2, $3, $4)
+                     RETURNING transaction_id`,
+                    [payment_account, total_amount, 'Outgoing', `Purchase of inventory: ${name}`]
+                );
+
+                // Link to business
+                await client.query(
+                    `INSERT INTO business_transactions (transaction_id, business_id)
+                     VALUES ($1, $2)`,
+                    [transactionResult.rows[0].transaction_id, business_id]
+                );
+
+                // Check if it's credit account
+                const accountResult = await client.query(
+                    'SELECT account_name FROM accounts WHERE account_id = $1',
+                    [payment_account]
+                );
+                
+                const isCredit = accountResult.rows[0]?.account_name?.toLowerCase().includes('credit');
+
+                // Update account balance (add for credit, subtract for cash/bank)
+                await client.query(
+                    `UPDATE business_account 
+                     SET balance = balance ${isCredit ? '+' : '-'} $1 
+                     WHERE account_id = $2`,
+                    [total_amount, payment_account]
+                );
+
+                // Create credit payable record if credit account
+                if (isCredit && party_name) {
+                    await client.query(
+                        `INSERT INTO credit_payables (business_id, party_name, total_amount)
+                         VALUES ($1, $2, $3)`,
+                        [business_id, party_name, total_amount]
+                    );
+                }
+            }
 
             await client.query('COMMIT');
             res.status(201).json(inventoryResult.rows[0]);
@@ -84,7 +129,7 @@ export const getInventoryItems = async (req: Request, res: Response) => {
         const business_id = businessResult.rows[0].business_id;
 
         const result = await pool.query(
-            `SELECT ii.inventory_id, ii.name, ii.stock, ii.type, ii.unit_cost
+            `SELECT ii.inventory_id as id, ii.name, ii.stock, ii.type, ii.unit_cost
              FROM inventory_info ii
              INNER JOIN business_inventory bi ON ii.inventory_id = bi.inventory_id
              WHERE bi.business_id = $1
@@ -102,7 +147,7 @@ export const getInventoryItems = async (req: Request, res: Response) => {
 export const updateInventoryStock = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { quantity, operation } = req.body;
+        const { quantity, operation, payment_account, total_amount, party_name } = req.body;
         const user_id = req.user?.id;
 
         if (!quantity || !operation) {
@@ -111,6 +156,24 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
 
         if (!['in', 'out'].includes(operation)) {
             return res.status(400).json({ message: 'Invalid operation. Must be in or out' });
+        }
+
+        // Validation for stock in operations
+        if (operation === 'in' && total_amount > 0 && !payment_account) {
+            return res.status(400).json({ message: 'Payment account is required for stock in operations unless payment is skipped' });
+        }
+
+        // Validation for credit account requiring party name
+        if (operation === 'in' && payment_account && total_amount > 0) {
+            const accountResult = await pool.query(
+                'SELECT account_name FROM accounts WHERE account_id = $1',
+                [payment_account]
+            );
+            
+            const isCredit = accountResult.rows[0]?.account_name?.toLowerCase().includes('credit');
+            if (isCredit && !party_name) {
+                return res.status(400).json({ message: 'Party name is required for credit transactions' });
+            }
         }
 
         if (!user_id) {
@@ -128,21 +191,127 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
 
         const business_id = businessResult.rows[0].business_id;
 
-        const stockChange = operation === 'in' ? quantity : -quantity;
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
 
-        const result = await pool.query(
-            `UPDATE inventory_items 
-             SET stock = stock + $1 
-             WHERE id = $2 AND business_id = $3
-             RETURNING *`,
-            [stockChange, id, business_id]
-        );
+            // Get current stock and unit cost
+            const currentResult = await client.query(
+                `SELECT ii.stock, ii.unit_cost, ii.name
+                 FROM inventory_info ii
+                 INNER JOIN business_inventory bi ON ii.inventory_id = bi.inventory_id
+                 WHERE ii.inventory_id = $1 AND bi.business_id = $2`,
+                [id, business_id]
+            );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Inventory item not found' });
+            if (currentResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ message: 'Inventory item not found' });
+            }
+
+            const { stock: currentStock, unit_cost, name } = currentResult.rows[0];
+            const stockChange = operation === 'in' ? parseInt(quantity) : -parseInt(quantity);
+            const newStock = parseInt(currentStock) + stockChange;
+
+            if (newStock < 0) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ message: 'Insufficient stock' });
+            }
+
+            // Update stock
+            const updateResult = await client.query(
+                `UPDATE inventory_info 
+                 SET stock = $1 
+                 WHERE inventory_id = $2
+                 RETURNING inventory_id, name, stock, type, unit_cost`,
+                [newStock, id]
+            );
+
+            // Handle payment for stock in operations
+            if (operation === 'in' && payment_account && total_amount > 0) {
+                // Create expense transaction
+                const transactionResult = await client.query(
+                    `INSERT INTO transactions (account_id, amount, type, note)
+                     VALUES ($1, $2, $3, $4)
+                     RETURNING transaction_id`,
+                    [payment_account, total_amount, 'Outgoing', `Stock in payment for ${name}`]
+                );
+
+                // Link to business
+                await client.query(
+                    `INSERT INTO business_transactions (transaction_id, business_id)
+                     VALUES ($1, $2)`,
+                    [transactionResult.rows[0].transaction_id, business_id]
+                );
+
+                // Check if it's credit account
+                const accountResult = await client.query(
+                    'SELECT account_name FROM accounts WHERE account_id = $1',
+                    [payment_account]
+                );
+                
+                const isCredit = accountResult.rows[0]?.account_name?.toLowerCase().includes('credit');
+
+                // Update account balance (add for credit, subtract for cash/bank)
+                await client.query(
+                    `UPDATE business_account 
+                     SET balance = balance ${isCredit ? '+' : '-'} $1 
+                     WHERE account_id = $2`,
+                    [total_amount, payment_account]
+                );
+
+                // Handle credit payable for stock in
+                if (isCredit && party_name) {
+                    console.log('Creating credit payable for:', party_name, 'amount:', total_amount);
+                    
+                    // Check if payable already exists for this party
+                    const existingPayable = await client.query(
+                        'SELECT payable_id, total_amount, paid_amount FROM credit_payables WHERE business_id = $1 AND party_name = $2 AND status != $3',
+                        [business_id, party_name, 'Paid']
+                    );
+
+                    console.log('Existing payable found:', existingPayable.rows.length);
+
+                    if (existingPayable.rows.length > 0) {
+                        // Add to existing payable
+                        await client.query(
+                            'UPDATE credit_payables SET total_amount = total_amount + $1 WHERE payable_id = $2',
+                            [total_amount, existingPayable.rows[0].payable_id]
+                        );
+                        console.log('Updated existing payable');
+                    } else {
+                        // Create new payable
+                        const newPayableResult = await client.query(
+                            `INSERT INTO credit_payables (business_id, party_name, total_amount)
+                             VALUES ($1, $2, $3) RETURNING payable_id`,
+                            [business_id, party_name, total_amount]
+                        );
+                        console.log('Created new payable with ID:', newPayableResult.rows[0].payable_id);
+                    }
+                } else {
+                    console.log('Credit payable not created - isCredit:', isCredit, 'party_name:', party_name);
+                }
+            }
+
+            // Log the transaction
+            const logType = operation === 'in' ? 'Incomming' : 'Outgoing';
+            const totalCost = parseInt(quantity) * parseFloat(unit_cost);
+            const addToRecover = operation === 'in' ? totalCost : 0;
+
+            await client.query(
+                `INSERT INTO inventory_logs (type, amount, previous_stock, new_stock, total_cost, add_to_recover, inventory_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [logType, parseInt(quantity), parseInt(currentStock), newStock, totalCost, addToRecover, id]
+            );
+
+            await client.query('COMMIT');
+            res.json(updateResult.rows[0]);
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
         }
-
-        res.json(result.rows[0]);
     } catch (error: any) {
         console.error('Error updating inventory stock:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });

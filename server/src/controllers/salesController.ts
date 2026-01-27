@@ -4,6 +4,7 @@ import pool from '../db';
 export const getSales = async (req: Request, res: Response) => {
     try {
         const user_id = req.user?.id;
+        const { status, product, date_from, date_to, page = 1, limit = 20 } = req.query;
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
@@ -19,11 +20,64 @@ export const getSales = async (req: Request, res: Response) => {
         }
 
         const business_id = businessResult.rows[0].business_id;
+        const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+        let whereClause = 'WHERE s.business_id = $1';
+        const queryParams = [business_id];
+        let paramCount = 1;
+
+        if (status) {
+            paramCount++;
+            whereClause += ` AND si.status = $${paramCount}`;
+            queryParams.push(status);
+        }
+
+        if (product) {
+            paramCount++;
+            whereClause += ` AND p.product_id = $${paramCount}`;
+            queryParams.push(product);
+        }
+
+        if (date_from) {
+            paramCount++;
+            whereClause += ` AND DATE(si.created_at) >= $${paramCount}`;
+            queryParams.push(date_from);
+        }
+
+        if (date_to) {
+            paramCount++;
+            whereClause += ` AND DATE(si.created_at) <= $${paramCount}`;
+            queryParams.push(date_to);
+        }
+
+        // Get total count
+        const countResult = await pool.query(
+            `SELECT COUNT(*) as total
+            FROM sales_info si
+            INNER JOIN sales s ON si.sale_id = s.sale_id
+            INNER JOIN customers_info ci ON s.customer_id = ci.customer_id
+            INNER JOIN products p ON si.product_id = p.product_id
+            LEFT JOIN debit_account da ON si.sale_id = da.sale_id
+            ${whereClause}`,
+            queryParams
+        );
+
+        const totalSales = parseInt(countResult.rows[0].total);
+        const totalPages = Math.ceil(totalSales / parseInt(limit as string));
+
+        // Add pagination to query params
+        paramCount++;
+        const limitParam = `$${paramCount}`;
+        queryParams.push(limit);
+        
+        paramCount++;
+        const offsetParam = `$${paramCount}`;
+        queryParams.push(offset);
 
         const salesResult = await pool.query(
             `SELECT 
                 si.sale_id,
-                ci.created_at as date,
+                si.created_at as date,
                 ci.name as customer,
                 p.name as product,
                 si.quantity,
@@ -37,9 +91,10 @@ export const getSales = async (req: Request, res: Response) => {
             INNER JOIN customers_info ci ON s.customer_id = ci.customer_id
             INNER JOIN products p ON si.product_id = p.product_id
             LEFT JOIN debit_account da ON si.sale_id = da.sale_id
-            WHERE s.business_id = $1
-            ORDER BY si.sale_id DESC`,
-            [business_id]
+            ${whereClause}
+            ORDER BY si.created_at DESC, si.sale_id DESC
+            LIMIT ${limitParam} OFFSET ${offsetParam}`,
+            queryParams
         );
 
         const sales = salesResult.rows.map(row => ({
@@ -50,7 +105,15 @@ export const getSales = async (req: Request, res: Response) => {
                 : row.total
         }));
 
-        res.json(sales);
+        res.json({
+            sales,
+            pagination: {
+                currentPage: parseInt(page as string),
+                totalPages,
+                totalSales,
+                limit: parseInt(limit as string)
+            }
+        });
     } catch (error: any) {
         console.error('Error fetching sales:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
@@ -117,11 +180,22 @@ export const addSale = async (req: Request, res: Response) => {
 
             // Insert into transactions table (only for non-debit payments)
             if (payment_type !== 'debit') {
+                // Calculate total COGS for this sale
+                const cogsResult = await client.query(
+                    `SELECT COALESCE(SUM(pca.amount_per_unit * $1), 0) as total_cogs
+                     FROM product_cost_allocation pca
+                     WHERE pca.product_id = $2`,
+                    [quantity, product_id]
+                );
+                
+                const totalCogs = parseFloat(cogsResult.rows[0].total_cogs);
+                const profit = parseFloat(total_amount) - totalCogs;
+
                 const transactionResult = await client.query(
                     `INSERT INTO transactions (account_id, amount, type, note)
                      VALUES ($1, $2, $3, $4)
                      RETURNING transaction_id`,
-                    [account_id, total_amount, 'Incomming', `Sale of product ${product_name}`]
+                    [account_id, profit, 'Incomming', `Profit from sale of ${product_name}`]
                 );
 
                 // Insert into business_transactions
@@ -131,12 +205,12 @@ export const addSale = async (req: Request, res: Response) => {
                     [transactionResult.rows[0].transaction_id, business_id]
                 );
 
-                // Update business account balance
+                // Update business account balance with profit only
                 await client.query(
                     `UPDATE business_account 
                      SET balance = balance + $1 
                      WHERE account_id = $2`,
-                    [total_amount, account_id]
+                    [profit, account_id]
                 );
             }
 
@@ -208,13 +282,7 @@ export const addSale = async (req: Request, res: Response) => {
                     [customer_id, sale_id, total_amount, 0, total_amount, 'Running']
                 );
 
-                // Update debit account balance (increase for amount owed)
-                await client.query(
-                    `UPDATE business_account 
-                     SET balance = balance + $1 
-                     WHERE account_id = $2`,
-                    [total_amount, account_id]
-                );
+                // For debit sales, don't add to balance immediately (will be added when payment is received)
             }
 
             // Update customer purchase history
@@ -320,19 +388,32 @@ export const recordPayment = async (req: Request, res: Response) => {
 
             // Add transaction entry for installment payment
             const productResult = await client.query(
-                `SELECT p.name FROM products p 
+                `SELECT p.name, si.product_id, si.quantity FROM products p 
                  INNER JOIN sales_info si ON p.product_id = si.product_id 
                  WHERE si.sale_id = $1`,
                 [id]
             );
             
-            const productName = productResult.rows[0]?.name || 'Unknown Product';
+            const { name: productName, product_id, quantity: saleQuantity } = productResult.rows[0];
+            
+            // Calculate COGS for this payment portion
+            const cogsResult = await client.query(
+                `SELECT COALESCE(SUM(pca.amount_per_unit), 0) as cogs_per_unit
+                 FROM product_cost_allocation pca
+                 WHERE pca.product_id = $1`,
+                [product_id]
+            );
+            
+            const cogsPerUnit = parseFloat(cogsResult.rows[0].cogs_per_unit);
+            const paymentQuantity = amount / (currentAmount / saleQuantity); // Calculate quantity for this payment
+            const cogsCost = cogsPerUnit * paymentQuantity;
+            const profit = amount - cogsCost;
             
             const transactionResult = await client.query(
                 `INSERT INTO transactions (account_id, amount, type, note)
                  VALUES ($1, $2, $3, $4)
                  RETURNING transaction_id`,
-                [account_id, amount, 'Incomming', `Sale of ${productName} installment`]
+                [account_id, profit, 'Incomming', `Profit from ${productName} installment`]
             );
 
             // Insert into business_transactions
@@ -356,29 +437,16 @@ export const recordPayment = async (req: Request, res: Response) => {
                 [amount, id]
             );
 
-            // Update business account balance for installment payment
+            // Update business account balance for installment payment (profit only)
             await client.query(
                 `UPDATE business_account 
                  SET balance = balance + $1 
                  WHERE account_id = $2`,
-                [amount, account_id]
+                [profit, account_id]
             );
 
-            // Reduce debit account balance since customer owes less
-            const debitAccountResult = await client.query(
-                'SELECT account_id FROM sales_info WHERE sale_id = $1',
-                [id]
-            );
-            const debit_account_id = debitAccountResult.rows[0]?.account_id;
-
-            if (debit_account_id) {
-                await client.query(
-                    `UPDATE business_account 
-                     SET balance = balance - $1 
-                     WHERE account_id = $2`,
-                    [amount, debit_account_id]
-                );
-            }
+            // Remove the debit account balance reduction since we're not tracking full amounts anymore
+            // The debit account represents what customer owes, not what's in our balance
 
             // Process COGS for debit payment
             const saleInfoResult = await client.query(

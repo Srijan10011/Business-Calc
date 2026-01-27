@@ -10,6 +10,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import LayersIcon from "@mui/icons-material/Layers";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
 import StoreIcon from "@mui/icons-material/Store";
 import SettingsIcon from "@mui/icons-material/Settings";
 
@@ -44,6 +45,12 @@ export const mainListItems = (
         <MonetizationOnIcon />
       </ListItemIcon>
       <ListItemText primary="Finance"/>
+    </ListItemButton>
+    <ListItemButton component={Link} to="/credits">
+      <ListItemIcon>
+        <CreditCardIcon />
+      </ListItemIcon>
+      <ListItemText primary="Credits"/>
     </ListItemButton>
     <ListItemButton component={Link} to="/assets">
       <ListItemIcon>

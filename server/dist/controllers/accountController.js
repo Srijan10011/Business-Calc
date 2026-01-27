@@ -80,7 +80,7 @@ const getTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function
         const result = yield db_1.default.query(`SELECT t.transaction_id, t.created_at, t.note, t.type, t.amount, a.account_name
              FROM transactions t
              JOIN business_transactions bt ON t.transaction_id = bt.transaction_id
-             JOIN accounts a ON t.account_id = a.account_id
+             LEFT JOIN accounts a ON t.account_id = a.account_id
              WHERE bt.business_id = $1
              ORDER BY t.created_at DESC`, [business_id]);
         const transactions = result.rows.map(row => ({
@@ -89,7 +89,7 @@ const getTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function
             description: row.note,
             category: row.type,
             amount: parseFloat(row.amount),
-            account: row.account_name
+            account: row.account_name || 'COGS Expense'
         }));
         res.json(transactions);
     }
