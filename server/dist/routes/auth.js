@@ -15,6 +15,10 @@ router.post('/register', authController_1.register);
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', authController_1.login);
+// @route   GET api/auth/check-business/:business_id
+// @desc    Check if business exists
+// @access  Public
+router.get('/check-business/:business_id', authController_1.checkBusiness);
 // @route   POST api/auth/setup-business
 // @desc    Setup business for user
 // @access  Private

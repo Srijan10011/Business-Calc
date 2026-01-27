@@ -23,20 +23,30 @@ export const getCustomers = async (req: Request, res: Response) => {
 
         const result = await pool.query(
             `SELECT 
-                c.id,
-                c.name,
-                c.phone,
-                c.address,
-                COALESCE(SUM(s.total_amount), 0) as total_purchases,
-                COALESCE(SUM(CASE WHEN LOWER(s.payment_type) = 'credit' THEN s.total_amount ELSE 0 END), 0) as outstanding_credit,
-                MAX(s.created_at) as last_purchase
-            FROM customers c
-            LEFT JOIN sales s ON c.id = s.customer_id
-            WHERE c.business_id = $1
-            GROUP BY c.id, c.name, c.phone, c.address
-            ORDER BY c.created_at DESC`,
+                ci.customer_id as id,
+                ci.customer_id,
+                ci.name,
+                ci.phone,
+                ci.email,
+                ci.address,
+                ci.created_at,
+                COALESCE(cph.total_purchase, 0) as total_purchases,
+                COALESCE(cph.outstanding_credit, 0) as outstanding_credit,
+                cph.last_purchase
+            FROM customers_info ci
+            INNER JOIN business_customers bc ON ci.customer_id = bc.customer_id
+            LEFT JOIN customer_purchase_history cph ON ci.customer_id = cph.customer_id
+            WHERE bc.business_id = $1
+            ORDER BY ci.created_at DESC`,
             [business_id]
         );
+
+        console.log('=== GET CUSTOMERS DEBUG ===');
+        console.log('Returning customers:', result.rows.length);
+        if (result.rows.length > 0) {
+            console.log('First customer ID:', result.rows[0].id);
+            console.log('First customer customer_id:', result.rows[0].customer_id);
+        }
 
         res.json(result.rows);
     } catch (error: any) {
@@ -49,6 +59,15 @@ export const getCustomerById = async (req: Request, res: Response) => {
     try {
         const user_id = req.user?.id;
         const { id } = req.params;
+
+        console.log('=== GET CUSTOMER BY ID DEBUG ===');
+        console.log('Received ID parameter:', id);
+        console.log('ID type:', typeof id);
+        console.log('User ID:', user_id);
+
+        if (!id || id === 'undefined') {
+            return res.status(400).json({ message: 'Invalid customer ID provided' });
+        }
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
@@ -67,18 +86,18 @@ export const getCustomerById = async (req: Request, res: Response) => {
 
         const result = await pool.query(
             `SELECT 
-                c.id,
-                c.name,
-                c.phone,
-                c.email,
-                c.address,
-                COALESCE(SUM(s.total_amount), 0) as total_purchases,
-                COALESCE(SUM(CASE WHEN LOWER(s.payment_type) = 'credit' THEN s.total_amount ELSE 0 END), 0) as outstanding_credit,
-                MAX(s.created_at) as last_purchase
-            FROM customers c
-            LEFT JOIN sales s ON c.id = s.customer_id
-            WHERE c.business_id = $1 AND c.id = $2
-            GROUP BY c.id, c.name, c.phone, c.email, c.address`,
+                ci.customer_id,
+                ci.name,
+                ci.phone,
+                ci.email,
+                ci.created_at,
+                COALESCE(cph.total_purchase, 0) as total_purchases,
+                COALESCE(cph.outstanding_credit, 0) as outstanding_credit,
+                cph.last_purchase
+            FROM customers_info ci
+            INNER JOIN business_customers bc ON ci.customer_id = bc.customer_id
+            LEFT JOIN customer_purchase_history cph ON ci.customer_id = cph.customer_id
+            WHERE bc.business_id = $1 AND ci.customer_id = $2`,
             [business_id, id]
         );
 
@@ -140,29 +159,10 @@ export const getCustomerSales = async (req: Request, res: Response) => {
 export const addCustomer = async (req: Request, res: Response) => {
     try {
         const { name, phone, email, address } = req.body;
-        const token = req.header('x-auth-token');
-        
-        console.log('=== JWT DEBUG ===');
-        console.log('Raw token received:', token?.substring(0, 50) + '...');
-        
-        if (token) {
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-                console.log('Decoded JWT user ID:', decoded.user.id);
-                
-                // Query users table to verify
-                const userResult = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [decoded.user.id]);
-                console.log('User from database:', userResult.rows[0]);
-            } catch (jwtError) {
-                console.log('JWT decode error:', jwtError);
-            }
-        }
-        
         const user_id = req.user?.id;
-        console.log('User ID from middleware:', user_id);
         
-        if (!name || !phone || !address) {
-            return res.status(400).json({ message: 'Missing required fields: name, phone, address' });
+        if (!name || !phone) {
+            return res.status(400).json({ message: 'Missing required fields: name, phone' });
         }
 
         if (!user_id) {
@@ -175,27 +175,27 @@ export const addCustomer = async (req: Request, res: Response) => {
             [user_id]
         );
 
-        console.log('Business query result:', businessResult.rows);
-
         if (businessResult.rows.length === 0) {
             return res.status(400).json({ message: 'User not associated with any business' });
         }
 
         const business_id = businessResult.rows[0].business_id;
-        console.log('Using business_id:', business_id);
 
-        if (!business_id) {
-            return res.status(400).json({ message: 'Invalid business association' });
-        }
-
-        const result = await pool.query(
-            `INSERT INTO customers (business_id, name, phone, email, address, created_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())
-             RETURNING *`,
-            [business_id, name, phone, email || null, address]
+        // Insert into customers_info table
+        const customerResult = await pool.query(
+            'INSERT INTO customers_info (name, phone, email, address) VALUES ($1, $2, $3, $4) RETURNING customer_id, name, phone, email, address, created_at',
+            [name, phone, email || null, address || null]
         );
 
-        res.status(201).json(result.rows[0]);
+        const customer_id = customerResult.rows[0].customer_id;
+
+        // Link customer to business in business_customers table
+        await pool.query(
+            'INSERT INTO business_customers (customer_id, business_id) VALUES ($1, $2)',
+            [customer_id, business_id]
+        );
+
+        res.status(201).json(customerResult.rows[0]);
     } catch (error: any) {
         console.error('Error adding customer:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });

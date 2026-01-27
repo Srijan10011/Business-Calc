@@ -9,6 +9,7 @@ import {
     CardContent,
 } from '@mui/material';
 import Title from '../components/dashboard/Title';
+import axios from 'axios';
 
 // --- Reusable Summary Card Component ---
 interface SummaryCardProps {
@@ -62,20 +63,60 @@ function AssetProgress({ name, value, progress, status }: AssetProgressProps) {
 }
 
 const Dashboard: React.FC = () => {
+    const [accounts, setAccounts] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
+
+    const fetchAccounts = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/accounts', {
+                headers: { 'x-auth-token': token }
+            });
+            setAccounts(response.data);
+        } catch (error) {
+            console.error('Error fetching accounts:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchAccounts();
+    }, []);
+
+    const getAccountBalance = (accountName: string) => {
+        const account = accounts.find(acc => 
+            acc.account_name.toLowerCase().includes(accountName.toLowerCase())
+        );
+        return account ? parseFloat(account.balance) : 0;
+    };
+
+    const cashBalance = getAccountBalance('cash');
+    const bankBalance = getAccountBalance('bank');
+    const debitBalance = getAccountBalance('debit');
+    const creditBalance = getAccountBalance('credit');
+    const totalBalance = cashBalance + bankBalance + debitBalance;
+
+    if (loading) {
+        return <Typography>Loading...</Typography>;
+    }
     return (
         <Grid container spacing={3}>
             {/* Top Summary Cards */}
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Total Balance" value="₹1,50,000" />
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Total Balance" value={`₹${totalBalance.toLocaleString('en-IN')}`} />
             </Grid>
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Cash Balance" value="₹50,000" />
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Cash Balance" value={`₹${cashBalance.toLocaleString('en-IN')}`} />
             </Grid>
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Bank Balance" value="₹90,000" />
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Bank Balance" value={`₹${bankBalance.toLocaleString('en-IN')}`} />
             </Grid>
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Receivables" value="₹10,000" />
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Debit Balance" value={`₹${debitBalance.toLocaleString('en-IN')}`} />
+            </Grid>
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Credit Balance" value={`₹${creditBalance.toLocaleString('en-IN')}`} />
             </Grid>
 
             {/* Money Flow Section */}

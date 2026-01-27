@@ -4,6 +4,7 @@ const express_1 = require("express");
 const categoryController_1 = require("../controllers/categoryController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
+router.get('/', authMiddleware_1.authMiddleware, categoryController_1.getCategories);
 router.post('/check', authMiddleware_1.authMiddleware, categoryController_1.checkCategory);
 router.post('/', authMiddleware_1.authMiddleware, categoryController_1.createCategory);
 exports.default = router;

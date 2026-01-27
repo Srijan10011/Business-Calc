@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Grid, Card, CardContent, Typography, Paper, Box, LinearProgress } from '@mui/material';
 import Title from '../components/dashboard/Title';
+import axios from 'axios';
 
 function SummaryCard({ title, value }) {
     return (
@@ -40,20 +41,61 @@ function AssetProgress({ name, value, progress, status }) {
 }
 
 const Dashboard = () => {
+    const [accounts, setAccounts] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    const fetchAccounts = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/accounts', {
+                headers: { 'x-auth-token': token }
+            });
+            setAccounts(response.data);
+        } catch (error) {
+            console.error('Error fetching accounts:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchAccounts();
+    }, []);
+
+    const getAccountBalance = (accountName) => {
+        const account = accounts.find(acc => 
+            acc.account_name.toLowerCase().includes(accountName.toLowerCase())
+        );
+        return account ? parseFloat(account.balance) : 0;
+    };
+
+    const cashBalance = getAccountBalance('cash');
+    const bankBalance = getAccountBalance('bank');
+    const debitBalance = getAccountBalance('debit');
+    const creditBalance = getAccountBalance('credit');
+    const totalBalance = cashBalance + bankBalance + debitBalance;
+
+    if (loading) {
+        return <Typography>Loading...</Typography>;
+    }
+
     return (
         <Grid container spacing={3}>
             {/* Top Summary Cards */}
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Total Balance" value="₹1,50,000"/>
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Total Balance" value={`₹${totalBalance.toLocaleString('en-IN')}`} />
             </Grid>
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Cash Balance" value="₹50,000"/>
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Cash Balance" value={`₹${cashBalance.toLocaleString('en-IN')}`} />
             </Grid>
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Bank Balance" value="₹90,000"/>
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Bank Balance" value={`₹${bankBalance.toLocaleString('en-IN')}`} />
             </Grid>
-            <Grid item xs={12} md={3}>
-                <SummaryCard title="Receivables" value="₹10,000"/>
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Debit Balance" value={`₹${debitBalance.toLocaleString('en-IN')}`} />
+            </Grid>
+            <Grid item xs={12} md={2.4}>
+                <SummaryCard title="Credit Balance" value={`₹${creditBalance.toLocaleString('en-IN')}`} />
             </Grid>
 
             {/* Money Flow Section */}
@@ -86,9 +128,9 @@ const Dashboard = () => {
             <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                     <Title>Assets Recovery Progress</Title>
-                    <AssetProgress name="Autoclave" value="₹100,000" progress={72} status="Active"/>
-                    <AssetProgress name="Computer" value="₹40,000" progress={100} status="Recovered"/>
-                    <Typography variant="caption" color="text.secondary" align="center" sx={{ mt: 2 }}>
+                    <AssetProgress name="Autoclave" value="₹100,000" progress={72} status="Active" />
+                    <AssetProgress name="Computer" value="₹40,000" progress={100} status="Recovered" />
+                    <Typography variant="caption" color="text.secondary" align="center" sx={{mt: 2}}>
                         Users will be able to add things here which is stored in db
                     </Typography>
                 </Paper>

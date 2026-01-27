@@ -43,6 +43,37 @@ export const checkCategory = async (req: Request, res: Response) => {
     }
 };
 
+export const getCategories = async (req: Request, res: Response) => {
+    try {
+        const user_id = req.user?.id;
+
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+
+        const businessResult = await pool.query(
+            'SELECT business_id FROM business_users WHERE user_id = $1',
+            [user_id]
+        );
+
+        if (businessResult.rows.length === 0) {
+            return res.status(400).json({ message: 'User not associated with any business' });
+        }
+
+        const business_id = businessResult.rows[0].business_id;
+
+        const result = await pool.query(
+            'SELECT * FROM categories WHERE business_id = $1 ORDER BY created_at DESC',
+            [business_id]
+        );
+
+        res.json(result.rows);
+    } catch (error: any) {
+        console.error('Error fetching categories:', error);
+        res.status(500).json({ message: 'Server error', error: error?.message });
+    }
+};
+
 export const createCategory = async (req: Request, res: Response) => {
     try {
         const { name, cost_behaviour, type, product_id } = req.body;

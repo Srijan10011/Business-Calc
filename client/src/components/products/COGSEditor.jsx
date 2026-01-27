@@ -1,0 +1,256 @@
+import React, { useState, useEffect } from 'react';
+import { 
+    Paper, 
+    Table, 
+    TableHead, 
+    TableRow, 
+    TableCell, 
+    TableBody, 
+    TextField, 
+    Typography, 
+    Button, 
+    IconButton, 
+    MenuItem,
+    Box,
+    Autocomplete
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import Title from '../dashboard/Title';
+
+function COGSEditor({ productId }) {
+    const [allocations, setAllocations] = useState([]);
+    const [existingCategories, setExistingCategories] = useState([]);
+    const [newAllocation, setNewAllocation] = useState({
+        category: '',
+        type: 'variable',
+        value: ''
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchAllocations();
+        fetchExistingCategories();
+    }, [productId]);
+
+    const fetchAllocations = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/cogs/product/${productId}/allocations`, {
+                headers: {
+                    'x-auth-token': token || '',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setAllocations(data);
+            } else {
+                console.error('Failed to fetch allocations');
+            }
+        } catch (error) {
+            console.error('Error fetching allocations:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchExistingCategories = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/cogs/categories', {
+                headers: {
+                    'x-auth-token': token || '',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setExistingCategories(data);
+            } else {
+                console.error('Failed to fetch categories');
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+
+    const handleAddAllocation = async () => {
+        if (!newAllocation.category || !newAllocation.value) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/cogs/cost-category', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token || '',
+                },
+                body: JSON.stringify({
+                    category: newAllocation.category,
+                    type: newAllocation.type,
+                    value: parseFloat(newAllocation.value),
+                    product_id: productId
+                }),
+            });
+
+            if (response.ok) {
+                setNewAllocation({ category: '', type: 'variable', value: '' });
+                fetchAllocations(); // Refresh the list
+                fetchExistingCategories(); // Refresh categories if new one was added
+                alert('Cost category added successfully!');
+            } else {
+                const error = await response.json();
+                alert(`Failed to add cost category: ${error.message}`);
+            }
+        } catch (error) {
+            console.error('Error adding allocation:', error);
+            alert('Error adding cost category');
+        }
+    };
+
+    const handleDeleteAllocation = async (allocationId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/cogs/allocation/${allocationId}`, {
+                method: 'DELETE',
+                headers: {
+                    'x-auth-token': token || '',
+                },
+            });
+
+            if (response.ok) {
+                fetchAllocations(); // Refresh the list
+                alert('Cost allocation deleted successfully!');
+            } else {
+                alert('Failed to delete cost allocation');
+            }
+        } catch (error) {
+            console.error('Error deleting allocation:', error);
+            alert('Error deleting cost allocation');
+        }
+    };
+
+    if (loading) {
+        return <Typography>Loading COGS data...</Typography>;
+    }
+
+    return (
+        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+            <Title>COGS (Cost of Goods Sold)</Title>
+            
+            <Table size="small">
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Category</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell>Value</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {allocations.map((allocation) => (
+                        <TableRow key={allocation.allocation_id}>
+                            <TableCell>{allocation.category}</TableCell>
+                            <TableCell>
+                                <Typography 
+                                    sx={{ 
+                                        textTransform: 'capitalize',
+                                        color: allocation.type === 'variable' ? 'primary.main' : 'secondary.main'
+                                    }}
+                                >
+                                    {allocation.type}
+                                </Typography>
+                            </TableCell>
+                            <TableCell>₹{allocation.value}</TableCell>
+                            <TableCell align="right">
+                                <IconButton
+                                    onClick={() => handleDeleteAllocation(allocation.allocation_id)}
+                                    color="error"
+                                    size="small"
+                                >
+                                    <DeleteIcon />
+                                </IconButton>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                    
+                    {/* Add new allocation row */}
+                    <TableRow>
+                        <TableCell>
+                            <Autocomplete
+                                freeSolo
+                                size="small"
+                                options={existingCategories}
+                                value={newAllocation.category}
+                                onChange={(event, newValue) => {
+                                    setNewAllocation({...newAllocation, category: newValue || ''});
+                                }}
+                                onInputChange={(event, newInputValue) => {
+                                    setNewAllocation({...newAllocation, category: newInputValue});
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        placeholder="Select or enter category"
+                                        variant="outlined"
+                                        size="small"
+                                    />
+                                )}
+                                sx={{ minWidth: 200 }}
+                            />
+                        </TableCell>
+                        <TableCell>
+                            <TextField
+                                select
+                                size="small"
+                                value={newAllocation.type}
+                                onChange={(e) => setNewAllocation({...newAllocation, type: e.target.value})}
+                                fullWidth
+                            >
+                                <MenuItem value="variable">Variable</MenuItem>
+                                <MenuItem value="fixed">Fixed</MenuItem>
+                            </TextField>
+                        </TableCell>
+                        <TableCell>
+                            <TextField
+                                size="small"
+                                type="number"
+                                placeholder="Amount in ₹"
+                                value={newAllocation.value}
+                                onChange={(e) => setNewAllocation({...newAllocation, value: e.target.value})}
+                                fullWidth
+                                InputProps={{
+                                    startAdornment: <Typography sx={{ mr: 1 }}>₹</Typography>
+                                }}
+                            />
+                        </TableCell>
+                        <TableCell align="right">
+                            <Button
+                                size="small"
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={handleAddAllocation}
+                            >
+                                Add
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
+
+            {allocations.length === 0 && (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                    <Typography color="text.secondary">
+                        No cost categories defined yet. Add your first cost category above.
+                    </Typography>
+                </Box>
+            )}
+        </Paper>
+    );
+}
+
+export default COGSEditor;

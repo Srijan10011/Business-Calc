@@ -1,25 +1,26 @@
 import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, FormControl, InputLabel, Select, MenuItem, RadioGroup, FormControlLabel, Radio, Typography, Button } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import axios from 'axios';
 
 function AddAssetModal({ open, onClose }) {
     const [assetName, setAssetName] = useState('');
-    const [category, setCategory] = useState('Machinery'); // Pre-select "Machinery"
+    const [category, setCategory] = useState('Machinery');
     const [totalCost, setTotalCost] = useState('');
-    const [recoveryMethod, setRecoveryMethod] = useState('percentage');
-    const [recoveryValue, setRecoveryValue] = useState(''); // State for conditional input
-    const [maintenancePercentage, setMaintenancePercentage] = useState('');
 
-    const handleSaveAsset = () => {
-        // Here you would typically send this data to your backend
-        console.log({
-            assetName,
-            category,
-            totalCost,
-            recoveryMethod,
-            recoveryValue, // Include this in the data
-            maintenancePercentage,
-        });
-        onClose(); // Close the dialog after saving
+    const handleSaveAsset = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/assets', {
+                name: assetName,
+                category,
+                totalCost: parseFloat(totalCost)
+            }, {
+                headers: { 'x-auth-token': token }
+            });
+            onClose();
+        } catch (error) {
+            console.error('Error saving asset:', error);
+        }
     };
 
     return (
@@ -59,53 +60,6 @@ function AddAssetModal({ open, onClose }) {
                             type="number"
                             value={totalCost}
                             onChange={(e) => setTotalCost(e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <FormControl component="fieldset">
-                            <Typography variant="body2" component="legend">Recovery Method</Typography>
-                            <RadioGroup
-                                row
-                                name="recovery-method"
-                                value={recoveryMethod}
-                                onChange={(e) => setRecoveryMethod(e.target.value)}
-                            >
-                                <FormControlLabel value="percentage" control={<Radio />} label="Percentage per product" />
-                                <FormControlLabel value="fixed" control={<Radio />} label="Fixed Rs per unit" />
-                            </RadioGroup>
-                        </FormControl>
-                    </Grid>
-                    {recoveryMethod === 'percentage' && (
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Percentage (%)"
-                                fullWidth
-                                type="number"
-                                value={recoveryValue}
-                                onChange={(e) => setRecoveryValue(e.target.value)}
-                                InputProps={{ endAdornment: <Typography>%</Typography> }}
-                            />
-                        </Grid>
-                    )}
-                    {recoveryMethod === 'fixed' && (
-                        <Grid item xs={12}>
-                            <TextField
-                                label="Fixed Amount (₹)"
-                                fullWidth
-                                type="number"
-                                value={recoveryValue}
-                                onChange={(e) => setRecoveryValue(e.target.value)}
-                                InputProps={{ startAdornment: <Typography>₹</Typography> }}
-                            />
-                        </Grid>
-                    )}
-                    <Grid item xs={12}>
-                        <TextField
-                            label="Maintenance %"
-                            fullWidth
-                            type="number"
-                            value={maintenancePercentage}
-                            onChange={(e) => setMaintenancePercentage(e.target.value)}
                         />
                     </Grid>
                 </Grid>

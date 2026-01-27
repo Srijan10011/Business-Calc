@@ -21,38 +21,17 @@ interface Account {
     id: string;
     type: string;
     balance: number;
-    name: string;
+    account_name: string;
 }
 
-// Generate Transaction Data
-function createData(
-  id: string,
-  date: string,
-  description: string,
-  category: string,
-  amount: number,
-  account: string,
-) {
-  return { id, date, description, category, amount, account };
+interface Transaction {
+    id: string;
+    date: string;
+    description: string;
+    category: string;
+    amount: number;
+    account: string;
 }
-
-const transactions = [
-  createData('trn-001', '13 Jan, 2026', 'Salary for Jan', 'Income', 50000, 'Bank Account'),
-  createData('trn-002', '12 Jan, 2026', 'Raw Material Purchase', 'Expense', -25000, 'Cash Account'),
-  createData('trn-003', '10 Jan, 2026', 'Electricity Bill', 'Expense', -2000, 'Bank Account'),
-  createData('trn-004', '08 Jan, 2026', 'Client Payment', 'Income', 15000, 'Invoice'),
-  createData('trn-005', '05 Jan, 2026', 'Rent Payment', 'Expense', -10000, 'Bank Account'),
-];
-
-const getAccountDisplayName = (type: string) => {
-    switch (type) {
-        case 'cash': return 'Cash Account';
-        case 'bank': return 'Bank Account';
-        case 'credit': return 'Funds on Hold';
-        case 'debit': return 'Invoice';
-        default: return type;
-    }
-};
 
 export default function Finance() {
     const [typeFilter, setTypeFilter] = React.useState('');
@@ -60,6 +39,7 @@ export default function Finance() {
     const [startDate, setStartDate] = React.useState('');
     const [endDate, setEndDate] = React.useState('');
     const [accounts, setAccounts] = React.useState<Account[]>([]);
+    const [transactions, setTransactions] = React.useState<Transaction[]>([]);
     const [loading, setLoading] = React.useState(true);
 
     const fetchAccounts = async () => {
@@ -79,6 +59,26 @@ export default function Finance() {
             }
         } catch (error) {
             console.error('Error fetching accounts:', error);
+        }
+    };
+
+    const fetchTransactions = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/accounts/transactions', {
+                headers: {
+                    'x-auth-token': token || '',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setTransactions(data);
+            } else {
+                console.error('Failed to fetch transactions');
+            }
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
         } finally {
             setLoading(false);
         }
@@ -86,6 +86,7 @@ export default function Finance() {
 
     React.useEffect(() => {
         fetchAccounts();
+        fetchTransactions();
     }, []);
 
     if (loading) {
@@ -100,7 +101,7 @@ export default function Finance() {
                 {accounts.map((account) => (
                     <Grid item xs={12} md={3} key={account.id}>
                         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-                            <Typography variant="h6">{getAccountDisplayName(account.type)}</Typography>
+                            <Typography variant="h6">{account.account_name}</Typography>
                             <Typography variant="h4">₹{account.balance.toLocaleString('en-IN')}</Typography>
                         </Paper>
                     </Grid>
@@ -140,8 +141,8 @@ export default function Finance() {
                             onChange={(e) => setTypeFilter(e.target.value as string)}
                         >
                             <MenuItem value=""><em>All</em></MenuItem>
-                            <MenuItem value="Income">Income</MenuItem>
-                            <MenuItem value="Expense">Expense</MenuItem>
+                            <MenuItem value="Incomming">Incomming</MenuItem>
+                            <MenuItem value="Outgoing">Outgoing</MenuItem>
                         </Select>
                     </FormControl>
                     <FormControl sx={{ minWidth: 150 }}>
@@ -179,7 +180,7 @@ export default function Finance() {
                                 <TableCell>{transaction.description}</TableCell>
                                 <TableCell>{transaction.category}</TableCell>
                                 <TableCell align="right">
-                                    <Typography color={transaction.amount > 0 ? 'green' : 'error'}>
+                                    <Typography color={transaction.category === 'Incomming' ? 'green' : 'error'}>
                                         ₹{transaction.amount.toLocaleString('en-IN')}
                                     </Typography>
                                 </TableCell>

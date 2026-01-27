@@ -57,23 +57,36 @@ const getAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getAccounts = getAccounts;
-const createDefaultAccountsForAllExisting = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Get all existing business_ids
-        const businessResult = yield db_1.default.query('SELECT id FROM businesses');
-        for (const business of businessResult.rows) {
-            // Check if accounts already exist for this business
-            const existingAccounts = yield db_1.default.query('SELECT COUNT(*) FROM accounts WHERE business_id = $1', [business.id]);
-            if (parseInt(existingAccounts.rows[0].count) === 0) {
-                // No accounts exist, create default ones
-                yield (0, exports.createDefaultAccounts)(business.id);
-            }
+        const user_id = req.user?.id;
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
         }
-        res.json({ message: 'Default accounts created for all businesses' });
+        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
+        if (businessResult.rows.length === 0) {
+            return res.status(400).json({ message: 'User not associated with any business' });
+        }
+        const business_id = businessResult.rows[0].business_id;
+        const result = yield db_1.default.query(`SELECT t.transaction_id, t.created_at, t.note, t.type, t.amount, a.account_name
+             FROM transactions t
+             JOIN business_transactions bt ON t.transaction_id = bt.transaction_id
+             JOIN accounts a ON t.account_id = a.account_id
+             WHERE bt.business_id = $1
+             ORDER BY t.created_at DESC`, [business_id]);
+        const transactions = result.rows.map(row => ({
+            id: row.transaction_id,
+            date: new Date(row.created_at).toLocaleDateString(),
+            description: row.note,
+            category: row.type,
+            amount: parseFloat(row.amount),
+            account: row.account_name
+        }));
+        res.json(transactions);
     }
     catch (error) {
-        console.error('Error creating default accounts for existing businesses:', error);
+        console.error('Error fetching transactions:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
-exports.createDefaultAccountsForAllExisting = createDefaultAccountsForAllExisting;
+exports.getTransactions = getTransactions;

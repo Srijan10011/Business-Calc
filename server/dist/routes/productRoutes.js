@@ -6,5 +6,6 @@ const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
 router.post('/', authMiddleware_1.authMiddleware, productController_1.addProduct);
 router.get('/', authMiddleware_1.authMiddleware, productController_1.getProducts);
+router.get('/:id', authMiddleware_1.authMiddleware, productController_1.getProductById);
 router.post('/add-stock', authMiddleware_1.authMiddleware, productController_1.addStock);
 exports.default = router;

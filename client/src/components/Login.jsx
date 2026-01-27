@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Container, Box, Avatar, Typography, TextField, Button, Grid, Link as MuiLink } from '@mui/material';
+import { Container, Box, Avatar, Typography, TextField, Button, Grid, Link as MuiLink, Alert } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import BusinessSetupDialog from './BusinessSetupDialog';
 
@@ -12,6 +12,7 @@ const Login = () => {
         password: ''
     });
     const [showBusinessSetup, setShowBusinessSetup] = useState(false);
+    const [error, setError] = useState('');
     const { email, password } = formData;
 
     const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,8 +39,7 @@ const Login = () => {
                 navigate('/dashboard');
             }
         } catch (err) {
-            console.error(err.response.data);
-            // You might want to set an error state here and display it to the user
+            setError(err.response?.data?.msg || 'Invalid credentials');
         }
     };
 
@@ -63,6 +63,7 @@ const Login = () => {
                     <Typography component="h1" variant="h5">
                         Sign in
                     </Typography>
+                    {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
                     <Box component="form" noValidate onSubmit={onSubmit} sx={{ mt: 1 }}>
                         <TextField
                             margin="normal"

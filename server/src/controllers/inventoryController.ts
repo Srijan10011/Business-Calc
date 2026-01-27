@@ -10,8 +10,8 @@ export const addInventoryItem = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: name, stock, unit_cost, type' });
         }
 
-        if (!['raw_material', 'product', 'other'].includes(type)) {
-            return res.status(400).json({ message: 'Invalid type. Must be raw_material, product, or other' });
+        if (!['Raw_material', 'Other'].includes(type)) {
+            return res.status(400).json({ message: 'Invalid type. Must be Raw_material or Other' });
         }
 
         if (!user_id) {
@@ -29,14 +29,35 @@ export const addInventoryItem = async (req: Request, res: Response) => {
 
         const business_id = businessResult.rows[0].business_id;
 
-        const result = await pool.query(
-            `INSERT INTO inventory_items (business_id, name, type, stock, unit_cost, created_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())
-             RETURNING *`,
-            [business_id, name, type, stock, unit_cost]
-        );
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
 
-        res.status(201).json(result.rows[0]);
+            // Insert into inventory_info
+            const inventoryResult = await client.query(
+                `INSERT INTO inventory_info (name, stock, type, unit_cost)
+                 VALUES ($1, $2, $3, $4)
+                 RETURNING inventory_id, name, stock, type, unit_cost`,
+                [name, stock, type, unit_cost]
+            );
+
+            const inventory_id = inventoryResult.rows[0].inventory_id;
+
+            // Link to business in business_inventory
+            await client.query(
+                `INSERT INTO business_inventory (inventory_id, business_id)
+                 VALUES ($1, $2)`,
+                [inventory_id, business_id]
+            );
+
+            await client.query('COMMIT');
+            res.status(201).json(inventoryResult.rows[0]);
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     } catch (error: any) {
         console.error('Error adding inventory item:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
@@ -63,7 +84,11 @@ export const getInventoryItems = async (req: Request, res: Response) => {
         const business_id = businessResult.rows[0].business_id;
 
         const result = await pool.query(
-            'SELECT * FROM inventory_items WHERE business_id = $1 ORDER BY created_at DESC',
+            `SELECT ii.inventory_id, ii.name, ii.stock, ii.type, ii.unit_cost
+             FROM inventory_info ii
+             INNER JOIN business_inventory bi ON ii.inventory_id = bi.inventory_id
+             WHERE bi.business_id = $1
+             ORDER BY ii.name`,
             [business_id]
         );
 

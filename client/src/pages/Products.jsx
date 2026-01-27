@@ -94,7 +94,6 @@ function Products() {
                         <TableRow>
                             <TableCell>Name</TableCell>
                             <TableCell>Price</TableCell>
-                            <TableCell>Profit Margin</TableCell>
                             <TableCell>Stock</TableCell>
                         </TableRow>
                     </TableHead>
@@ -107,13 +106,12 @@ function Products() {
                                     </Link>
                                 </TableCell>
                                 <TableCell>₹{product.price.toLocaleString('en-IN')}</TableCell>
-                                <TableCell>{product.profit_margin}%</TableCell>
                                 <TableCell>{product.stock}</TableCell>
                             </TableRow>
                         ))}
                         {products.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={4} align="center">
+                                <TableCell colSpan={3} align="center">
                                     No products found. Add your first product!
                                 </TableCell>
                             </TableRow>

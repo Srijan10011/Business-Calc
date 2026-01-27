@@ -3,15 +3,27 @@ import { Box, Button, Grid, Card, CardContent, Typography, LinearProgress } from
 import Add from '@mui/icons-material/Add';
 import Title from '../components/dashboard/Title';
 import AddAssetModal from '../components/assets/AddAssetModal';
-
-const assets = [
-    { id: 'asset-001', name: 'Autoclave', cost: 100000, recovered: 72000, status: 'Active', maintenance: 0.2 },
-    { id: 'asset-002', name: 'Computer', cost: 40000, recovered: 40000, status: 'Retired', maintenance: 0.1 },
-    { id: 'asset-003', name: 'Machine X', cost: 250000, recovered: 50000, status: 'Active', maintenance: 0.5 },
-];
+import axios from 'axios';
 
 function Assets() {
     const [open, setOpen] = React.useState(false);
+    const [assets, setAssets] = React.useState([]);
+
+    const fetchAssets = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/assets', {
+                headers: { 'x-auth-token': token }
+            });
+            setAssets(response.data);
+        } catch (error) {
+            console.error('Error fetching assets:', error);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchAssets();
+    }, []);
 
     const handleOpen = () => {
         setOpen(true);
@@ -19,6 +31,7 @@ function Assets() {
 
     const handleClose = () => {
         setOpen(false);
+        fetchAssets(); // Refresh assets after adding new one
     };
 
     return (
@@ -31,8 +44,6 @@ function Assets() {
             </Box>
             <Grid container spacing={3}>
                 {assets.map((asset) => {
-                    const remaining = asset.cost - asset.recovered;
-                    const progress = (asset.recovered / asset.cost) * 100;
                     return (
                         <Grid item xs={12} sm={6} md={4} key={asset.id}>
                             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -47,19 +58,16 @@ function Assets() {
                                         Recovered: ₹{asset.recovered.toLocaleString('en-IN')}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Remaining: ₹{remaining.toLocaleString('en-IN')}
+                                        Remaining: ₹{asset.remaining.toLocaleString('en-IN')}
                                     </Typography>
                                     <Box sx={{ width: '100%', mt: 2 }}>
-                                        <LinearProgress variant="determinate" value={progress}/>
+                                        <LinearProgress variant="determinate" value={asset.progress}/>
                                         <Typography variant="caption" color="text.secondary">
-                                            {`${Math.round(progress)}%`}
+                                            {`${Math.round(asset.progress)}%`}
                                         </Typography>
                                     </Box>
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                         Status: {asset.status}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Maintenance: {asset.maintenance}%
                                     </Typography>
                                 </CardContent>
                             </Card>

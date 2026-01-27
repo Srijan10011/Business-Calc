@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createCategory = exports.checkCategory = void 0;
+exports.createCategory = exports.getCategories = exports.checkCategory = void 0;
 const db_1 = __importDefault(require("../db"));
 const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -46,6 +46,27 @@ const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.checkCategory = checkCategory;
+const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
+        if (businessResult.rows.length === 0) {
+            return res.status(400).json({ message: 'User not associated with any business' });
+        }
+        const business_id = businessResult.rows[0].business_id;
+        const result = yield db_1.default.query('SELECT * FROM categories WHERE business_id = $1 ORDER BY created_at DESC', [business_id]);
+        res.json(result.rows);
+    }
+    catch (error) {
+        console.error('Error fetching categories:', error);
+        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
+    }
+});
+exports.getCategories = getCategories;
 const createCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {

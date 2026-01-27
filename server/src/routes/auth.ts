@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { register, login, setupBusiness } from '../controllers/authController';
+import { register, login, setupBusiness, checkBusiness } from '../controllers/authController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
 // @route   POST api/auth/register
@@ -12,6 +12,11 @@ router.post('/register', register);
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', login);
+
+// @route   GET api/auth/check-business/:business_id
+// @desc    Check if business exists
+// @access  Public
+router.get('/check-business/:business_id', checkBusiness);
 
 // @route   POST api/auth/setup-business
 // @desc    Setup business for user

@@ -34,6 +34,8 @@ export default function Sales() {
     const [selectedSale, setSelectedSale] = React.useState<any>(null);
     const [paymentAmount, setPaymentAmount] = React.useState('');
     const [paymentError, setPaymentError] = React.useState('');
+    const [selectedAccount, setSelectedAccount] = React.useState('');
+    const [accounts, setAccounts] = React.useState([]);
     const [stockDialog, setStockDialog] = React.useState(false);
     const [products, setProducts] = React.useState([]);
     const [selectedProduct, setSelectedProduct] = React.useState('');
@@ -64,9 +66,27 @@ export default function Sales() {
         }
     };
 
+    const fetchAccounts = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/accounts', {
+                headers: { 'x-auth-token': token }
+            });
+            // Filter out Credit and Debit accounts for payment
+            const filteredAccounts = response.data.filter(
+                (account: any) => !account.account_name.toLowerCase().includes('credit') && 
+                                 !account.account_name.toLowerCase().includes('debit')
+            );
+            setAccounts(filteredAccounts);
+        } catch (error) {
+            console.error('Error fetching accounts:', error);
+        }
+    };
+
     React.useEffect(() => {
         fetchSales();
         fetchProducts();
+        fetchAccounts();
     }, []);
 
     const handleOpen = () => {
@@ -83,6 +103,7 @@ export default function Sales() {
     const handlePayClick = (sale: any) => {
         setSelectedSale(sale);
         setPaymentAmount('');
+        setSelectedAccount('');
         setPaymentError('');
         setPaymentDialog(true);
     };
@@ -92,7 +113,10 @@ export default function Sales() {
             const token = localStorage.getItem('token');
             await axios.post(
                 `http://localhost:5000/api/sales/${selectedSale.sale_id}/payment`,
-                { amount: parseFloat(paymentAmount) },
+                { 
+                    amount: parseFloat(paymentAmount),
+                    account_id: selectedAccount
+                },
                 { headers: { 'x-auth-token': token } }
             );
             setPaymentDialog(false);
@@ -163,12 +187,7 @@ export default function Sales() {
                 <TableCell>{row.customer}</TableCell>
                 <TableCell>{row.product}</TableCell>
                 <TableCell>{row.quantity}</TableCell>
-                <TableCell>
-                    {row.status === 'Pending' && row.amount_due !== null
-                        ? `₹${row.amount_due}/${row.total}`
-                        : `₹${row.total}`
-                    }
-                </TableCell>
+                <TableCell>₹{row.total}</TableCell>
                 <TableCell>{row.payment_type}</TableCell>
                 <TableCell>
                     <Chip label={row.status} color={statusColors[row.status]} size="small"/>
@@ -193,6 +212,21 @@ export default function Sales() {
             {paymentError && (
                 <Alert severity="error" sx={{ mb: 2 }}>{paymentError}</Alert>
             )}
+            <TextField
+                select
+                margin="dense"
+                label="Account"
+                fullWidth
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                sx={{ mb: 2 }}
+            >
+                {accounts.map((account: any) => (
+                    <MenuItem key={account.account_id} value={account.account_id}>
+                        {account.account_name}
+                    </MenuItem>
+                ))}
+            </TextField>
             <TextField
                 autoFocus
                 margin="dense"

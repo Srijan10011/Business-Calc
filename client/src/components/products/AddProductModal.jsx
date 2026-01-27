@@ -4,7 +4,6 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, But
 function AddProductModal({ open, onClose }) {
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
-    const [profitMargin, setProfitMargin] = useState('');
     const [stock, setStock] = useState('');
 
     const handleSaveProduct = async () => {
@@ -19,7 +18,6 @@ function AddProductModal({ open, onClose }) {
                 body: JSON.stringify({
                     name,
                     price: parseFloat(price),
-                    profit_margin: parseFloat(profitMargin),
                     stock: parseInt(stock),
                 }),
             });
@@ -28,7 +26,6 @@ function AddProductModal({ open, onClose }) {
                 console.log('Product added successfully');
                 setName('');
                 setPrice('');
-                setProfitMargin('');
                 setStock('');
                 onClose();
             } else {
@@ -59,15 +56,6 @@ function AddProductModal({ open, onClose }) {
                             type="number"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            label="Profit Margin (%)"
-                            fullWidth
-                            type="number"
-                            value={profitMargin}
-                            onChange={(e) => setProfitMargin(e.target.value)}
                         />
                     </Grid>
                     <Grid item xs={12}>
