@@ -52,6 +52,9 @@ export default function Finance() {
     const [payoutAmount, setPayoutAmount] = React.useState('');
     const [payoutAccount, setPayoutAccount] = React.useState('');
     const [payoutNote, setPayoutNote] = React.useState('');
+    const [teamMembers, setTeamMembers] = React.useState([]);
+    const [selectedEmployee, setSelectedEmployee] = React.useState('');
+    const [salaryMonth, setSalaryMonth] = React.useState(new Date().toISOString().slice(0, 7));
 
     const fetchAccounts = async () => {
         try {
@@ -88,6 +91,18 @@ export default function Finance() {
             setCogsData(response.data);
         } catch (error) {
             console.error('Error fetching COGS data:', error);
+        }
+    };
+
+    const fetchTeamMembers = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/team', {
+                headers: { 'x-auth-token': token }
+            });
+            setTeamMembers(response.data);
+        } catch (error) {
+            console.error('Error fetching team members:', error);
         }
     };
 
@@ -139,6 +154,8 @@ export default function Finance() {
         setPayoutCategory(category);
         setPayoutAmount('');
         setPayoutNote('');
+        setSelectedEmployee('');
+        setSalaryMonth(new Date().toISOString().slice(0, 7));
         setPayoutOpen(true);
     };
 
@@ -165,6 +182,7 @@ export default function Finance() {
         fetchAccounts();
         fetchTransactions();
         fetchCOGSData();
+        fetchTeamMembers();
     }, []);
 
     if (loading) {
@@ -432,6 +450,45 @@ export default function Finance() {
                         Available: ₹{payoutCategory ? parseFloat(payoutCategory.balance).toLocaleString('en-IN') : '0'}
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                        {payoutCategory?.category_name?.toLowerCase().includes('salary') && (
+                            <>
+                                <FormControl fullWidth>
+                                    <InputLabel>Employee</InputLabel>
+                                    <Select
+                                        value={selectedEmployee}
+                                        onChange={(e) => {
+                                            setSelectedEmployee(e.target.value);
+                                            const employee = teamMembers.find(m => m.member_id === e.target.value);
+                                            if (employee) {
+                                                setPayoutAmount(employee.salary || '');
+                                                setPayoutNote(`Salary for ${employee.name} on ${new Date(salaryMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`);
+                                            }
+                                        }}
+                                        label="Employee"
+                                    >
+                                        {teamMembers.map((member) => (
+                                            <MenuItem key={member.member_id} value={member.member_id}>
+                                                {member.name} - {member.position}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                                <TextField
+                                    label="Month"
+                                    type="month"
+                                    value={salaryMonth}
+                                    onChange={(e) => {
+                                        setSalaryMonth(e.target.value);
+                                        const employee = teamMembers.find(m => m.member_id === selectedEmployee);
+                                        if (employee) {
+                                            setPayoutNote(`Salary for ${employee.name} on ${new Date(e.target.value).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`);
+                                        }
+                                    }}
+                                    InputLabelProps={{ shrink: true }}
+                                    fullWidth
+                                />
+                            </>
+                        )}
                         <TextField
                             label="Amount"
                             type="number"

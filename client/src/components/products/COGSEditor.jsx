@@ -66,12 +66,18 @@ function COGSEditor({ productId }) {
 
             if (response.ok) {
                 const data = await response.json();
-                setExistingCategories(data);
+                // Add Salary as first option, then other categories
+                const categoriesWithSalary = ['Salary', ...data.filter(cat => cat !== 'Salary')];
+                setExistingCategories(categoriesWithSalary);
             } else {
                 console.error('Failed to fetch categories');
+                // If API fails, at least show Salary as default option
+                setExistingCategories(['Salary']);
             }
         } catch (error) {
             console.error('Error fetching categories:', error);
+            // If API fails, at least show Salary as default option
+            setExistingCategories(['Salary']);
         }
     };
 

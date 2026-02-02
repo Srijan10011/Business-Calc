@@ -30,6 +30,7 @@ const assetRoutes_1 = __importDefault(require("./routes/assetRoutes"));
 const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
 const expenseRoutes_1 = __importDefault(require("./routes/expenseRoutes"));
 const creditRoutes_1 = __importDefault(require("./routes/creditRoutes"));
+const teamRoutes_1 = __importDefault(require("./routes/teamRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = 5000;
@@ -71,6 +72,7 @@ app.use('/api/assets', assetRoutes_1.default);
 app.use('/api/dashboard', dashboardRoutes_1.default);
 app.use('/api/expenses', expenseRoutes_1.default);
 app.use('/api/credits', creditRoutes_1.default);
+app.use('/api/team', teamRoutes_1.default);
 const server = app.listen(port, () => {
     console.log(`⚡️[server]: Minimal Express Server is running at http://localhost:${port}`);
     console.log('Minimal application initialization complete. Server should now be active.');

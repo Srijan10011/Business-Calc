@@ -12,6 +12,8 @@ import Assets from './pages/Assets';
 import Products from './pages/Products';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Team from './pages/Team';
+import TeamProfile from './pages/TeamProfile';
 import Home from './pages/Home';
 import CustomerProfile from './pages/CustomerProfile';
 import ProductDetail from './pages/ProductDetail';
@@ -38,6 +40,8 @@ const App = () => {
             <Route path="/products" element={<Products />} />
             <Route path="/products/:productId" element={<ProductDetail />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/team" element={<Team />} />
+            <Route path="/team/:memberId" element={<TeamProfile />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>

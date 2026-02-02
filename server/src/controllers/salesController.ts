@@ -129,6 +129,10 @@ export const addSale = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
+        if (!customer_id) {
+            return res.status(400).json({ message: 'Customer selection is required' });
+        }
+
         // Get business_id from business_users table
         const businessResult = await pool.query(
             'SELECT business_id FROM business_users WHERE user_id = $1',

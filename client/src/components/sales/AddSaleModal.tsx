@@ -67,6 +67,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const [newCustomerPhone, setNewCustomerPhone] = React.useState('');
     const [newCustomerAddress, setNewCustomerAddress] = React.useState('');
     const [stockError, setStockError] = React.useState(false);
+    const [error, setError] = React.useState('');
 
     const total = rate * quantity;
 
@@ -204,6 +205,8 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             return;
         }
         
+        setError(''); // Clear previous errors
+        
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/sales', {
@@ -218,8 +221,10 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
                 headers: { 'x-auth-token': token }
             });
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving sale:', error);
+            const errorMessage = error.response?.data?.message || 'Error saving sale';
+            setError(errorMessage);
         }
     };
 
@@ -283,6 +288,13 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
                                 <Link component="button" onClick={handleAddStockClick} underline="always">
                                     Add stock?
                                 </Link>
+                            </Alert>
+                        </Grid>
+                    )}
+                    {error && (
+                        <Grid item xs={12}>
+                            <Alert severity="error">
+                                {error}
                             </Alert>
                         </Grid>
                     )}

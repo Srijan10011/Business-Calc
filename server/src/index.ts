@@ -16,6 +16,7 @@ import assetRoutes from './routes/assetRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import expenseRoutes from './routes/expenseRoutes';
 import creditRoutes from './routes/creditRoutes';
+import teamRoutes from './routes/teamRoutes';
 
 dotenv.config();
 
@@ -62,6 +63,7 @@ app.use('/api/assets', assetRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/credits', creditRoutes);
+app.use('/api/team', teamRoutes);
 
 const server = app.listen(port, () => {
   console.log(`⚡️[server]: Minimal Express Server is running at http://localhost:${port}`);

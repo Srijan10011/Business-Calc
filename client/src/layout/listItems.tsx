@@ -13,6 +13,8 @@ import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import BusinessCenterIcon from '@mui/icons-material/BusinessCenter';
 import StoreIcon from '@mui/icons-material/Store';
 import SettingsIcon from '@mui/icons-material/Settings';
+import GroupIcon from '@mui/icons-material/Group';
+import GroupIcon from '@mui/icons-material/Group';
 
 export const mainListItems = (
   <React.Fragment>
@@ -63,6 +65,12 @@ export const mainListItems = (
         <BarChartIcon />
       </ListItemIcon>
       <ListItemText primary="Reports" />
+    </ListItemButton>
+    <ListItemButton component={RouterLink} to="/team">
+      <ListItemIcon>
+        <GroupIcon />
+      </ListItemIcon>
+      <ListItemText primary="Team" />
     </ListItemButton>
     <ListItemButton component={RouterLink} to="/settings">
       <ListItemIcon>
