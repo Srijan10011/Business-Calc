@@ -30,16 +30,20 @@ import axios from 'axios';
 export default function TeamProfile() {
     const { memberId } = useParams();
     const [member, setMember] = useState(null);
+    const [accountBalance, setAccountBalance] = useState(0);
     const [attendance, setAttendance] = useState([]);
     const [salaryHistory, setSalaryHistory] = useState([]);
     const [totalSalaryPaid, setTotalSalaryPaid] = useState(0);
     const [payoutDialog, setPayoutDialog] = useState(false);
+    const [addSalaryDialog, setAddSalaryDialog] = useState(false);
     const [payoutAmount, setPayoutAmount] = useState('');
+    const [addSalaryAmount, setAddSalaryAmount] = useState('');
     const [payoutMonth, setPayoutMonth] = useState(new Date().toISOString().slice(0, 7));
     const [payoutError, setPayoutError] = useState('');
 
     useEffect(() => {
         fetchMemberData();
+        fetchAccountBalance();
         fetchAttendance();
         fetchSalaryHistory();
     }, [memberId]);
@@ -53,6 +57,18 @@ export default function TeamProfile() {
             setMember(response.data);
         } catch (error) {
             console.error('Error fetching member:', error);
+        }
+    };
+
+    const fetchAccountBalance = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`http://localhost:5000/api/team/${memberId}/account`, {
+                headers: { 'x-auth-token': token }
+            });
+            setAccountBalance(response.data.current_balance || 0);
+        } catch (error) {
+            console.error('Error fetching account balance:', error);
         }
     };
 
@@ -86,6 +102,7 @@ export default function TeamProfile() {
         try {
             setPayoutError('');
             const token = localStorage.getItem('token');
+            
             await axios.post('http://localhost:5000/api/team/salary-payout', {
                 memberId,
                 amount: parseFloat(payoutAmount),
@@ -94,9 +111,20 @@ export default function TeamProfile() {
             }, {
                 headers: { 'x-auth-token': token }
             });
+            
+            // Deduct from account balance (can go negative for advances)
+            await axios.post('http://localhost:5000/api/team/distribute-salary', {
+                member_id: memberId,
+                amount: -parseFloat(payoutAmount), // Negative to deduct
+                month: payoutMonth
+            }, {
+                headers: { 'x-auth-token': token }
+            });
+            
             setPayoutDialog(false);
             setPayoutAmount('');
             fetchSalaryHistory();
+            fetchAccountBalance();
         } catch (error) {
             console.error('Error processing salary payout:', error);
             if (error.response?.data?.error === 'INSUFFICIENT_BALANCE') {
@@ -107,11 +135,37 @@ export default function TeamProfile() {
         }
     };
 
+    const handleAddSalary = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/team/distribute-salary', {
+                member_id: memberId,
+                amount: parseFloat(addSalaryAmount),
+                month: new Date().toISOString().slice(0, 7)
+            }, {
+                headers: { 'x-auth-token': token }
+            });
+            setAddSalaryDialog(false);
+            setAddSalaryAmount('');
+            fetchAccountBalance();
+        } catch (error) {
+            console.error('Error adding salary:', error);
+        }
+    };
+
     if (!member) return <Typography>Loading...</Typography>;
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>{member.name} - Profile</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4">{member.name} - Profile</Typography>
+                <Button variant="contained" onClick={() => {
+                    setPayoutDialog(true);
+                    setPayoutError('');
+                }}>
+                    Payout
+                </Button>
+            </Box>
             
             <Grid container spacing={3}>
                 <Grid item xs={12} md={4}>
@@ -132,14 +186,12 @@ export default function TeamProfile() {
                         <CardContent>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                 <Typography variant="h6">Salary Information</Typography>
-                                <Button variant="contained" onClick={() => {
-                    setPayoutDialog(true);
-                    setPayoutError('');
-                }}>
-                                    Pay Salary
+                                <Button variant="outlined" onClick={() => setAddSalaryDialog(true)}>
+                                    Add Salary
                                 </Button>
                             </Box>
                             <Typography>Current Salary: ₹{member.salary?.toLocaleString('en-IN') || 'N/A'}</Typography>
+                            <Typography>Account Balance: ₹{accountBalance.toLocaleString('en-IN')}</Typography>
                             <Typography>Total Paid: ₹{totalSalaryPaid.toLocaleString('en-IN')}</Typography>
                         </CardContent>
                     </Card>
@@ -154,15 +206,23 @@ export default function TeamProfile() {
                                     <TableRow>
                                         <TableCell>Date</TableCell>
                                         <TableCell>Month</TableCell>
+                                        <TableCell>Type</TableCell>
                                         <TableCell>Amount</TableCell>
                                         <TableCell>Description</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {salaryHistory.map((payment) => (
-                                        <TableRow key={payment.id}>
+                                        <TableRow key={payment.transaction_id}>
                                             <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
                                             <TableCell>{payment.month}</TableCell>
+                                            <TableCell>
+                                                <Chip 
+                                                    label={payment.type === 'addition' ? 'Added' : 'Payout'} 
+                                                    color={payment.type === 'addition' ? 'success' : 'primary'}
+                                                    size="small"
+                                                />
+                                            </TableCell>
                                             <TableCell>₹{payment.amount.toLocaleString('en-IN')}</TableCell>
                                             <TableCell>{payment.description}</TableCell>
                                         </TableRow>
@@ -207,7 +267,7 @@ export default function TeamProfile() {
             </Grid>
 
             <Dialog open={payoutDialog} onClose={() => setPayoutDialog(false)}>
-                <DialogTitle>Pay Salary</DialogTitle>
+                <DialogTitle>Payout Salary</DialogTitle>
                 <DialogContent>
                     {payoutError && (
                         <Typography 
@@ -236,7 +296,25 @@ export default function TeamProfile() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setPayoutDialog(false)}>Cancel</Button>
-                    <Button onClick={handleSalaryPayout} variant="contained">Pay</Button>
+                    <Button onClick={handleSalaryPayout} variant="contained">Payout</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={addSalaryDialog} onClose={() => setAddSalaryDialog(false)}>
+                <DialogTitle>Add Salary to Account</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Amount"
+                        type="number"
+                        fullWidth
+                        value={addSalaryAmount}
+                        onChange={(e) => setAddSalaryAmount(e.target.value)}
+                        sx={{ mt: 2 }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAddSalaryDialog(false)}>Cancel</Button>
+                    <Button onClick={handleAddSalary} variant="contained">Add</Button>
                 </DialogActions>
             </Dialog>
         </Box>

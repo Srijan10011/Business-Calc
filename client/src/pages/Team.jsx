@@ -24,7 +24,10 @@ import {
     Select,
     MenuItem,
     Alert,
-    Link
+    Link,
+    Switch,
+    FormControlLabel,
+    Divider
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -38,6 +41,7 @@ export default function Team() {
     const [open, setOpen] = useState(false);
     const [editingMember, setEditingMember] = useState(null);
     const [error, setError] = useState('');
+    const [salaryDistributionMode, setSalaryDistributionMode] = useState('manual');
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -169,12 +173,94 @@ export default function Team() {
         }
     };
 
+    const handleSalaryDistribution = async () => {
+        if (salaryDistributionMode === 'automatic') {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.post('http://localhost:5000/api/team/auto-distribute', {}, {
+                    headers: { 'x-auth-token': token }
+                });
+                alert(response.data.message);
+                await fetchTeamMembers(); // Refresh to show updated balances
+            } catch (error) {
+                console.error('Error auto distributing salaries:', error);
+                alert('Error distributing salaries');
+            }
+        } else {
+            console.log('Opening manual salary distribution...');
+        }
+    };
+
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1">
-                    Team Management
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="h4" component="h1">
+                        Team Management
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2">Salary Distribution:</Typography>
+                        <Box
+                            onClick={async () => {
+                                const newMode = salaryDistributionMode === 'manual' ? 'automatic' : 'manual';
+                                setSalaryDistributionMode(newMode);
+                                
+                                // If switching to automatic, trigger distribution
+                                if (newMode === 'automatic') {
+                                    await handleSalaryDistribution();
+                                }
+                            }}
+                            sx={{
+                                position: 'relative',
+                                width: 120,
+                                height: 32,
+                                backgroundColor: '#e0e0e0',
+                                borderRadius: '16px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '2px',
+                                transition: 'all 0.3s ease'
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    position: 'absolute',
+                                    width: 56,
+                                    height: 28,
+                                    backgroundColor: 'primary.main',
+                                    borderRadius: '14px',
+                                    transition: 'transform 0.3s ease',
+                                    transform: salaryDistributionMode === 'automatic' ? 'translateX(60px)' : 'translateX(0px)'
+                                }}
+                            />
+                            <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    left: 8, 
+                                    color: salaryDistributionMode === 'manual' ? 'white' : 'text.secondary',
+                                    fontWeight: salaryDistributionMode === 'manual' ? 'bold' : 'normal',
+                                    zIndex: 1
+                                }}
+                            >
+                                Manual
+                            </Typography>
+                            <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                    position: 'absolute', 
+                                    right: 8, 
+                                    color: salaryDistributionMode === 'automatic' ? 'white' : 'text.secondary',
+                                    fontWeight: salaryDistributionMode === 'automatic' ? 'bold' : 'normal',
+                                    zIndex: 1
+                                }}
+                            >
+                                Auto
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Box>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}

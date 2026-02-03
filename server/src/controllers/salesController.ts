@@ -268,9 +268,26 @@ export const addSale = async (req: Request, res: Response) => {
                             
                             if (remaining > 0) {
                                 const amountToAdd = Math.min(totalAmount, remaining);
+                                const excessAmount = totalAmount - amountToAdd;
+                                
+                                // Update asset recovery
                                 await client.query(
                                     'UPDATE fixed_cost_assets SET recovered = recovered + $1 WHERE cateogory_id = $2',
                                     [amountToAdd, allocation.category_id]
+                                );
+                                
+                                // Add excess back to the payment account (cash/bank)
+                                if (excessAmount > 0) {
+                                    await client.query(
+                                        'UPDATE business_account SET balance = balance + $1 WHERE account_id = $2',
+                                        [excessAmount, account_id]
+                                    );
+                                }
+                            } else {
+                                // Asset fully recovered, add all amount back to payment account
+                                await client.query(
+                                    'UPDATE business_account SET balance = balance + $1 WHERE account_id = $2',
+                                    [totalAmount, account_id]
                                 );
                             }
                         }

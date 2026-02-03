@@ -157,6 +157,51 @@ export const cogsPayout = async (req: Request, res: Response) => {
                 [amount, category_id, business_id]
             );
 
+            // If this is a salary payout, also deduct from employee account balance
+            if (categoryName.toLowerCase().includes('salary') && note.includes('Salary for ')) {
+                // Extract employee name from note format: "Salary for [Name] on [Date]"
+                const employeeNameMatch = note.match(/Salary for (.+?) on/);
+                if (employeeNameMatch) {
+                    const employeeName = employeeNameMatch[1];
+                    
+                    // Find employee by name
+                    const employeeResult = await client.query(
+                        'SELECT member_id FROM team_members WHERE name = $1 AND business_id = $2',
+                        [employeeName, business_id]
+                    );
+                    
+                    if (employeeResult.rows.length > 0) {
+                        const memberId = employeeResult.rows[0].member_id;
+                        
+                        // Get or create account
+                        let accountResult = await client.query(
+                            'SELECT * FROM team_accounts WHERE member_id = $1',
+                            [memberId]
+                        );
+
+                        if (accountResult.rows.length === 0) {
+                            await client.query(
+                                'INSERT INTO team_accounts (member_id) VALUES ($1)',
+                                [memberId]
+                            );
+                        }
+
+                        // Deduct from account balance (can go negative for advances)
+                        await client.query(
+                            'UPDATE team_accounts SET current_balance = current_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE member_id = $2',
+                            [amount, memberId]
+                        );
+
+                        // Record salary transaction
+                        const currentMonth = new Date().toISOString().slice(0, 7);
+                        await client.query(
+                            'INSERT INTO salary_transactions (member_id, amount, distribution_month, transaction_type) VALUES ($1, $2, $3, $4)',
+                            [memberId, -parseFloat(amount), currentMonth, 'withdrawal']
+                        );
+                    }
+                }
+            }
+
             await client.query('COMMIT');
             res.json({ message: 'COGS payout recorded successfully' });
         } catch (error) {

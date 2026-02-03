@@ -139,6 +139,16 @@ const Dashboard = () => {
 
     return (
         <React.Fragment>
+            {/* Header with Add Expense Button */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4" component="h1">
+                    Dashboard
+                </Typography>
+                <Button variant="contained" color="error" onClick={() => setExpenseDialog(true)}>
+                    Add Expense
+                </Button>
+            </Box>
+
             <Grid container spacing={3}>
             {/* Top Summary Cards */}
             <Grid item xs={12} md={2}>
@@ -156,33 +166,39 @@ const Dashboard = () => {
             <Grid item xs={12} md={2}>
                 <SummaryCard title="Credit Balance" value={`₹${creditBalance.toLocaleString('en-IN')}`} />
             </Grid>
-            <Grid item xs={12} md={2}>
-                <Button variant="contained" color="error" onClick={() => setExpenseDialog(true)}>
-                    Add Expense
-                </Button>
-            </Grid>
 
             {/* Money Flow Section */}
             <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                     <Title>Money Flow (This Month)</Title>
-                    <Grid container>
-                        <Grid item xs={6}>
-                            <Typography variant="subtitle1" color="green">Incoming</Typography>
+                    <Grid container spacing={4}>
+                        <Grid item xs={5}>
+                            <Typography variant="subtitle1" sx={{ color: 'green' }}>Incoming</Typography>
                             <Box component="ul" sx={{ pl: 2 }}>
                                 <li><Typography>Cash: ₹{(moneyFlow.incoming.cash || 0).toLocaleString('en-IN')}</Typography></li>
                                 <li><Typography>Bank: ₹{(moneyFlow.incoming.bank || 0).toLocaleString('en-IN')}</Typography></li>
                                 <li><Typography>Credit: ₹{(moneyFlow.incoming.credit || 0).toLocaleString('en-IN')}</Typography></li>
+                                {/* Add empty spaces to match outgoing length */}
+                                {Array.from({ length: Math.max(0, (Object.keys(moneyFlow.outgoing.cogs || {}).length + 2) - 3) }).map((_, index) => (
+                                    <div key={index} style={{ height: '24px' }}></div>
+                                ))}
+                                <li><Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1, color: 'green' }}>
+                                    Total: ₹{((moneyFlow.incoming.cash || 0) + (moneyFlow.incoming.bank || 0) + (moneyFlow.incoming.credit || 0)).toLocaleString('en-IN')}
+                                </Typography></li>
                             </Box>
                         </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="subtitle1" color="red">Outgoing</Typography>
+                        <Grid item xs={2}></Grid>
+                        <Grid item xs={5}>
+                            <Typography variant="subtitle1" sx={{ color: 'red' }}>Outgoing</Typography>
                             <Box component="ul" sx={{ pl: 2 }}>
                                 <li><Typography>Inventory: ₹{(moneyFlow.outgoing.inventory || 0).toLocaleString('en-IN')}</Typography></li>
                                 {Object.entries(moneyFlow.outgoing.cogs || {}).map(([category, amount]) => (
                                     <li key={category}><Typography>{category}: ₹{amount.toLocaleString('en-IN')}</Typography></li>
                                 ))}
                                 <li><Typography>General Expenses: ₹{(moneyFlow.outgoing.general || 0).toLocaleString('en-IN')}</Typography></li>
+                                <li><Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1, color: 'red' }}>
+                                    Total: ₹{((moneyFlow.outgoing.inventory || 0) + Object.values(moneyFlow.outgoing.cogs || {}).reduce((sum, amount) => sum + amount, 0) + (moneyFlow.outgoing.general || 0)).toLocaleString('en-IN')}
+                                </Typography></li>
                             </Box>
                         </Grid>
                     </Grid>

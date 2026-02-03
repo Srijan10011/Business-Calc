@@ -22,7 +22,10 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Alert
+    Alert,
+    Switch,
+    FormControlLabel,
+    Divider
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -47,6 +50,7 @@ export default function Team() {
     const [open, setOpen] = React.useState(false);
     const [editingMember, setEditingMember] = React.useState<TeamMember | null>(null);
     const [error, setError] = React.useState('');
+    const [salaryDistributionMode, setSalaryDistributionMode] = React.useState<'automatic' | 'manual'>('manual');
     const [formData, setFormData] = React.useState({
         name: '',
         email: '',
@@ -172,6 +176,16 @@ export default function Team() {
         }
     };
 
+    const handleSalaryDistribution = () => {
+        if (salaryDistributionMode === 'automatic') {
+            // Trigger automatic salary distribution logic
+            console.log('Processing automatic salary distribution...');
+        } else {
+            // Open manual salary distribution interface
+            console.log('Opening manual salary distribution...');
+        }
+    };
+
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -243,6 +257,38 @@ export default function Team() {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <Divider sx={{ my: 4 }} />
+
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+                    Salary Distribution
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={salaryDistributionMode === 'automatic'}
+                                onChange={(e) => setSalaryDistributionMode(e.target.checked ? 'automatic' : 'manual')}
+                            />
+                        }
+                        label={`Mode: ${salaryDistributionMode === 'automatic' ? 'Automatic' : 'Manual'}`}
+                    />
+                    <Button
+                        variant="contained"
+                        onClick={handleSalaryDistribution}
+                        disabled={teamMembers.filter(m => m.status === 'active').length === 0}
+                    >
+                        {salaryDistributionMode === 'automatic' ? 'Process Salaries' : 'Distribute Salaries'}
+                    </Button>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                    {salaryDistributionMode === 'automatic' 
+                        ? 'Salaries will be automatically distributed based on predefined rules.'
+                        : 'Manually select and distribute salaries to team members.'
+                    }
+                </Typography>
+            </Box>
 
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
                 <DialogTitle>
