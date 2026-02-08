@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { useParams } from 'react-router-dom';
-import { Paper, Box, IconButton, Typography, Grid, TextField, Button } from '@mui/material';
+import { Paper, Box, IconButton, Typography, Grid, TextField, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import ArrowBack from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import Title from '../components/dashboard/Title';
 import COGSEditor from '../components/products/COGSEditor';
@@ -12,6 +13,7 @@ const ProductDetail = () => {
     
     const [product, setProduct] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     
     // State for basic info
     const [name, setName] = React.useState('');
@@ -41,6 +43,9 @@ const ProductDetail = () => {
                 setName(data.name);
                 setPrice(data.price);
                 setStock(data.stock);
+            } else if (response.status === 404) {
+                // Product not found or removed
+                navigate('/products');
             } else {
                 console.error('Failed to fetch product');
             }
@@ -72,6 +77,35 @@ const ProductDetail = () => {
         setIsInventoryEditing(false);
     };
 
+    const handleDeleteClick = () => {
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'x-auth-token': token || '',
+                },
+            });
+
+            if (response.ok) {
+                navigate('/products');
+            } else {
+                console.error('Failed to delete product');
+            }
+        } catch (error) {
+            console.error('Error deleting product:', error);
+        }
+        setDeleteDialogOpen(false);
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteDialogOpen(false);
+    };
+
     if (loading) {
         return <Typography>Loading product...</Typography>;
     }
@@ -81,15 +115,21 @@ const ProductDetail = () => {
     }
 
     return (
-        <Paper sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
-                    <ArrowBack />
-                </IconButton>
-                <Typography variant="h4" component="h1">
-                    {name} (ID: {productId})
-                </Typography>
-            </Box>
+        <>
+            <Paper sx={{ p: 3, mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
+                            <ArrowBack />
+                        </IconButton>
+                        <Typography variant="h4" component="h1">
+                            {name} (ID: {productId})
+                        </Typography>
+                    </Box>
+                    <IconButton color="error" onClick={handleDeleteClick}>
+                        <DeleteIcon />
+                    </IconButton>
+                </Box>
 
             <Grid container spacing={3}>
                 {/* Basic Info */}
@@ -166,6 +206,22 @@ const ProductDetail = () => {
                 </Grid>
             </Grid>
         </Paper>
+
+        <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
+            <DialogTitle>Delete Product</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+                    Are you sure you want to remove "{name}" from your business? This action will archive the product and its sales history.
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleDeleteCancel}>Cancel</Button>
+                <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+                    Delete
+                </Button>
+            </DialogActions>
+        </Dialog>
+    </>
     );
 };
 

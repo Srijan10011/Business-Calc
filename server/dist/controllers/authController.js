@@ -38,10 +38,6 @@ const checkBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 exports.checkBusiness = checkBusiness;
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password, business_id } = req.body;
-    // Require business_id for registration
-    if (!business_id) {
-        return res.status(400).json({ msg: 'Business ID is required for registration' });
-    }
     const client = yield db_1.default.connect();
     try {
         yield client.query('BEGIN');
@@ -50,24 +46,34 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             yield client.query('ROLLBACK');
             return res.status(400).json({ msg: 'User already exists' });
         }
-        // Validate business_id exists first
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(business_id)) {
-            yield client.query('ROLLBACK');
-            return res.status(400).json({ msg: 'Invalid business ID format' });
+        let finalBusinessId = business_id;
+        let needsBusinessSetup = false;
+        // If business_id provided, validate it exists
+        if (business_id) {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            if (!uuidRegex.test(business_id)) {
+                yield client.query('ROLLBACK');
+                return res.status(400).json({ msg: 'Invalid business ID format' });
+            }
+            const businessExists = yield client.query('SELECT business_id FROM businesses WHERE business_id = $1', [business_id]);
+            if (businessExists.rows.length === 0) {
+                yield client.query('ROLLBACK');
+                return res.status(400).json({ msg: 'Business not found' });
+            }
         }
-        const businessExists = yield client.query('SELECT business_id FROM businesses WHERE business_id = $1', [business_id]);
-        if (businessExists.rows.length === 0) {
-            yield client.query('ROLLBACK');
-            return res.status(400).json({ msg: 'Business not found' });
+        else {
+            // No business_id provided - user will need to set up business later
+            needsBusinessSetup = true;
+            finalBusinessId = null;
         }
         const salt = yield bcryptjs_1.default.genSalt(10);
         const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
-        // Create user only after business validation
         const newUser = yield client.query('INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id, name, email, created_at', [name, email, hashedPassword]);
         const user_id = newUser.rows[0].user_id;
-        // Link user to business
-        yield client.query('INSERT INTO business_users (user_id, business_id) VALUES ($1, $2)', [user_id, business_id]);
+        // Link user to business only if business_id was provided
+        if (finalBusinessId) {
+            yield client.query('INSERT INTO business_users (user_id, business_id) VALUES ($1, $2)', [user_id, finalBusinessId]);
+        }
         yield client.query('COMMIT');
         const payload = {
             user: {
@@ -79,7 +85,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 throw err;
             res.json({
                 token,
-                needsBusinessSetup: false
+                needsBusinessSetup
             });
         });
     }

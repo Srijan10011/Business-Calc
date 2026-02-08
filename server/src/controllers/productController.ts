@@ -77,7 +77,8 @@ export const getProducts = async (req: Request, res: Response) => {
                 p.created_at
             FROM products p
             INNER JOIN products_business pb ON p.product_id = pb.product_id
-            WHERE pb.business_id = $1
+            LEFT JOIN removed_products rp ON p.product_id = rp.original_product_id
+            WHERE pb.business_id = $1 AND rp.removed_product_id IS NULL
             ORDER BY p.created_at DESC`,
             [business_id]
         );
@@ -120,7 +121,8 @@ export const getProductById = async (req: Request, res: Response) => {
                 p.created_at
             FROM products p
             INNER JOIN products_business pb ON p.product_id = pb.product_id
-            WHERE pb.business_id = $1 AND p.product_id = $2`,
+            LEFT JOIN removed_products rp ON p.product_id = rp.original_product_id
+            WHERE pb.business_id = $1 AND p.product_id = $2 AND rp.removed_product_id IS NULL`,
             [business_id, id]
         );
 

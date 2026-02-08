@@ -15,8 +15,11 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import { mainListItems } from "./listItems";
-import { Outlet } from "react-router-dom";
-import { Avatar } from "@mui/material";
+import { Outlet, useNavigate } from "react-router-dom";
+import { Avatar, Menu, MenuItem, ListItemIcon } from "@mui/material";
+import LogoutIcon from "@mui/icons-material/Logout";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import axios from "axios";
 
 const drawerWidth = 240;
 
@@ -68,9 +71,42 @@ const mdTheme = createTheme();
 
 function DashboardLayout() {
     const [open, setOpen] = React.useState(true);
+    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [user, setUser] = React.useState(null);
+    const navigate = useNavigate();
+    const profileMenuOpen = Boolean(anchorEl);
+
     const toggleDrawer = () => {
         setOpen(!open);
     };
+
+    const handleProfileClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleProfileClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
+
+    React.useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get('http://localhost:5000/api/auth/me', {
+                    headers: { 'x-auth-token': token }
+                });
+                setUser(response.data);
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            }
+        };
+        fetchUser();
+    }, []);
 
     return (
         <ThemeProvider theme={mdTheme}>
@@ -108,9 +144,37 @@ function DashboardLayout() {
                                 <NotificationsIcon />
                             </Badge>
                         </IconButton>
-                        <IconButton color="inherit" sx={{ ml: 2 }}>
-                            <Avatar alt="User" src="/static/images/avatar/1.jpg"/>
+                        <IconButton color="inherit" sx={{ ml: 2 }} onClick={handleProfileClick}>
+                            <Avatar alt={user?.name || 'User'} sx={{ bgcolor: 'secondary.main' }}>
+                                {user?.name?.charAt(0).toUpperCase() || 'U'}
+                            </Avatar>
                         </IconButton>
+                        <Menu
+                            anchorEl={anchorEl}
+                            open={profileMenuOpen}
+                            onClose={handleProfileClose}
+                            onClick={handleProfileClose}
+                            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                        >
+                            <Box sx={{ px: 2, py: 1 }}>
+                                <Typography variant="subtitle1">{user?.name}</Typography>
+                                <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
+                            </Box>
+                            <Divider />
+                            <MenuItem onClick={handleProfileClose}>
+                                <ListItemIcon>
+                                    <AccountCircleIcon fontSize="small" />
+                                </ListItemIcon>
+                                Account Details
+                            </MenuItem>
+                            <MenuItem onClick={handleLogout}>
+                                <ListItemIcon>
+                                    <LogoutIcon fontSize="small" />
+                                </ListItemIcon>
+                                Logout
+                            </MenuItem>
+                        </Menu>
                     </Toolbar>
                 </AppBar>
                 <Drawer variant="permanent" open={open}>

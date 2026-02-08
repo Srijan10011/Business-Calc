@@ -66,7 +66,8 @@ const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 p.created_at
             FROM products p
             INNER JOIN products_business pb ON p.product_id = pb.product_id
-            WHERE pb.business_id = $1
+            LEFT JOIN removed_products rp ON p.product_id = rp.original_product_id
+            WHERE pb.business_id = $1 AND rp.removed_product_id IS NULL
             ORDER BY p.created_at DESC`, [business_id]);
         res.json(result.rows);
     }
@@ -99,7 +100,8 @@ const getProductById = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 p.created_at
             FROM products p
             INNER JOIN products_business pb ON p.product_id = pb.product_id
-            WHERE pb.business_id = $1 AND p.product_id = $2`, [business_id, id]);
+            LEFT JOIN removed_products rp ON p.product_id = rp.original_product_id
+            WHERE pb.business_id = $1 AND p.product_id = $2 AND rp.removed_product_id IS NULL`, [business_id, id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Product not found' });
         }

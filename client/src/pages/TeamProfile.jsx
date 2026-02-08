@@ -91,7 +91,10 @@ export default function TeamProfile() {
                 headers: { 'x-auth-token': token }
             });
             setSalaryHistory(response.data);
-            const total = response.data.reduce((sum, payment) => sum + payment.amount, 0);
+            // Only sum payout transactions for total paid
+            const total = response.data
+                .filter(payment => payment.type === 'payout')
+                .reduce((sum, payment) => sum + payment.amount, 0);
             setTotalSalaryPaid(total);
         } catch (error) {
             console.error('Error fetching salary history:', error);

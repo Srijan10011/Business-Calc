@@ -329,19 +329,16 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
             [business_id, `Salary payout for ${memberName}%`]
         );
 
-        // Get salary additions
+        // Get salary additions (exclude negative amounts as they're duplicates of payouts)
         const additionHistory = await pool.query(
             `SELECT 
                 st.transaction_id, 
                 st.amount, 
                 ('Salary added for ' || $2 || ' - ' || st.distribution_month) as note,
                 st.created_at,
-                CASE 
-                    WHEN st.transaction_type = 'withdrawal' THEN 'payout'
-                    ELSE 'addition'
-                END as transaction_type
+                'addition' as transaction_type
              FROM salary_transactions st
-             WHERE st.member_id = $1`,
+             WHERE st.member_id = $1 AND st.amount > 0`,
             [id, memberName]
         );
 
