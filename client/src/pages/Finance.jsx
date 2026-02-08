@@ -397,34 +397,77 @@ export default function Finance() {
                                 <MenuItem value="to-cogs">From Account to COGS</MenuItem>
                             </Select>
                         </FormControl>
-                        <FormControl fullWidth>
-                            <InputLabel>COGS Category</InputLabel>
-                            <Select
-                                value={cogsCategory}
-                                label="COGS Category"
-                                onChange={(e) => setCogsCategory(e.target.value)}
-                            >
-                                {cogsData.categories.map((category, index) => (
-                                    <MenuItem key={index} value={category.category_id}>
-                                        {category.category_name} (₹{parseFloat(category.balance).toLocaleString('en-IN')})
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <FormControl fullWidth>
-                            <InputLabel>Account</InputLabel>
-                            <Select
-                                value={cogsAccount}
-                                label="Account"
-                                onChange={(e) => setCogsAccount(e.target.value)}
-                            >
-                                {accounts.filter(acc => !acc.account_name?.toLowerCase().includes('credit') && !acc.account_name?.toLowerCase().includes('debit')).map((account) => (
-                                    <MenuItem key={account.account_id} value={account.account_id}>
-                                        {account.account_name} (₹{account.balance.toLocaleString('en-IN')})
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        
+                        {cogsDirection === 'from-cogs' ? (
+                            <>
+                                <FormControl fullWidth>
+                                    <InputLabel>COGS Category</InputLabel>
+                                    <Select
+                                        value={cogsCategory}
+                                        label="COGS Category"
+                                        onChange={(e) => setCogsCategory(e.target.value)}
+                                    >
+                                        {cogsData.categories.map((category, index) => (
+                                            <MenuItem key={index} value={category.category_id}>
+                                                {category.category_name} (₹{parseFloat(category.balance).toLocaleString('en-IN')})
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                                    <Typography variant="h5">↓</Typography>
+                                </Box>
+                                <FormControl fullWidth>
+                                    <InputLabel>Account</InputLabel>
+                                    <Select
+                                        value={cogsAccount}
+                                        label="Account"
+                                        onChange={(e) => setCogsAccount(e.target.value)}
+                                    >
+                                        {accounts.filter(acc => !acc.account_name?.toLowerCase().includes('credit') && !acc.account_name?.toLowerCase().includes('debit')).map((account) => (
+                                            <MenuItem key={account.account_id} value={account.account_id}>
+                                                {account.account_name} (₹{account.balance.toLocaleString('en-IN')})
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </>
+                        ) : (
+                            <>
+                                <FormControl fullWidth>
+                                    <InputLabel>Account</InputLabel>
+                                    <Select
+                                        value={cogsAccount}
+                                        label="Account"
+                                        onChange={(e) => setCogsAccount(e.target.value)}
+                                    >
+                                        {accounts.filter(acc => !acc.account_name?.toLowerCase().includes('credit') && !acc.account_name?.toLowerCase().includes('debit')).map((account) => (
+                                            <MenuItem key={account.account_id} value={account.account_id}>
+                                                {account.account_name} (₹{account.balance.toLocaleString('en-IN')})
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                                    <Typography variant="h5">↓</Typography>
+                                </Box>
+                                <FormControl fullWidth>
+                                    <InputLabel>COGS Category</InputLabel>
+                                    <Select
+                                        value={cogsCategory}
+                                        label="COGS Category"
+                                        onChange={(e) => setCogsCategory(e.target.value)}
+                                    >
+                                        {cogsData.categories.map((category, index) => (
+                                            <MenuItem key={index} value={category.category_id}>
+                                                {category.category_name} (₹{parseFloat(category.balance).toLocaleString('en-IN')})
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </>
+                        )}
+                        
                         <TextField
                             label="Amount"
                             type="number"

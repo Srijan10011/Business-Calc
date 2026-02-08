@@ -34,6 +34,7 @@ function Inventory() {
     const [stockPartyName, setStockPartyName] = React.useState('');
     const [suppliers, setSuppliers] = React.useState([]);
     const [isNewSupplier, setIsNewSupplier] = React.useState(false);
+    const [showPaymentError, setShowPaymentError] = React.useState(false);
 
     React.useEffect(() => {
         fetchItems();
@@ -86,10 +87,17 @@ function Inventory() {
         setPaymentAccount('');
         setSkipPayment(false);
         setPartyName('');
+        setShowPaymentError(false);
         setAddDialog(true);
     };
 
     const handleSaveItem = async () => {
+        // Validate payment account
+        if (!skipPayment && !paymentAccount) {
+            setShowPaymentError(true);
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
             const totalAmount = skipPayment ? 0 : (parseFloat(stock) * parseFloat(unitCost));
@@ -305,8 +313,14 @@ function Inventory() {
                                 label="Account"
                                 fullWidth
                                 value={paymentAccount}
-                                onChange={(e) => setPaymentAccount(e.target.value)}
+                                onChange={(e) => {
+                                    setPaymentAccount(e.target.value);
+                                    setShowPaymentError(false);
+                                }}
                                 disabled={skipPayment}
+                                required={!skipPayment}
+                                error={showPaymentError && !skipPayment && !paymentAccount}
+                                helperText={showPaymentError && !skipPayment && !paymentAccount ? "Please select an account or skip payment" : ""}
                             >
                                 {accounts.filter(acc => ['Cash Account', 'Bank Account', 'Credit Account'].includes(acc.account_name)).map((account) => (
                                     <MenuItem key={account.account_id} value={account.account_id}>
@@ -345,7 +359,12 @@ function Inventory() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setAddDialog(false)}>Cancel</Button>
-                    <Button onClick={handleSaveItem} variant="contained">Save</Button>
+                    <Button 
+                        onClick={handleSaveItem} 
+                        variant="contained"
+                    >
+                        Save
+                    </Button>
                 </DialogActions>
             </Dialog>
 

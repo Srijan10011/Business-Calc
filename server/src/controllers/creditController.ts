@@ -128,14 +128,17 @@ export const payCreditAmount = async (req: Request, res: Response) => {
 
             // Update payment account balance
             await client.query(
-                `UPDATE business_account SET balance = balance - $1 WHERE account_id = $2`,
-                [amount, payment_account]
+                `UPDATE business_account SET balance = balance - $1 WHERE account_id = $2 AND business_id = $3`,
+                [amount, payment_account, business_id]
             );
 
-            // Reduce credit account balance
+            // Reduce credit account balance (the account used when inventory was purchased)
             const creditAccountResult = await client.query(
-                'SELECT account_id FROM accounts WHERE account_name = $1',
-                ['Credit Account']
+                `SELECT ba.account_id 
+                 FROM business_account ba
+                 JOIN accounts a ON ba.account_id = a.account_id
+                 WHERE a.account_name ILIKE '%credit%' AND ba.business_id = $1`,
+                [business_id]
             );
 
             if (creditAccountResult.rows.length > 0) {

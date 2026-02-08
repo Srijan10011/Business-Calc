@@ -44,6 +44,14 @@ export const addInventoryItem = async (req: Request, res: Response) => {
             );
 
             const inventory_id = inventoryResult.rows[0].inventory_id;
+            const total_cost = parseFloat(stock) * parseFloat(unit_cost);
+
+            // Create inventory log entry
+            await client.query(
+                `INSERT INTO inventory_logs (type, amount, previous_stock, new_stock, total_cost, add_to_recover, inventory_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                ['Incomming', stock, 0, stock, total_cost, 0, inventory_id]
+            );
 
             // Link to business in business_inventory
             await client.query(
