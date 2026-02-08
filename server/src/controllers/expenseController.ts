@@ -160,7 +160,7 @@ export const cogsPayout = async (req: Request, res: Response) => {
             // If this is a salary payout, also deduct from employee account balance
             if (categoryName.toLowerCase().includes('salary') && note.includes('Salary for ')) {
                 // Extract employee name from note format: "Salary for [Name] on [Date]"
-                const employeeNameMatch = note.match(/Salary for (.+?) on/);
+                const employeeNameMatch = note.match(/Salary for ([\w\s]+?) on/);
                 if (employeeNameMatch) {
                     const employeeName = employeeNameMatch[1];
                     
