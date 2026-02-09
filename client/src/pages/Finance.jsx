@@ -21,7 +21,7 @@ import {
     DialogActions
 } from '@mui/material';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../utils/api';
 
 export default function Finance() {
     const [typeFilter, setTypeFilter] = React.useState('');
@@ -59,7 +59,7 @@ export default function Finance() {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts', {
+            const response = await api.get('/accounts', {
                 headers: { 'x-auth-token': token }
             });
             setAccounts(response.data);
@@ -71,7 +71,7 @@ export default function Finance() {
     const fetchTransactions = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts/transactions', {
+            const response = await api.get('/accounts/transactions', {
                 headers: { 'x-auth-token': token }
             });
             setTransactions(response.data);
@@ -85,7 +85,7 @@ export default function Finance() {
     const fetchCOGSData = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/cogs/data', {
+            const response = await api.get('/cogs/data', {
                 headers: { 'x-auth-token': token }
             });
             setCogsData(response.data);
@@ -97,7 +97,7 @@ export default function Finance() {
     const fetchTeamMembers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/team', {
+            const response = await api.get('/team', {
                 headers: { 'x-auth-token': token }
             });
             setTeamMembers(response.data);
@@ -109,7 +109,7 @@ export default function Finance() {
     const handleTransfer = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/accounts/transfer', {
+            await api.post('/accounts/transfer', {
                 fromAccountId: fromAccount,
                 toAccountId: toAccount,
                 amount: parseFloat(transferAmount)
@@ -130,7 +130,7 @@ export default function Finance() {
     const handleCogsTransfer = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/accounts/transfer-cogs', {
+            await api.post('/accounts/transfer-cogs', {
                 categoryId: cogsCategory,
                 accountId: cogsAccount,
                 amount: parseFloat(cogsAmount),
@@ -162,7 +162,7 @@ export default function Finance() {
     const handleCogsPayoutSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/expenses/cogs-payout', {
+            await api.post('/expenses/cogs-payout', {
                 category_id: payoutCategory.category_id,
                 amount: parseFloat(payoutAmount),
                 note: payoutNote

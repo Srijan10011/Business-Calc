@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Button } from '@mui/material';
+import api from '../../utils/api';
 
 function AddCustomerModal({ open, onClose }) {
     const [name, setName] = useState('');
@@ -57,36 +58,16 @@ function AddCustomerModal({ open, onClose }) {
 
         if (isValid) {
             try {
-                const token = localStorage.getItem('token'); // Assuming token is stored in localStorage
-                if (!token) {
-                    console.error('No authentication token found. Please log in.');
-                    // Optionally, redirect to login page or show an error message
-                    return;
-                }
-
                 const fullAddress = `${street} ${city} ${state} ${zipCode}`.trim();
 
-                const response = await fetch('http://localhost:5000/api/customers', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-auth-token': token, // Include the token in the header
-                    },
-                    body: JSON.stringify({
-                        name,
-                        phone,
-                        email: email.trim() === '' ? null : email,
-                        address: fullAddress, // Send the constructed full address string
-                    }),
+                const response = await api.post('/customers', {
+                    name,
+                    phone,
+                    email: email.trim() === '' ? null : email,
+                    address: fullAddress,
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Failed to add customer');
-                }
-
-                const newCustomer = await response.json();
-                console.log('Customer added successfully:', newCustomer);
+                console.log('Customer added successfully:', response.data);
 
                 // Reset fields and close the dialog after saving
                 setName('');

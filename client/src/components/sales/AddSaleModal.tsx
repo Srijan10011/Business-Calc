@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import axios from 'axios';
+import api from '../../utils/api';
 
 interface AddSaleModalProps {
     open: boolean;
@@ -85,7 +85,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const fetchProducts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/products', {
+            const response = await api.get('/products', {
                 headers: { 'x-auth-token': token }
             });
             setProducts(response.data);
@@ -109,7 +109,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const fetchCustomers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/customers', {
+            const response = await api.get('/customers', {
                 headers: { 'x-auth-token': token }
             });
             setCustomers(response.data);
@@ -124,7 +124,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts', {
+            const response = await api.get('/accounts', {
                 headers: { 'x-auth-token': token }
             });
             
@@ -179,7 +179,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const handleAddNewCustomer = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:5000/api/customers', {
+            const response = await api.post('/customers', {
                 name: newCustomerName,
                 phone: newCustomerPhone,
                 address: newCustomerAddress
@@ -209,7 +209,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
         
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/sales', {
+            await api.post('/sales', {
                 customer_id: customer,
                 total_amount: total,
                 payment_type: paymentType,

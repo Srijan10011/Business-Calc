@@ -14,7 +14,7 @@ import Container from "@mui/material/Container";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import { mainListItems } from "./listItems";
+import { MainListItems } from "./listItems";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Avatar, Menu, MenuItem, ListItemIcon } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -195,7 +195,7 @@ function DashboardLayout() {
                     </Toolbar>
                     <Divider />
                     <List component="nav">
-                        {mainListItems}
+                        <MainListItems />
                     </List>
                 </Drawer>
                 <Box

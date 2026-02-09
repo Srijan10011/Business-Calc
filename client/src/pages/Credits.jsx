@@ -18,7 +18,7 @@ import {
     Box
 } from '@mui/material';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../utils/api';
 
 const statusColors = {
     Pending: 'error',
@@ -42,7 +42,7 @@ export default function Credits() {
     const fetchPayables = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/credits', {
+            const response = await api.get('/credits', {
                 headers: { 'x-auth-token': token }
             });
             setPayables(response.data);
@@ -54,7 +54,7 @@ export default function Credits() {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts', {
+            const response = await api.get('/accounts', {
                 headers: { 'x-auth-token': token }
             });
             setAccounts(response.data);
@@ -73,7 +73,7 @@ export default function Credits() {
     const handlePaymentSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/credits/pay', {
+            await api.post('/credits/pay', {
                 payable_id: selectedPayable.payable_id,
                 amount: parseFloat(paymentAmount),
                 payment_account: paymentAccount

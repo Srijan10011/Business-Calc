@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 import { Container, Box, Avatar, Typography, TextField, Button, Grid, Link as MuiLink, Alert } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import BusinessSetupDialog from './BusinessSetupDialog';
@@ -27,13 +27,22 @@ const Login = () => {
                 }
             };
             const body = JSON.stringify(user);
-            const res = await axios.post('http://localhost:5000/api/auth/login', body, config);
+            const res = await api.post('/auth/login', body, config);
             
-            // Store the token in localStorage
+            console.log('Login response:', res.data);
+            
+            // Store the token and role in localStorage
             localStorage.setItem('token', res.data.token);
+            if (res.data.role) {
+                localStorage.setItem('userRole', res.data.role);
+                console.log('Stored role:', res.data.role);
+            }
             
-            // Check if business setup is needed
-            if (res.data.needsBusinessSetup) {
+            // Check status
+            if (res.data.requestPending) {
+                alert('Your request is pending approval from the business owner.');
+                navigate('/dashboard');
+            } else if (res.data.needsBusinessSetup) {
                 setShowBusinessSetup(true);
             } else {
                 navigate('/dashboard');

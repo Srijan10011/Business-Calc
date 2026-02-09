@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Box, Avatar, Typography, TextField, Button, Grid, Link as MuiLink } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -39,13 +39,16 @@ const Register = () => {
                     }
                 };
                 const body = JSON.stringify(newUser);
-                const res = await axios.post('http://localhost:5000/api/auth/register', body, config);
+                const res = await api.post('/auth/register', body, config);
                 
                 // Store the token
                 localStorage.setItem('token', res.data.token);
                 
-                // Check if business setup is needed
-                if (res.data.needsBusinessSetup) {
+                // Check if request is pending approval
+                if (res.data.requestPending) {
+                    alert('Your request has been sent to the business owner for approval. You will be notified once approved.');
+                    navigate('/login');
+                } else if (res.data.needsBusinessSetup) {
                     setShowBusinessSetup(true);
                 } else {
                     navigate('/dashboard');

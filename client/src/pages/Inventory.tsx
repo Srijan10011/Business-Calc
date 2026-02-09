@@ -24,7 +24,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../../utils/api';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
     OK: 'success',
@@ -47,7 +47,7 @@ export default function Inventory() {
     const fetchItems = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/inventory', {
+            const response = await api.get('/inventory', {
                 headers: { 'x-auth-token': token }
             });
             setItems(response.data);
@@ -67,7 +67,7 @@ export default function Inventory() {
     const handleSaveItem = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/inventory', {
+            await api.post('/inventory', {
                 name,
                 stock: parseInt(stock),
                 unit_cost: parseFloat(unitCost),

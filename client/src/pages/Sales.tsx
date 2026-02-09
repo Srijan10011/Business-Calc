@@ -20,7 +20,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import Title from '../components/dashboard/Title';
 import AddSaleModal from '../components/sales/AddSaleModal';
-import axios from 'axios';
+import api from '../utils/api';
 
 const statusColors: Record<string, 'success' | 'warning'> = {
     Paid: 'success',
@@ -76,7 +76,7 @@ export default function Sales() {
     const fetchProducts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/products', {
+            const response = await api.get('/products', {
                 headers: { 'x-auth-token': token }
             });
             setProducts(response.data);
@@ -88,7 +88,7 @@ export default function Sales() {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts', {
+            const response = await api.get('/accounts', {
                 headers: { 'x-auth-token': token }
             });
             // Filter out Credit and Debit accounts for payment

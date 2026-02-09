@@ -4,7 +4,7 @@ import { Paper, Box, IconButton, Typography, Avatar, Tabs, Tab, CircularProgress
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../utils/api';
 
 function CustomTabPanel(props) {
     const { children, value, index, ...other } = props;

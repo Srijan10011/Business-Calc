@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupBusiness = exports.login = exports.register = exports.checkBusiness = void 0;
+exports.getUserInfo = exports.setupBusiness = exports.login = exports.register = exports.checkBusiness = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_1 = __importDefault(require("../db"));
@@ -70,9 +70,9 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
         const newUser = yield client.query('INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id, name, email, created_at', [name, email, hashedPassword]);
         const user_id = newUser.rows[0].user_id;
-        // Link user to business only if business_id was provided
+        // If business_id provided, create pending request instead of direct access
         if (finalBusinessId) {
-            yield client.query('INSERT INTO business_users (user_id, business_id) VALUES ($1, $2)', [user_id, finalBusinessId]);
+            yield client.query('INSERT INTO user_requests (user_id, business_id, status) VALUES ($1, $2, $3)', [user_id, finalBusinessId, 'pending']);
         }
         yield client.query('COMMIT');
         const payload = {
@@ -85,7 +85,8 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 throw err;
             res.json({
                 token,
-                needsBusinessSetup
+                needsBusinessSetup: !finalBusinessId,
+                requestPending: !!finalBusinessId
             });
         });
     }
@@ -129,13 +130,29 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             console.log('User name:', user.rows[0].name);
             console.log('User email:', user.rows[0].email);
             console.log('Token (first 50 chars):', (token === null || token === void 0 ? void 0 : token.substring(0, 50)) + '...');
-            // Check if user needs business setup
-            const businessCheck = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user.rows[0].user_id]);
-            const needsBusinessSetup = businessCheck.rows.length === 0;
+            // Check if user has business access or pending request
+            const businessCheck = yield db_1.default.query('SELECT business_id, role FROM business_users WHERE user_id = $1', [user.rows[0].user_id]);
+            let needsBusinessSetup = false;
+            let requestPending = false;
+            const role = businessCheck.rows.length > 0 ? businessCheck.rows[0].role : null;
+            if (businessCheck.rows.length === 0) {
+                // Check if there's a pending request
+                const requestCheck = yield db_1.default.query('SELECT status FROM user_requests WHERE user_id = $1 AND status = $2', [user.rows[0].user_id, 'pending']);
+                if (requestCheck.rows.length > 0) {
+                    requestPending = true;
+                }
+                else {
+                    needsBusinessSetup = true;
+                }
+            }
             console.log('Needs business setup:', needsBusinessSetup);
+            console.log('Request pending:', requestPending);
+            console.log('User role:', role);
             res.json({
                 token,
-                needsBusinessSetup
+                needsBusinessSetup,
+                requestPending,
+                role
             });
         }));
     }
@@ -156,8 +173,8 @@ const setupBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         // Create new business
         const newBusiness = yield db_1.default.query('INSERT INTO businesses (name, currency) VALUES ($1, $2) RETURNING business_id, name, currency', [businessName, currency]);
         const business_id = newBusiness.rows[0].business_id;
-        // Add to business_users table (no role column in schema)
-        yield db_1.default.query('INSERT INTO business_users (user_id, business_id) VALUES ($1, $2)', [user_id, business_id]);
+        // Add to business_users table with Owner role
+        yield db_1.default.query('INSERT INTO business_users (user_id, business_id, role) VALUES ($1, $2, $3)', [user_id, business_id, 'Owner']);
         // Create default accounts for the new business
         yield (0, accountController_1.createDefaultAccounts)(business_id);
         console.log('Business setup completed for user:', user_id, 'Business:', business_id);
@@ -172,3 +189,35 @@ const setupBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.setupBusiness = setupBusiness;
+const getUserInfo = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    try {
+        const userInfo = yield db_1.default.query(`SELECT u.user_id, u.name, u.email, bu.role, bu.role_id
+             FROM users u 
+             LEFT JOIN business_users bu ON u.user_id = bu.user_id 
+             WHERE u.user_id = $1`, [user_id]);
+        if (userInfo.rows.length === 0) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        const user = userInfo.rows[0];
+        // Get permissions
+        let permissions = [];
+        if (((_b = user.role) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'owner') {
+            permissions = ['*']; // All permissions
+        }
+        else if (user.role_id) {
+            const permResult = yield db_1.default.query(`SELECT p.permission_key 
+                 FROM role_permissions rp
+                 JOIN permissions p ON rp.permission_id = p.permission_id
+                 WHERE rp.role_id = $1`, [user.role_id]);
+            permissions = permResult.rows.map(row => row.permission_key);
+        }
+        res.json(Object.assign(Object.assign({}, user), { permissions }));
+    }
+    catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server error');
+    }
+});
+exports.getUserInfo = getUserInfo;

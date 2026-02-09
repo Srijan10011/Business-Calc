@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import { addProduct, getProducts, getProductById, addStock } from '../controllers/productController';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { loadPermissions, requirePermission } from '../middleware/permissionMiddleware';
 
 const router = Router();
 
-router.post('/', authMiddleware, addProduct);
-router.get('/', authMiddleware, getProducts);
-router.get('/:id', authMiddleware, getProductById);
-router.post('/add-stock', authMiddleware, addStock);
-router.delete('/:id', authMiddleware, async (req: any, res: any) => {
+router.post('/', authMiddleware, loadPermissions, requirePermission('products.create'), addProduct);
+router.get('/', authMiddleware, loadPermissions, requirePermission('products.view'), getProducts);
+router.get('/:id', authMiddleware, loadPermissions, requirePermission('products.view'), getProductById);
+router.post('/add-stock', authMiddleware, loadPermissions, requirePermission('products.edit'), addStock);
+router.delete('/:id', authMiddleware, loadPermissions, requirePermission('products.delete'), async (req: any, res: any) => {
     const { id } = req.params;
     const user_id = req.user.id;
 

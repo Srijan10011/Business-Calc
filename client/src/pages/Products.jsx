@@ -5,7 +5,7 @@ import Inventory from '@mui/icons-material/Inventory';
 import Title from '../components/dashboard/Title';
 import { Link } from 'react-router-dom';
 import AddProductModal from '../components/products/AddProductModal';
-import axios from 'axios';
+import api from '../utils/api';
 
 function Products() {
     const [open, setOpen] = React.useState(false);

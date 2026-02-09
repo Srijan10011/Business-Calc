@@ -10,7 +10,7 @@ import {
     Typography,
     MenuItem
 } from '@mui/material';
-import axios from 'axios';
+import api from '../../utils/api';
 
 interface BusinessSetupDialogProps {
     open: boolean;

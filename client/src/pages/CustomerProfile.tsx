@@ -13,7 +13,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../../utils/api';
 
 interface TabPanelProps {
     children?: React.ReactNode;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, TextField, MenuItem, Button } from '@mui/material';
-import axios from 'axios';
+import api from '../utils/api';
 
 const currencies = [
     { value: 'USD', label: 'US Dollar (USD)' },
@@ -38,7 +38,8 @@ const BusinessSetupDialog = ({ open, onComplete }) => {
                 }
             };
 
-            await axios.post('http://localhost:5000/api/auth/setup-business', formData, config);
+            await api.post('/auth/setup-business', formData, config);
+            localStorage.setItem('userRole', 'Owner');
             onComplete();
         } catch (err) {
             setError(err.response?.data?.msg || 'Failed to setup business');

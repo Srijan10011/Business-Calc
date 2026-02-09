@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Grid, Card, CardContent, Typography, Paper, Box, LinearProgress, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Paper, Box, LinearProgress, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Alert } from '@mui/material';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../utils/api';
 
 function SummaryCard({ title, value }) {
     return (
@@ -53,28 +53,49 @@ const Dashboard = () => {
     const [expenseAmount, setExpenseAmount] = React.useState('');
     const [expenseNote, setExpenseNote] = React.useState('');
     const [moneyFlow, setMoneyFlow] = React.useState({ incoming: {}, outgoing: {} });
+    const [userStatus, setUserStatus] = React.useState(null);
+
+    const checkUserStatus = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await api.get('/requests/status', {
+                headers: { 'x-auth-token': token }
+            });
+            setUserStatus(res.data);
+        } catch (error) {
+            console.error('Error checking user status:', error);
+        }
+    };
 
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts', {
+            const response = await api.get('/accounts', {
                 headers: { 'x-auth-token': token }
             });
             setAccounts(response.data);
         } catch (error) {
-            console.error('Error fetching accounts:', error);
+            if (error.response?.status === 403) {
+                setAccounts([]);
+            } else {
+                console.error('Error fetching accounts:', error);
+            }
         }
     };
 
     const fetchAssets = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/assets', {
+            const response = await api.get('/assets', {
                 headers: { 'x-auth-token': token }
             });
             setAssets(response.data);
         } catch (error) {
-            console.error('Error fetching assets:', error);
+            if (error.response?.status === 403) {
+                setAssets([]);
+            } else {
+                console.error('Error fetching assets:', error);
+            }
         }
     };
 
@@ -87,7 +108,7 @@ const Dashboard = () => {
     const fetchMoneyFlow = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/dashboard/money-flow', {
+            const response = await api.get('/dashboard/money-flow', {
                 headers: { 'x-auth-token': token }
             });
             setMoneyFlow(response.data);
@@ -97,6 +118,7 @@ const Dashboard = () => {
     };
 
     React.useEffect(() => {
+        checkUserStatus();
         fetchData();
     }, []);
 
@@ -116,7 +138,7 @@ const Dashboard = () => {
     const handleExpenseSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/expenses', {
+            await api.post('/expenses', {
                 account_id: expenseAccount,
                 amount: parseFloat(expenseAmount),
                 note: expenseNote
@@ -139,6 +161,13 @@ const Dashboard = () => {
 
     return (
         <React.Fragment>
+            {/* Pending Approval Banner */}
+            {userStatus?.status === 'pending' && (
+                <Alert severity="warning" sx={{ mb: 3 }}>
+                    Your request to join this business is pending approval from the owner. You will have limited access until approved.
+                </Alert>
+            )}
+
             {/* Header with Add Expense Button */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" component="h1">

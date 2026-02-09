@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
     Container,
@@ -50,7 +50,7 @@ const Register: React.FC = () => {
                     }
                 };
                 const body = JSON.stringify(newUser);
-                const res = await axios.post('http://localhost:5000/api/auth/register', body, config);
+                const res = await api.post('/auth/register', body, config);
                 
                 // Store the token
                 localStorage.setItem('token', res.data.token);

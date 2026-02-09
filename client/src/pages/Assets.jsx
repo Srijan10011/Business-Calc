@@ -3,7 +3,7 @@ import { Box, Button, Grid, Card, CardContent, Typography, LinearProgress } from
 import Add from '@mui/icons-material/Add';
 import Title from '../components/dashboard/Title';
 import AddAssetModal from '../components/assets/AddAssetModal';
-import axios from 'axios';
+import api from '../utils/api';
 
 function Assets() {
     const [open, setOpen] = React.useState(false);
@@ -12,7 +12,7 @@ function Assets() {
     const fetchAssets = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/assets', {
+            const response = await api.get('/assets', {
                 headers: { 'x-auth-token': token }
             });
             setAssets(response.data);

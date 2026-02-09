@@ -21,7 +21,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import Title from '../components/dashboard/Title';
 import { Link as RouterLink } from 'react-router-dom';
 import AddProductModal from '../components/products/AddProductModal';
-import axios from 'axios';
+import api from '../../utils/api';
 
 interface Product {
     id: number;

@@ -18,7 +18,7 @@ import {
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../utils/api';
 
 const Reports = () => {
     const [selectedMonth, setSelectedMonth] = React.useState(new Date().toISOString().slice(0, 7));

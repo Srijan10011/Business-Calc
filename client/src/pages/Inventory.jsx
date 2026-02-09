@@ -6,7 +6,7 @@ import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Visibility from '@mui/icons-material/Visibility';
 import Refresh from '@mui/icons-material/Refresh';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../utils/api';
 
 const statusColors = {
     OK: 'success',
@@ -45,7 +45,7 @@ function Inventory() {
     const fetchSuppliers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/credits', {
+            const response = await api.get('/credits', {
                 headers: { 'x-auth-token': token }
             });
             const uniqueSuppliers = [...new Set(response.data.map(p => p.party_name))];
@@ -58,7 +58,7 @@ function Inventory() {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts', {
+            const response = await api.get('/accounts', {
                 headers: { 'x-auth-token': token }
             });
             setAccounts(response.data);
@@ -70,7 +70,7 @@ function Inventory() {
     const fetchItems = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/inventory', {
+            const response = await api.get('/inventory', {
                 headers: { 'x-auth-token': token }
             });
             setItems(response.data);
@@ -102,7 +102,7 @@ function Inventory() {
             const token = localStorage.getItem('token');
             const totalAmount = skipPayment ? 0 : (parseFloat(stock) * parseFloat(unitCost));
             
-            await axios.post('http://localhost:5000/api/inventory', {
+            await api.post('/inventory', {
                 name,
                 stock: parseInt(stock),
                 unit_cost: parseFloat(unitCost),

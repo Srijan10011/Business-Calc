@@ -19,7 +19,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { Avatar, Menu, MenuItem, ListItemIcon } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import axios from 'axios';
+import api from '../../utils/api';
 
 const drawerWidth: number = 240;
 
@@ -104,7 +104,7 @@ function DashboardLayout() {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/auth/me', {
+        const response = await api.get('/auth/me', {
           headers: { 'x-auth-token': token }
         });
         setUser(response.data);

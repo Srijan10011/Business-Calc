@@ -7,6 +7,14 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
         // Get business_id from business_users table
         const userResult = await pool.query('SELECT business_id FROM business_users WHERE user_id = $1', [userId]);
+        
+        if (userResult.rows.length === 0) {
+            return res.json({ 
+                assets: [], 
+                message: 'No business access yet' 
+            });
+        }
+        
         const businessId = userResult.rows[0].business_id;
 
         // Get assets recovery progress
@@ -115,6 +123,14 @@ export const getMoneyFlow = async (req: Request, res: Response) => {
 
         // Get business_id from business_users table
         const userResult = await pool.query('SELECT business_id FROM business_users WHERE user_id = $1', [userId]);
+        
+        if (userResult.rows.length === 0) {
+            return res.json({ 
+                incoming: {}, 
+                outgoing: {} 
+            });
+        }
+        
         const businessId = userResult.rows[0].business_id;
 
         // Get current month's start and end dates

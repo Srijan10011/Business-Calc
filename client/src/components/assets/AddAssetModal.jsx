@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
-import axios from 'axios';
+import api from '../../utils/api';
 
 function AddAssetModal({ open, onClose }) {
     const [assetName, setAssetName] = useState('');
@@ -10,7 +10,7 @@ function AddAssetModal({ open, onClose }) {
     const handleSaveAsset = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/assets', {
+            await api.post('/assets', {
                 name: assetName,
                 category,
                 totalCost: parseFloat(totalCost)

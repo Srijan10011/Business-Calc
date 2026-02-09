@@ -4,7 +4,7 @@ import Add from '@mui/icons-material/Add';
 import Title from '../components/dashboard/Title';
 import { Link } from 'react-router-dom';
 import AddCustomerModal from '../components/customers/AddCustomerModal';
-import axios from 'axios';
+import api from '../utils/api';
 
 function Customers() {
     const [open, setOpen] = React.useState(false);
@@ -12,10 +12,7 @@ function Customers() {
 
     const fetchCustomers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/customers', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/customers');
             console.log('Customers data:', response.data);
             setCustomers(response.data);
         } catch (error) {

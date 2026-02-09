@@ -25,7 +25,7 @@ import {
     Select,
     MenuItem
 } from '@mui/material';
-import axios from 'axios';
+import api from '../utils/api';
 
 export default function TeamProfile() {
     const { memberId } = useParams();
@@ -106,7 +106,7 @@ export default function TeamProfile() {
             setPayoutError('');
             const token = localStorage.getItem('token');
             
-            await axios.post('http://localhost:5000/api/team/salary-payout', {
+            await api.post('/team/salary-payout', {
                 memberId,
                 amount: parseFloat(payoutAmount),
                 month: payoutMonth,
@@ -116,7 +116,7 @@ export default function TeamProfile() {
             });
             
             // Deduct from account balance (can go negative for advances)
-            await axios.post('http://localhost:5000/api/team/distribute-salary', {
+            await api.post('/team/distribute-salary', {
                 member_id: memberId,
                 amount: -parseFloat(payoutAmount), // Negative to deduct
                 month: payoutMonth
@@ -141,7 +141,7 @@ export default function TeamProfile() {
     const handleAddSalary = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/team/distribute-salary', {
+            await api.post('/team/distribute-salary', {
                 member_id: memberId,
                 amount: parseFloat(addSalaryAmount),
                 month: new Date().toISOString().slice(0, 7)

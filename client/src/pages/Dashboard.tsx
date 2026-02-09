@@ -9,7 +9,7 @@ import {
     CardContent,
 } from '@mui/material';
 import Title from '../components/dashboard/Title';
-import axios from 'axios';
+import api from '../../utils/api';
 
 // --- Reusable Summary Card Component ---
 interface SummaryCardProps {
@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/accounts', {
+            const response = await api.get('/accounts', {
                 headers: { 'x-auth-token': token }
             });
             setAccounts(response.data);

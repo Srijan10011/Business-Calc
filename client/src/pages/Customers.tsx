@@ -14,7 +14,7 @@ import AddIcon from '@mui/icons-material/Add';
 import Title from '../components/dashboard/Title';
 import { Link as RouterLink } from 'react-router-dom';
 import AddCustomerModal from '../components/customers/AddCustomerModal';
-import axios from 'axios';
+import api from '../../utils/api';
 
 export default function Customers() {
   const [open, setOpen] = React.useState(false);
@@ -23,7 +23,7 @@ export default function Customers() {
   const fetchCustomers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/customers', {
+      const response = await api.get('/customers', {
         headers: { 'x-auth-token': token }
       });
       setCustomers(response.data);

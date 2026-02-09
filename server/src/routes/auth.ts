@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { register, login, setupBusiness, checkBusiness } from '../controllers/authController';
+import { register, login, setupBusiness, checkBusiness, getUserInfo } from '../controllers/authController';
 import { authMiddleware } from '../middleware/authMiddleware';
 import pool from '../db';
 
@@ -15,20 +15,9 @@ router.post('/register', register);
 router.post('/login', login);
 
 // @route   GET api/auth/me
-// @desc    Get current user
+// @desc    Get current user with role
 // @access  Private
-router.get('/me', authMiddleware, async (req: any, res: any) => {
-    try {
-        const user = await pool.query(
-            'SELECT user_id, name, email, created_at FROM users WHERE user_id = $1',
-            [req.user.id]
-        );
-        res.json(user.rows[0]);
-    } catch (err: any) {
-        console.error(err.message);
-        res.status(500).send('Server error');
-    }
-});
+router.get('/me', authMiddleware, getUserInfo);
 
 // @route   GET api/auth/check-business/:business_id
 // @desc    Check if business exists

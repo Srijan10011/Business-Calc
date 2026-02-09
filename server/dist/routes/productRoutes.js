@@ -12,12 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const productController_1 = require("../controllers/productController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
+const permissionMiddleware_1 = require("../middleware/permissionMiddleware");
 const router = (0, express_1.Router)();
-router.post('/', authMiddleware_1.authMiddleware, productController_1.addProduct);
-router.get('/', authMiddleware_1.authMiddleware, productController_1.getProducts);
-router.get('/:id', authMiddleware_1.authMiddleware, productController_1.getProductById);
-router.post('/add-stock', authMiddleware_1.authMiddleware, productController_1.addStock);
-router.delete('/:id', authMiddleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('products.create'), productController_1.addProduct);
+router.get('/', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('products.view'), productController_1.getProducts);
+router.get('/:id', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('products.view'), productController_1.getProductById);
+router.post('/add-stock', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('products.edit'), productController_1.addStock);
+router.delete('/:id', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('products.delete'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const user_id = req.user.id;
     const client = yield require('../db').default.connect();

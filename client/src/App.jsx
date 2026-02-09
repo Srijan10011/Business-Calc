@@ -18,6 +18,7 @@ import Home from './pages/Home';
 import CustomerProfile from './pages/CustomerProfile';
 import ProductDetail from './pages/ProductDetail';
 import Credits from './pages/Credits';
+import Admin from './pages/Admin';
 import PrivateRoute from './components/PrivateRoute';
 
 const App = () => {
@@ -42,6 +43,7 @@ const App = () => {
             <Route path="/reports" element={<Reports />} />
             <Route path="/team" element={<Team />} />
             <Route path="/team/:memberId" element={<TeamProfile />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>

@@ -18,6 +18,8 @@ import expenseRoutes from './routes/expenseRoutes';
 import creditRoutes from './routes/creditRoutes';
 import teamRoutes from './routes/teamRoutes';
 import reportRoutes from './routes/reportRoutes';
+import requestRoutes from './routes/requestRoutes';
+import roleRoutes from './routes/roleRoutes';
 
 dotenv.config();
 
@@ -66,6 +68,8 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/credits', creditRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api', roleRoutes);
 
 const server = app.listen(port, () => {
   console.log(`⚡️[server]: Minimal Express Server is running at http://localhost:${port}`);

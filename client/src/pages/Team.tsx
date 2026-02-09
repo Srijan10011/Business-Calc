@@ -30,7 +30,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axios from 'axios';
+import api from '../../utils/api';
 
 interface TeamMember {
     member_id: string;
@@ -69,7 +69,7 @@ export default function Team() {
     const fetchTeamMembers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:5000/api/team', {
+            const response = await api.get('/team', {
                 headers: { 'x-auth-token': token }
             });
             setTeamMembers(response.data);
@@ -134,7 +134,7 @@ export default function Team() {
                     headers: { 'x-auth-token': token }
                 });
             } else {
-                await axios.post('http://localhost:5000/api/team', data, {
+                await api.post('/team', data, {
                     headers: { 'x-auth-token': token }
                 });
             }

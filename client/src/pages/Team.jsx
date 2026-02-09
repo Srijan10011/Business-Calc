@@ -32,7 +32,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axios from 'axios';
+import api from '../utils/api';
 
 export default function Team() {
     const navigate = useNavigate();
@@ -62,7 +62,7 @@ export default function Team() {
             setLoading(true);
             const token = localStorage.getItem('token');
             console.log('Fetching team members...');
-            const response = await axios.get('http://localhost:5000/api/team', {
+            const response = await api.get('/team', {
                 headers: { 'x-auth-token': token }
             });
             console.log('Team members response:', response.data);
@@ -131,7 +131,7 @@ export default function Team() {
                     headers: { 'x-auth-token': token }
                 });
             } else {
-                await axios.post('http://localhost:5000/api/team', data, {
+                await api.post('/team', data, {
                     headers: { 'x-auth-token': token }
                 });
             }
@@ -177,7 +177,7 @@ export default function Team() {
         if (salaryDistributionMode === 'automatic') {
             try {
                 const token = localStorage.getItem('token');
-                const response = await axios.post('http://localhost:5000/api/team/auto-distribute', {}, {
+                const response = await api.post('/team/auto-distribute', {}, {
                     headers: { 'x-auth-token': token }
                 });
                 alert(response.data.message);

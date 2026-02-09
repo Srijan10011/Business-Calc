@@ -7,6 +7,11 @@ export const getAssets = async (req: Request, res: Response) => {
 
         // Get business_id from business_users table
         const userResult = await pool.query('SELECT business_id FROM business_users WHERE user_id = $1', [userId]);
+        
+        if (userResult.rows.length === 0) {
+            return res.status(403).json({ msg: 'No business access' });
+        }
+        
         const businessId = userResult.rows[0].business_id;
 
         // Get assets data
@@ -48,6 +53,11 @@ export const createAsset = async (req: Request, res: Response) => {
 
         // Get business_id from business_users table
         const userResult = await pool.query('SELECT business_id FROM business_users WHERE user_id = $1', [userId]);
+        
+        if (userResult.rows.length === 0) {
+            return res.status(403).json({ msg: 'No business access' });
+        }
+        
         const businessId = userResult.rows[0].business_id;
 
         // Insert into cost_categories with type = category (from frontend)
