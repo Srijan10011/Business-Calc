@@ -20,6 +20,8 @@ import teamRoutes from './routes/teamRoutes';
 import reportRoutes from './routes/reportRoutes';
 import requestRoutes from './routes/requestRoutes';
 import roleRoutes from './routes/roleRoutes';
+import businessUsersRoutes from './routes/businessUsers';
+import dependencyRoutes from './routes/dependencyRoutes';
 
 dotenv.config();
 
@@ -69,6 +71,8 @@ app.use('/api/credits', creditRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/business-users', businessUsersRoutes);
+app.use('/api/dependencies', dependencyRoutes);
 app.use('/api', roleRoutes);
 
 const server = app.listen(port, () => {

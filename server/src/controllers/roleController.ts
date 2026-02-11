@@ -137,10 +137,70 @@ export const createRole = async (req: Request, res: Response) => {
         res.json(newRole.rows[0]);
     } catch (err: any) {
         await client.query('ROLLBACK');
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error creating role:', err.message);
+        
+        if (err.code === '23505') { // Unique constraint violation
+            return res.status(400).json({ msg: 'A role with this name already exists in your business' });
+        }
+        
+        res.status(500).json({ msg: 'Server error' });
     } finally {
         client.release();
+    }
+};
+
+// Check if role with same permissions exists
+export const checkDuplicateRole = async (req: Request, res: Response) => {
+    const user_id = req.user?.id;
+    const { permissions, exclude_role_id } = req.body;
+
+    try {
+        const businessResult = await pool.query(
+            'SELECT business_id FROM business_users WHERE user_id = $1',
+            [user_id]
+        );
+
+        if (businessResult.rows.length === 0) {
+            return res.status(403).json({ msg: 'No business access' });
+        }
+
+        const business_id = businessResult.rows[0].business_id;
+
+        if (!permissions || permissions.length === 0) {
+            return res.json({ exists: false });
+        }
+
+        // Get all roles with their permissions
+        const existingRoles = await pool.query(
+            `SELECT r.role_id, r.role_name, 
+                    array_agg(rp.permission_id ORDER BY rp.permission_id) as permission_ids
+             FROM roles r
+             LEFT JOIN role_permissions rp ON r.role_id = rp.role_id
+             WHERE r.business_id = $1 AND ($2::uuid IS NULL OR r.role_id != $2)
+             GROUP BY r.role_id, r.role_name`,
+            [business_id, exclude_role_id || null]
+        );
+
+        // Sort incoming permissions for comparison
+        const sortedPermissions = [...permissions].sort();
+
+        // Check if any existing role has the exact same permissions
+        for (const role of existingRoles.rows) {
+            const rolePermissions = role.permission_ids ? role.permission_ids.sort() : [];
+            
+            if (JSON.stringify(rolePermissions) === JSON.stringify(sortedPermissions)) {
+                return res.json({
+                    exists: true,
+                    role_id: role.role_id,
+                    role_name: role.role_name
+                });
+            }
+        }
+
+        res.json({ exists: false });
+    } catch (err: any) {
+        console.error('Error checking duplicate role:', err.message);
+        res.status(500).json({ msg: 'Server error' });
     }
 };
 

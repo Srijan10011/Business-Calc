@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Grid, Card, CardContent, Typography, Paper, Box, LinearProgress, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Alert } from '@mui/material';
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
+import { usePermissions } from '../context/PermissionContext';
 
 function SummaryCard({ title, value }) {
     return (
@@ -45,6 +46,7 @@ function AssetProgress({ name, value, progress, status }) {
 }
 
 const Dashboard = () => {
+    const { hasPermission } = usePermissions();
     const [accounts, setAccounts] = React.useState([]);
     const [assets, setAssets] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
@@ -200,37 +202,42 @@ const Dashboard = () => {
             <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                     <Title>Money Flow (This Month)</Title>
-                    <Grid container spacing={4}>
-                        <Grid item xs={5}>
-                            <Typography variant="subtitle1" sx={{ color: 'green' }}>Incoming</Typography>
-                            <Box component="ul" sx={{ pl: 2 }}>
-                                <li><Typography>Cash: ₹{(moneyFlow.incoming.cash || 0).toLocaleString('en-IN')}</Typography></li>
-                                <li><Typography>Bank: ₹{(moneyFlow.incoming.bank || 0).toLocaleString('en-IN')}</Typography></li>
-                                <li><Typography>Credit: ₹{(moneyFlow.incoming.credit || 0).toLocaleString('en-IN')}</Typography></li>
-                                {/* Add empty spaces to match outgoing length */}
-                                {Array.from({ length: Math.max(0, (Object.keys(moneyFlow.outgoing.cogs || {}).length + 2) - 3) }).map((_, index) => (
-                                    <div key={index} style={{ height: '24px' }}></div>
-                                ))}
-                                <li><Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1, color: 'green' }}>
-                                    Total: ₹{((moneyFlow.incoming.cash || 0) + (moneyFlow.incoming.bank || 0) + (moneyFlow.incoming.credit || 0)).toLocaleString('en-IN')}
-                                </Typography></li>
-                            </Box>
+                    {hasPermission('finance.view') ? (
+                        <Grid container spacing={4}>
+                            <Grid item xs={5}>
+                                <Typography variant="subtitle1" sx={{ color: 'green' }}>Incoming</Typography>
+                                <Box component="ul" sx={{ pl: 2 }}>
+                                    <li><Typography>Cash: ₹{(moneyFlow.incoming.cash || 0).toLocaleString('en-IN')}</Typography></li>
+                                    <li><Typography>Bank: ₹{(moneyFlow.incoming.bank || 0).toLocaleString('en-IN')}</Typography></li>
+                                    <li><Typography>Credit: ₹{(moneyFlow.incoming.credit || 0).toLocaleString('en-IN')}</Typography></li>
+                                    {Array.from({ length: Math.max(0, (Object.keys(moneyFlow.outgoing.cogs || {}).length + 2) - 3) }).map((_, index) => (
+                                        <div key={index} style={{ height: '24px' }}></div>
+                                    ))}
+                                    <li><Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1, color: 'green' }}>
+                                        Total: ₹{((moneyFlow.incoming.cash || 0) + (moneyFlow.incoming.bank || 0) + (moneyFlow.incoming.credit || 0)).toLocaleString('en-IN')}
+                                    </Typography></li>
+                                </Box>
+                            </Grid>
+                            <Grid item xs={2}></Grid>
+                            <Grid item xs={5}>
+                                <Typography variant="subtitle1" sx={{ color: 'red' }}>Outgoing</Typography>
+                                <Box component="ul" sx={{ pl: 2 }}>
+                                    <li><Typography>Inventory: ₹{(moneyFlow.outgoing.inventory || 0).toLocaleString('en-IN')}</Typography></li>
+                                    {Object.entries(moneyFlow.outgoing.cogs || {}).map(([category, amount]) => (
+                                        <li key={category}><Typography>{category}: ₹{amount.toLocaleString('en-IN')}</Typography></li>
+                                    ))}
+                                    <li><Typography>General Expenses: ₹{(moneyFlow.outgoing.general || 0).toLocaleString('en-IN')}</Typography></li>
+                                    <li><Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1, color: 'red' }}>
+                                        Total: ₹{((moneyFlow.outgoing.inventory || 0) + Object.values(moneyFlow.outgoing.cogs || {}).reduce((sum, amount) => sum + amount, 0) + (moneyFlow.outgoing.general || 0)).toLocaleString('en-IN')}
+                                    </Typography></li>
+                                </Box>
+                            </Grid>
                         </Grid>
-                        <Grid item xs={2}></Grid>
-                        <Grid item xs={5}>
-                            <Typography variant="subtitle1" sx={{ color: 'red' }}>Outgoing</Typography>
-                            <Box component="ul" sx={{ pl: 2 }}>
-                                <li><Typography>Inventory: ₹{(moneyFlow.outgoing.inventory || 0).toLocaleString('en-IN')}</Typography></li>
-                                {Object.entries(moneyFlow.outgoing.cogs || {}).map(([category, amount]) => (
-                                    <li key={category}><Typography>{category}: ₹{amount.toLocaleString('en-IN')}</Typography></li>
-                                ))}
-                                <li><Typography>General Expenses: ₹{(moneyFlow.outgoing.general || 0).toLocaleString('en-IN')}</Typography></li>
-                                <li><Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 1, color: 'red' }}>
-                                    Total: ₹{((moneyFlow.outgoing.inventory || 0) + Object.values(moneyFlow.outgoing.cogs || {}).reduce((sum, amount) => sum + amount, 0) + (moneyFlow.outgoing.general || 0)).toLocaleString('en-IN')}
-                                </Typography></li>
-                            </Box>
-                        </Grid>
-                    </Grid>
+                    ) : (
+                        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                            No permission to view financial data
+                        </Typography>
+                    )}
                 </Paper>
             </Grid>
 
@@ -238,19 +245,25 @@ const Dashboard = () => {
             <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
                     <Title>Assets Recovery Progress</Title>
-                    {assets.length > 0 ? (
-                        assets.map((asset) => (
-                            <AssetProgress 
-                                key={asset.id}
-                                name={asset.name} 
-                                value={`₹${asset.cost.toLocaleString('en-IN')}`} 
-                                progress={asset.progress} 
-                                status={asset.status} 
+                    {hasPermission('assets.view') ? (
+                        assets.length > 0 ? (
+                            assets.map((asset) => (
+                                <AssetProgress 
+                                    key={asset.id}
+                                    name={asset.name} 
+                                    value={`₹${asset.cost.toLocaleString('en-IN')}`} 
+                                    progress={asset.progress} 
+                                    status={asset.status} 
                             />
                         ))
                     ) : (
                         <Typography variant="body2" color="text.secondary" align="center" sx={{mt: 2}}>
                             No assets found. Add assets to track recovery progress.
+                        </Typography>
+                    )
+                    ) : (
+                        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                            No permission to view assets
                         </Typography>
                     )}
                 </Paper>

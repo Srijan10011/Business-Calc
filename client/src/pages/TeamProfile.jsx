@@ -51,7 +51,7 @@ export default function TeamProfile() {
     const fetchMemberData = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/team/${memberId}`, {
+            const response = await api.get(`/team/${memberId}`, {
                 headers: { 'x-auth-token': token }
             });
             setMember(response.data);
@@ -63,7 +63,7 @@ export default function TeamProfile() {
     const fetchAccountBalance = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/team/${memberId}/account`, {
+            const response = await api.get(`/team/${memberId}/account`, {
                 headers: { 'x-auth-token': token }
             });
             setAccountBalance(response.data.current_balance || 0);
@@ -75,7 +75,7 @@ export default function TeamProfile() {
     const fetchAttendance = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/team/${memberId}/attendance`, {
+            const response = await api.get(`/team/${memberId}/attendance`, {
                 headers: { 'x-auth-token': token }
             });
             setAttendance(response.data);
@@ -87,7 +87,7 @@ export default function TeamProfile() {
     const fetchSalaryHistory = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/team/${memberId}/salary-history`, {
+            const response = await api.get(`/team/${memberId}/salary-history`, {
                 headers: { 'x-auth-token': token }
             });
             setSalaryHistory(response.data);

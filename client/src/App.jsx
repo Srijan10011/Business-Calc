@@ -20,34 +20,41 @@ import ProductDetail from './pages/ProductDetail';
 import Credits from './pages/Credits';
 import Admin from './pages/Admin';
 import PrivateRoute from './components/PrivateRoute';
+import ProtectedRoute from './components/ProtectedRoute';
+import { PermissionProvider } from './context/PermissionContext';
+import { SnackbarProvider } from './context/SnackbarContext';
 
 const App = () => {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route element={<PrivateRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/customers/:customerId" element={<CustomerProfile />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/finance" element={<Finance />} />
-            <Route path="/credits" element={<Credits />} />
-            <Route path="/assets" element={<Assets />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:productId" element={<ProductDetail />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/team/:memberId" element={<TeamProfile />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/settings" element={<Settings />} />
+      <SnackbarProvider>
+        <PermissionProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route element={<PrivateRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/sales" element={<ProtectedRoute permission="sales.view"><Sales /></ProtectedRoute>} />
+              <Route path="/customers" element={<ProtectedRoute permission="customers.view"><Customers /></ProtectedRoute>} />
+              <Route path="/customers/:customerId" element={<ProtectedRoute permission="customers.view"><CustomerProfile /></ProtectedRoute>} />
+              <Route path="/inventory" element={<ProtectedRoute permission="inventory.view"><Inventory /></ProtectedRoute>} />
+              <Route path="/finance" element={<ProtectedRoute permission="finance.view"><Finance /></ProtectedRoute>} />
+              <Route path="/credits" element={<ProtectedRoute permission="credits.view"><Credits /></ProtectedRoute>} />
+              <Route path="/assets" element={<ProtectedRoute permission="assets.view"><Assets /></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute permission="products.view"><Products /></ProtectedRoute>} />
+              <Route path="/products/:productId" element={<ProtectedRoute permission="products.view"><ProductDetail /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute permission="reports.view"><Reports /></ProtectedRoute>} />
+              <Route path="/team" element={<ProtectedRoute permission="team.view"><Team /></ProtectedRoute>} />
+              <Route path="/team/:memberId" element={<ProtectedRoute permission="team.view"><TeamProfile /></ProtectedRoute>} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+        </PermissionProvider>
+      </SnackbarProvider>
     </BrowserRouter>
   );
 };

@@ -62,7 +62,7 @@ export default function Sales() {
             params.append('page', currentPage.toString());
             params.append('limit', '20');
             
-            const response = await axios.get(`http://localhost:5000/api/sales?${params}`, {
+            const response = await api.get(`/sales?${params}`, {
                 headers: { 'x-auth-token': token }
             });
             setSales(response.data.sales);
@@ -76,7 +76,7 @@ export default function Sales() {
     const fetchProducts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get('/products', {
+            const response = await api.get('/dependencies/products', {
                 headers: { 'x-auth-token': token }
             });
             setProducts(response.data);
@@ -88,7 +88,7 @@ export default function Sales() {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get('/accounts', {
+            const response = await api.get('/dependencies/accounts', {
                 headers: { 'x-auth-token': token }
             });
             // Filter out Credit and Debit accounts for payment
@@ -139,8 +139,8 @@ export default function Sales() {
     const handlePaymentSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post(
-                `http://localhost:5000/api/sales/${selectedSale.sale_id}/payment`,
+            await api.post(
+                `/sales/${selectedSale.sale_id}/payment`,
                 { 
                     amount: parseFloat(paymentAmount),
                     account_id: selectedAccount
@@ -168,8 +168,8 @@ export default function Sales() {
     const handleStockSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post(
-                'http://localhost:5000/api/products/add-stock',
+            await api.post(
+                '/products/add-stock',
                 { product_id: selectedProduct, stock: parseInt(stockAmount) },
                 { headers: { 'x-auth-token': token } }
             );

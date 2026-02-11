@@ -29,7 +29,7 @@ const Reports = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:5000/api/reports/monthly?month=${selectedMonth}`, {
+            const response = await api.get(`/reports/monthly?month=${selectedMonth}`, {
                 headers: { 'x-auth-token': token }
             });
             setReportData(response.data);

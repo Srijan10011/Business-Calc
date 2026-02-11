@@ -175,6 +175,11 @@ export default function Finance() {
             fetchCOGSData();
         } catch (error) {
             console.error('Error processing COGS payout:', error);
+            if (error.response?.status === 403) {
+                alert('Permission Denied: You do not have permission to process payouts');
+            } else {
+                alert('Error processing payout: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 

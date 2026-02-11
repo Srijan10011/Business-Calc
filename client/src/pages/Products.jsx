@@ -59,8 +59,8 @@ function Products() {
     const handleStockSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.post(
-                'http://localhost:5000/api/products/add-stock',
+            await api.post(
+                '/products/add-stock',
                 { product_id: selectedProduct, stock: parseInt(stockAmount) },
                 { headers: { 'x-auth-token': token } }
             );

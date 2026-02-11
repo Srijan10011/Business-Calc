@@ -58,7 +58,7 @@ function Inventory() {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get('/accounts', {
+            const response = await api.get('/dependencies/accounts', {
                 headers: { 'x-auth-token': token }
             });
             setAccounts(response.data);
@@ -117,6 +117,11 @@ function Inventory() {
             fetchItems();
         } catch (error) {
             console.error('Error adding inventory item:', error);
+            if (error.response?.status === 403) {
+                alert('Permission Denied: You do not have permission to create inventory items');
+            } else {
+                alert('Error adding inventory item: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 
@@ -160,8 +165,8 @@ function Inventory() {
                 ? parseFloat(stockQuantity) * parseFloat(selectedItemData?.unit_cost || 0) 
                 : 0;
                 
-            await axios.patch(
-                `http://localhost:5000/api/inventory/${selectedItem}/stock`,
+            await api.patch(
+                `/inventory/${selectedItem}/stock`,
                 { 
                     quantity: parseInt(stockQuantity), 
                     operation: stockOperation,

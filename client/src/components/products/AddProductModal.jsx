@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Button } from '@mui/material';
+import api from '../../utils/api';
 
 function AddProductModal({ open, onClose }) {
     const [name, setName] = useState('');
@@ -9,28 +10,19 @@ function AddProductModal({ open, onClose }) {
     const handleSaveProduct = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/products', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': token || '',
-                },
-                body: JSON.stringify({
-                    name,
-                    price: parseFloat(price),
-                    stock: parseInt(stock),
-                }),
+            await api.post('/products', {
+                name,
+                price: parseFloat(price),
+                stock: parseInt(stock),
+            }, {
+                headers: { 'x-auth-token': token }
             });
 
-            if (response.ok) {
-                console.log('Product added successfully');
-                setName('');
-                setPrice('');
-                setStock('');
-                onClose();
-            } else {
-                console.error('Failed to add product');
-            }
+            console.log('Product added successfully');
+            setName('');
+            setPrice('');
+            setStock('');
+            onClose();
         } catch (error) {
             console.error('Error adding product:', error);
         }

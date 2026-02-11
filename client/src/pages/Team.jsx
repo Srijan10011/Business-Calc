@@ -61,11 +61,9 @@ export default function Team() {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            console.log('Fetching team members...');
             const response = await api.get('/team', {
                 headers: { 'x-auth-token': token }
             });
-            console.log('Team members response:', response.data);
             setTeamMembers(response.data);
         } catch (error) {
             console.error('Error fetching team members:', error);
@@ -127,7 +125,7 @@ export default function Team() {
             };
 
             if (editingMember) {
-                await axios.put(`http://localhost:5000/api/team/${editingMember.member_id}`, data, {
+                await api.put(`/team/${editingMember.member_id}`, data, {
                     headers: { 'x-auth-token': token }
                 });
             } else {
@@ -151,7 +149,7 @@ export default function Team() {
 
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/api/team/${memberId}`, {
+            await api.delete(`/team/${memberId}`, {
                 headers: { 'x-auth-token': token }
             });
             await fetchTeamMembers();

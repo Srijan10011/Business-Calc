@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
+import { usePermissions } from '../context/PermissionContext';
 
 const statusColors = {
     Pending: 'error',
@@ -27,6 +28,7 @@ const statusColors = {
 };
 
 export default function Credits() {
+    const { hasPermission, loading } = usePermissions();
     const [payables, setPayables] = React.useState([]);
     const [accounts, setAccounts] = React.useState([]);
     const [paymentDialog, setPaymentDialog] = React.useState(false);
@@ -35,9 +37,11 @@ export default function Credits() {
     const [paymentAccount, setPaymentAccount] = React.useState('');
 
     React.useEffect(() => {
-        fetchPayables();
-        fetchAccounts();
-    }, []);
+        if (!loading && hasPermission('credits.view')) {
+            fetchPayables();
+            fetchAccounts();
+        }
+    }, [loading, hasPermission]);
 
     const fetchPayables = async () => {
         try {
@@ -54,7 +58,7 @@ export default function Credits() {
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get('/accounts', {
+            const response = await api.get('/dependencies/accounts', {
                 headers: { 'x-auth-token': token }
             });
             setAccounts(response.data);

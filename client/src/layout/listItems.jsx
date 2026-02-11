@@ -15,10 +15,11 @@ import StoreIcon from "@mui/icons-material/Store";
 import SettingsIcon from "@mui/icons-material/Settings";
 import GroupIcon from "@mui/icons-material/Group";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import { usePermissions } from "../context/PermissionContext";
 
 export const MainListItems = () => {
   const userRole = localStorage.getItem('userRole');
-  console.log('Current userRole from localStorage:', userRole);
+  const { hasPermission } = usePermissions();
 
   return (
     <React.Fragment>
@@ -28,60 +29,88 @@ export const MainListItems = () => {
         </ListItemIcon>
         <ListItemText primary="Dashboard"/>
       </ListItemButton>
-      <ListItemButton component={Link} to="/sales">
-        <ListItemIcon>
-          <ShoppingCartIcon />
-        </ListItemIcon>
-        <ListItemText primary="Sales"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/customers">
-        <ListItemIcon>
-          <PeopleIcon />
-        </ListItemIcon>
-        <ListItemText primary="Customers"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/inventory">
-        <ListItemIcon>
-          <StoreIcon />
-        </ListItemIcon>
-        <ListItemText primary="Inventory"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/finance">
-        <ListItemIcon>
-          <MonetizationOnIcon />
-        </ListItemIcon>
-        <ListItemText primary="Finance"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/credits">
-        <ListItemIcon>
-          <CreditCardIcon />
-        </ListItemIcon>
-        <ListItemText primary="Credits"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/assets">
-        <ListItemIcon>
-          <BusinessCenterIcon />
-        </ListItemIcon>
-        <ListItemText primary="Assets"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/products">
-        <ListItemIcon>
-          <LayersIcon />
-        </ListItemIcon>
-        <ListItemText primary="Products"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/reports">
-        <ListItemIcon>
-          <BarChartIcon />
-        </ListItemIcon>
-        <ListItemText primary="Reports"/>
-      </ListItemButton>
-      <ListItemButton component={Link} to="/team">
-        <ListItemIcon>
-          <GroupIcon />
-        </ListItemIcon>
-        <ListItemText primary="Team"/>
-      </ListItemButton>
+      
+      {hasPermission('sales.view') && (
+        <ListItemButton component={Link} to="/sales">
+          <ListItemIcon>
+            <ShoppingCartIcon />
+          </ListItemIcon>
+          <ListItemText primary="Sales"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('customers.view') && (
+        <ListItemButton component={Link} to="/customers">
+          <ListItemIcon>
+            <PeopleIcon />
+          </ListItemIcon>
+          <ListItemText primary="Customers"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('inventory.view') && (
+        <ListItemButton component={Link} to="/inventory">
+          <ListItemIcon>
+            <StoreIcon />
+          </ListItemIcon>
+          <ListItemText primary="Inventory"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('finance.view') && (
+        <ListItemButton component={Link} to="/finance">
+          <ListItemIcon>
+            <MonetizationOnIcon />
+          </ListItemIcon>
+          <ListItemText primary="Finance"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('credits.view') && (
+        <ListItemButton component={Link} to="/credits">
+          <ListItemIcon>
+            <CreditCardIcon />
+          </ListItemIcon>
+          <ListItemText primary="Credits"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('assets.view') && (
+        <ListItemButton component={Link} to="/assets">
+          <ListItemIcon>
+            <BusinessCenterIcon />
+          </ListItemIcon>
+          <ListItemText primary="Assets"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('products.view') && (
+        <ListItemButton component={Link} to="/products">
+          <ListItemIcon>
+            <LayersIcon />
+          </ListItemIcon>
+          <ListItemText primary="Products"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('reports.view') && (
+        <ListItemButton component={Link} to="/reports">
+          <ListItemIcon>
+            <BarChartIcon />
+          </ListItemIcon>
+          <ListItemText primary="Reports"/>
+        </ListItemButton>
+      )}
+      
+      {hasPermission('team.view') && (
+        <ListItemButton component={Link} to="/team">
+          <ListItemIcon>
+            <GroupIcon />
+          </ListItemIcon>
+          <ListItemText primary="Team"/>
+        </ListItemButton>
+      )}
+      
       {userRole && userRole.toLowerCase() === 'owner' && (
         <ListItemButton component={Link} to="/admin">
           <ListItemIcon>

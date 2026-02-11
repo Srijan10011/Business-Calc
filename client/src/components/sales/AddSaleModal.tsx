@@ -85,7 +85,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const fetchProducts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get('/products', {
+            const response = await api.get('/dependencies/products', {
                 headers: { 'x-auth-token': token }
             });
             setProducts(response.data);
@@ -109,7 +109,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const fetchCustomers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get('/customers', {
+            const response = await api.get('/dependencies/customers', {
                 headers: { 'x-auth-token': token }
             });
             setCustomers(response.data);
@@ -124,7 +124,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
     const fetchAccounts = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await api.get('/accounts', {
+            const response = await api.get('/dependencies/accounts', {
                 headers: { 'x-auth-token': token }
             });
             

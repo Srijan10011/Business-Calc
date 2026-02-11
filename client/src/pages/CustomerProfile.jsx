@@ -45,7 +45,7 @@ const CustomerProfile = () => {
         const fetchCustomer = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await axios.get(`http://localhost:5000/api/customers/${customerId}`, {
+                const response = await api.get(`/customers/${customerId}`, {
                     headers: { 'x-auth-token': token }
                 });
                 setCustomer(response.data);
@@ -63,7 +63,7 @@ const CustomerProfile = () => {
         const fetchSales = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await axios.get(`http://localhost:5000/api/customers/${customerId}/sales`, {
+                const response = await api.get(`/customers/${customerId}/sales`, {
                     headers: { 'x-auth-token': token }
                 });
                 setSales(response.data);
