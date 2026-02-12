@@ -88,7 +88,9 @@ export default function Credits() {
             fetchPayables();
         } catch (error) {
             console.error('Error making payment:', error);
-            alert('Error: ' + (error.response?.data?.message || error.message));
+            if (error.response?.status !== 403) {
+                alert('Error: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 

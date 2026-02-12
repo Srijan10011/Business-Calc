@@ -21,6 +21,7 @@ import AddIcon from '@mui/icons-material/Add';
 import Title from '../components/dashboard/Title';
 import AddSaleModal from '../components/sales/AddSaleModal';
 import api from '../utils/api';
+import { usePermissions } from '../context/PermissionContext';
 
 const statusColors = {
     Paid: 'success',
@@ -28,6 +29,7 @@ const statusColors = {
 };
 
 export default function Sales() {
+    const { hasPermission } = usePermissions();
     const [open, setOpen] = useState(false);
     const [sales, setSales] = useState([]);
     const [paymentDialog, setPaymentDialog] = useState(false);
@@ -186,13 +188,15 @@ export default function Sales() {
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Title>Recent Sales</Title>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpen}
-        >
-          Add Sale
-        </Button>
+        {hasPermission('sales.create') && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpen}
+          >
+            Add Sale
+          </Button>
+        )}
       </Box>
       
       {/* Filter Section */}

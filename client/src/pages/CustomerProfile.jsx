@@ -39,6 +39,7 @@ const CustomerProfile = () => {
     const [value, setValue] = React.useState(0);
     const [customer, setCustomer] = React.useState(null);
     const [sales, setSales] = React.useState([]);
+    const [payments, setPayments] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
 
     React.useEffect(() => {
@@ -72,8 +73,22 @@ const CustomerProfile = () => {
             }
         };
 
+        const fetchPayments = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await api.get(`/customers/${customerId}/payments`, {
+                    headers: { 'x-auth-token': token }
+                });
+                setPayments(response.data);
+            } catch (error) {
+                console.error('Error fetching payments:', error);
+            }
+        };
+
         if (value === 1) {
             fetchSales();
+        } else if (value === 2) {
+            fetchPayments();
         }
     }, [customerId, value]);
 
@@ -163,7 +178,30 @@ const CustomerProfile = () => {
             </CustomTabPanel>
             <CustomTabPanel value={value} index={2}>
                 <Title>Payments</Title>
-                <Typography variant="body1">Payment details will be displayed here.</Typography>
+                {payments.length === 0 ? (
+                    <Typography variant="body1">No payment history found.</Typography>
+                ) : (
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Date</TableCell>
+                                <TableCell>Amount</TableCell>
+                                <TableCell>Payment Type</TableCell>
+                                <TableCell>Source</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {payments.map((payment, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{new Date(payment.payment_date).toLocaleDateString()}</TableCell>
+                                    <TableCell>₹{parseFloat(payment.amount).toLocaleString('en-IN')}</TableCell>
+                                    <TableCell>{payment.payment_type}</TableCell>
+                                    <TableCell>{payment.payment_source}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </CustomTabPanel>
             <CustomTabPanel value={value} index={3}>
                 <Title>Notes</Title>

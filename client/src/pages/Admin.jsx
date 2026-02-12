@@ -536,7 +536,19 @@ const Admin = () => {
                             </IconButton>
                           </Box>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">No Role Assigned</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" color="text.secondary">No Role Assigned</Typography>
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              onClick={() => {
+                                setSelectedUserForView(user);
+                                setChangeRoleDialog(true);
+                              }}
+                            >
+                              Assign Role
+                            </Button>
+                          </Box>
                         )}
                       </TableCell>
                       <TableCell>{user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</TableCell>
@@ -786,14 +798,14 @@ const Admin = () => {
 
       {/* Change Role Dialog */}
       <Dialog open={changeRoleDialog} onClose={() => setChangeRoleDialog(false)}>
-        <DialogTitle>Change User Role</DialogTitle>
+        <DialogTitle>{selectedUserForView?.role_name ? 'Change User Role' : 'Assign Role'}</DialogTitle>
         <DialogContent>
           <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Select New Role</InputLabel>
+            <InputLabel>Select Role</InputLabel>
             <Select
               value={newRoleForUser}
               onChange={(e) => setNewRoleForUser(e.target.value)}
-              label="Select New Role"
+              label="Select Role"
             >
               {roles.filter(r => r.role_id !== selectedUserForView?.role_id).map(role => (
                 <MenuItem key={role.role_id} value={role.role_id}>
@@ -831,10 +843,14 @@ const Admin = () => {
 
       {/* Confirm Role Change Dialog */}
       <Dialog open={confirmChangeDialog} onClose={() => setConfirmChangeDialog(false)}>
-        <DialogTitle>Confirm Role Change</DialogTitle>
+        <DialogTitle>{selectedUserForView?.role_name ? 'Confirm Role Change' : 'Confirm Role Assignment'}</DialogTitle>
         <DialogContent>
           <Typography>
-            Confirming this will change the role of <strong>{selectedUserForView?.name}</strong> from <strong>{selectedUserForView?.role_name || 'No Role'}</strong> to <strong>{roles.find(r => r.role_id === newRoleForUser)?.role_name}</strong>
+            {selectedUserForView?.role_name ? (
+              <>Confirming this will change the role of <strong>{selectedUserForView?.name}</strong> from <strong>{selectedUserForView?.role_name}</strong> to <strong>{roles.find(r => r.role_id === newRoleForUser)?.role_name}</strong></>
+            ) : (
+              <>Confirming this will assign <strong>{selectedUserForView?.name}</strong> the role of <strong>{roles.find(r => r.role_id === newRoleForUser)?.role_name}</strong></>
+            )}
           </Typography>
         </DialogContent>
         <DialogActions>

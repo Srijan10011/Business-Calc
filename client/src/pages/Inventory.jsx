@@ -117,9 +117,7 @@ function Inventory() {
             fetchItems();
         } catch (error) {
             console.error('Error adding inventory item:', error);
-            if (error.response?.status === 403) {
-                alert('Permission Denied: You do not have permission to create inventory items');
-            } else {
+            if (error.response?.status !== 403) {
                 alert('Error adding inventory item: ' + (error.response?.data?.message || error.message));
             }
         }
@@ -180,7 +178,9 @@ function Inventory() {
             fetchItems();
         } catch (error) {
             console.error('Error updating stock:', error);
-            alert('Error updating stock: ' + (error.response?.data?.message || error.message));
+            if (error.response?.status !== 403) {
+                alert('Error updating stock: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 

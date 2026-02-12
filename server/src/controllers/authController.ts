@@ -35,7 +35,9 @@ export const register = async (req: Request, res: Response) => {
     try {
         await client.query('BEGIN');
 
-        const user = await client.query('SELECT * FROM users WHERE email = $1', [email]);
+        const normalizedEmail = email.toLowerCase().trim();
+
+        const user = await client.query('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
 
         if (user.rows.length > 0) {
             await client.query('ROLLBACK');
@@ -73,7 +75,7 @@ export const register = async (req: Request, res: Response) => {
 
         const newUser = await client.query(
             'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id, name, email, created_at',
-            [name, email, hashedPassword]
+            [name, normalizedEmail, hashedPassword]
         );
 
         const user_id = newUser.rows[0].user_id;
@@ -123,7 +125,9 @@ export const login = async (req: Request, res: Response) => {
         console.log('=== LOGIN ATTEMPT ===');
         console.log('Email:', email);
         
-        const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        const user = await pool.query('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
 
         if (user.rows.length === 0) {
             console.log('User not found');

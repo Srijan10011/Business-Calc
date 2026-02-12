@@ -8,5 +8,6 @@ const router = (0, express_1.Router)();
 router.get('/', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.view'), customerController_1.getCustomers);
 router.get('/:id', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.view'), customerController_1.getCustomerById);
 router.get('/:id/sales', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.view'), customerController_1.getCustomerSales);
+router.get('/:id/payments', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.view'), customerController_1.getCustomerPayments);
 router.post('/', authMiddleware_1.authMiddleware, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.create'), customerController_1.addCustomer);
 exports.default = router;
