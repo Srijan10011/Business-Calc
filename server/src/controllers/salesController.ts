@@ -133,6 +133,14 @@ export const addSale = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Customer selection is required' });
         }
 
+        if (parseFloat(rate) < 0) {
+            return res.status(400).json({ message: 'Rate cannot be negative' });
+        }
+
+        if (parseInt(quantity) < 0) {
+            return res.status(400).json({ message: 'Quantity cannot be negative' });
+        }
+
         // Get business_id from business_users table
         const businessResult = await pool.query(
             'SELECT business_id FROM business_users WHERE user_id = $1',

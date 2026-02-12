@@ -107,6 +107,10 @@ const transferFunds = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ message: "Invalid transfer amount" });
+            throw Error;
+        }
         // Get business_id from business_users table
         const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
         if (businessResult.rows.length === 0) {
@@ -163,6 +167,9 @@ const transferCOGS = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
+        }
+        if (!amount || parseFloat(amount) <= 0) {
+            return res.status(400).json({ message: 'Amount must be positive' });
         }
         const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
         if (businessResult.rows.length === 0) {

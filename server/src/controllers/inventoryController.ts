@@ -10,6 +10,14 @@ export const addInventoryItem = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: name, stock, unit_cost, type' });
         }
 
+        if (parseInt(stock) < 0) {
+            return res.status(400).json({ message: 'Stock cannot be negative' });
+        }
+
+        if (parseFloat(unit_cost) < 0) {
+            return res.status(400).json({ message: 'Unit cost cannot be negative' });
+        }
+
         const dbType = type === 'raw_material' ? 'Raw_material' : 'Other';
 
         if (!['Raw_material', 'Other'].includes(dbType)) {
@@ -160,6 +168,10 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
 
         if (!quantity || !operation) {
             return res.status(400).json({ message: 'Missing required fields: quantity, operation' });
+        }
+
+        if (parseInt(quantity) < 0) {
+            return res.status(400).json({ message: 'Quantity cannot be negative' });
         }
 
         if (!['in', 'out'].includes(operation)) {

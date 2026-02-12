@@ -48,6 +48,8 @@ function AddProductModal({ open, onClose }) {
                             type="number"
                             value={price}
                             onChange={(e) => setPrice(e.target.value)}
+                            error={price && parseFloat(price) < 0}
+                            helperText={price && parseFloat(price) < 0 ? "Price cannot be negative" : ""}
                         />
                     </Grid>
                     <Grid item xs={12}>
@@ -57,13 +59,21 @@ function AddProductModal({ open, onClose }) {
                             type="number"
                             value={stock}
                             onChange={(e) => setStock(e.target.value)}
+                            error={stock && parseInt(stock) < 0}
+                            helperText={stock && parseInt(stock) < 0 ? "Stock cannot be negative" : ""}
                         />
                     </Grid>
                 </Grid>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSaveProduct} variant="contained">Save Product</Button>
+                <Button 
+                    onClick={handleSaveProduct} 
+                    variant="contained"
+                    disabled={!name || !price || !stock || parseFloat(price) < 0 || parseInt(stock) < 0}
+                >
+                    Save Product
+                </Button>
             </DialogActions>
         </Dialog>
     );

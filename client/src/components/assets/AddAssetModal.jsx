@@ -60,13 +60,21 @@ function AddAssetModal({ open, onClose }) {
                             type="number"
                             value={totalCost}
                             onChange={(e) => setTotalCost(e.target.value)}
+                            error={totalCost && parseFloat(totalCost) < 0}
+                            helperText={totalCost && parseFloat(totalCost) < 0 ? "Cost cannot be negative" : ""}
                         />
                     </Grid>
                 </Grid>
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSaveAsset} variant="contained">Save Asset</Button>
+                <Button 
+                    onClick={handleSaveAsset} 
+                    variant="contained"
+                    disabled={!assetName || !totalCost || parseFloat(totalCost) < 0}
+                >
+                    Save Asset
+                </Button>
             </DialogActions>
         </Dialog>
     );

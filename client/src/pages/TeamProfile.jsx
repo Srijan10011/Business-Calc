@@ -287,6 +287,8 @@ export default function TeamProfile() {
                         value={payoutAmount}
                         onChange={(e) => setPayoutAmount(e.target.value)}
                         sx={{ mt: 2, mb: 2 }}
+                        error={payoutAmount && parseFloat(payoutAmount) <= 0}
+                        helperText={payoutAmount && parseFloat(payoutAmount) <= 0 ? "Amount must be positive" : ""}
                     />
                     <TextField
                         label="Month"
@@ -299,7 +301,13 @@ export default function TeamProfile() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setPayoutDialog(false)}>Cancel</Button>
-                    <Button onClick={handleSalaryPayout} variant="contained">Payout</Button>
+                    <Button 
+                        onClick={handleSalaryPayout} 
+                        variant="contained"
+                        disabled={!payoutAmount || parseFloat(payoutAmount) <= 0}
+                    >
+                        Payout
+                    </Button>
                 </DialogActions>
             </Dialog>
 
@@ -313,11 +321,19 @@ export default function TeamProfile() {
                         value={addSalaryAmount}
                         onChange={(e) => setAddSalaryAmount(e.target.value)}
                         sx={{ mt: 2 }}
+                        error={addSalaryAmount && parseFloat(addSalaryAmount) <= 0}
+                        helperText={addSalaryAmount && parseFloat(addSalaryAmount) <= 0 ? "Amount must be positive" : ""}
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setAddSalaryDialog(false)}>Cancel</Button>
-                    <Button onClick={handleAddSalary} variant="contained">Add</Button>
+                    <Button 
+                        onClick={handleAddSalary} 
+                        variant="contained"
+                        disabled={!addSalaryAmount || parseFloat(addSalaryAmount) <= 0}
+                    >
+                        Add
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Box>

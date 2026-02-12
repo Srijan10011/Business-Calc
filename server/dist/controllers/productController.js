@@ -22,6 +22,12 @@ const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (!name || price === undefined || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: name, price, stock' });
         }
+        if (parseFloat(price) < 0) {
+            return res.status(400).json({ message: 'Price cannot be negative' });
+        }
+        if (parseInt(stock) < 0) {
+            return res.status(400).json({ message: 'Stock cannot be negative' });
+        }
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }

@@ -175,11 +175,19 @@ export default function Credits() {
                         fullWidth
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}
+                        error={paymentAmount && parseFloat(paymentAmount) <= 0}
+                        helperText={paymentAmount && parseFloat(paymentAmount) <= 0 ? "Amount must be positive" : ""}
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setPaymentDialog(false)}>Cancel</Button>
-                    <Button onClick={handlePaymentSubmit} variant="contained">Pay</Button>
+                    <Button 
+                        onClick={handlePaymentSubmit} 
+                        variant="contained"
+                        disabled={!paymentAccount || !paymentAmount || parseFloat(paymentAmount) <= 0}
+                    >
+                        Pay
+                    </Button>
                 </DialogActions>
             </Dialog>
         </React.Fragment>

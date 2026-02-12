@@ -264,6 +264,9 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
                             value={rate}
                             onChange={(e) => setRate(Number(e.target.value))}
                             fullWidth
+                            error={rate < 0}
+                            helperText={rate < 0 ? "Rate cannot be negative" : ""}
+                            inputProps={{ min: 0 }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={4}>
@@ -273,7 +276,9 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
                             value={quantity}
                             onChange={(e) => handleQuantityChange(Number(e.target.value))}
                             fullWidth
-                            error={stockError}
+                            error={stockError || quantity < 0}
+                            helperText={quantity < 0 ? "Quantity cannot be negative" : ""}
+                            inputProps={{ min: 0 }}
                         />
                     </Grid>
                     <Grid item xs={12} sm={8} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -401,7 +406,13 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSaveSale} variant="contained" disabled={stockError}>Save Sale</Button>
+                <Button 
+                    onClick={handleSaveSale} 
+                    variant="contained" 
+                    disabled={stockError || rate < 0 || quantity < 0}
+                >
+                    Save Sale
+                </Button>
             </DialogActions>
         </Dialog>
     );

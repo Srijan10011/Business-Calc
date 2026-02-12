@@ -42,6 +42,10 @@ export const addCostCategory = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: category, type, value, product_id' });
         }
 
+        if (parseFloat(value) < 0) {
+            return res.status(400).json({ message: 'Amount cannot be negative' });
+        }
+
         if (!['variable', 'fixed'].includes(type)) {
             return res.status(400).json({ message: 'Type must be either "variable" or "fixed"' });
         }

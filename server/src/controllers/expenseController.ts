@@ -10,6 +10,10 @@ export const addExpense = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: account_id, amount, note' });
         }
 
+        if (parseFloat(amount) <= 0) {
+            return res.status(400).json({ message: 'Amount must be positive' });
+        }
+
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
@@ -93,6 +97,10 @@ export const cogsPayout = async (req: Request, res: Response) => {
 
         if (!category_id || !amount || !note) {
             return res.status(400).json({ message: 'Missing required fields: category_id, amount, note' });
+        }
+
+        if (parseFloat(amount) <= 0) {
+            return res.status(400).json({ message: 'Amount must be positive' });
         }
 
         if (!user_id) {

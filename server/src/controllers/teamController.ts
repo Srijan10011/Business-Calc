@@ -199,6 +199,10 @@ export const payoutSalary = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Member ID, amount, and month are required' });
         }
 
+        if (parseFloat(amount) <= 0) {
+            return res.status(400).json({ message: 'Amount must be positive' });
+        }
+
         const businessResult = await pool.query(
             'SELECT business_id FROM business_users WHERE user_id = $1',
             [user_id]
@@ -462,6 +466,15 @@ export const distributeSalary = async (req: Request, res: Response) => {
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
+        }
+
+        if (!amount) {
+            return res.status(400).json({ message: 'Amount is required' });
+        }
+
+        // Allow negative amounts for deductions, but validate it's not zero
+        if (parseFloat(amount) === 0) {
+            return res.status(400).json({ message: 'Amount cannot be zero' });
         }
 
         const businessResult = await pool.query(

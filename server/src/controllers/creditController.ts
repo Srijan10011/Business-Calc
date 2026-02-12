@@ -45,6 +45,10 @@ export const payCreditAmount = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: payable_id, amount, payment_account' });
         }
 
+        if (parseFloat(amount) <= 0) {
+            return res.status(400).json({ message: 'Amount must be positive' });
+        }
+
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }

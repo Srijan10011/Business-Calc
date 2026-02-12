@@ -51,6 +51,14 @@ export const createAsset = async (req: Request, res: Response) => {
         const { name, category, totalCost } = req.body;
         const userId = (req as any).user.id;
 
+        if (!name || !category || totalCost === undefined) {
+            return res.status(400).json({ message: 'Missing required fields: name, category, totalCost' });
+        }
+
+        if (parseFloat(totalCost) < 0) {
+            return res.status(400).json({ message: 'Cost cannot be negative' });
+        }
+
         // Get business_id from business_users table
         const userResult = await pool.query('SELECT business_id FROM business_users WHERE user_id = $1', [userId]);
         

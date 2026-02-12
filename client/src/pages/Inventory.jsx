@@ -286,6 +286,8 @@ function Inventory() {
                                 fullWidth
                                 value={stock}
                                 onChange={(e) => setStock(e.target.value)}
+                                error={stock && parseInt(stock) < 0}
+                                helperText={stock && parseInt(stock) < 0 ? "Stock cannot be negative" : ""}
                             />
                             <TextField
                                 margin="dense"
@@ -294,6 +296,8 @@ function Inventory() {
                                 fullWidth
                                 value={unitCost}
                                 onChange={(e) => setUnitCost(e.target.value)}
+                                error={unitCost && parseFloat(unitCost) < 0}
+                                helperText={unitCost && parseFloat(unitCost) < 0 ? "Unit cost cannot be negative" : ""}
                             />
                             <TextField
                                 select
@@ -367,6 +371,7 @@ function Inventory() {
                     <Button 
                         onClick={handleSaveItem} 
                         variant="contained"
+                        disabled={!name || !stock || !unitCost || parseInt(stock) < 0 || parseFloat(unitCost) < 0}
                     >
                         Save
                     </Button>
@@ -401,6 +406,8 @@ function Inventory() {
                                 fullWidth
                                 value={stockQuantity}
                                 onChange={(e) => setStockQuantity(e.target.value)}
+                                error={stockQuantity && parseInt(stockQuantity) < 0}
+                                helperText={stockQuantity && parseInt(stockQuantity) < 0 ? "Quantity cannot be negative" : ""}
                             />
                         </Grid>
                         
@@ -482,7 +489,13 @@ function Inventory() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setStockDialog(false)}>Cancel</Button>
-                    <Button onClick={handleStockUpdate} variant="contained">Update</Button>
+                    <Button 
+                        onClick={handleStockUpdate} 
+                        variant="contained"
+                        disabled={!selectedItem || !stockQuantity || parseInt(stockQuantity) < 0}
+                    >
+                        Update
+                    </Button>
                 </DialogActions>
             </Dialog>
         </React.Fragment>

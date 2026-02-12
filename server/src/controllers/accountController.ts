@@ -124,6 +124,11 @@ export const transferFunds = async (req: Request, res: Response) => {
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ message: "Invalid transfer amount" });
+            throw Error;
+        }
+
 
         // Get business_id from business_users table
         const businessResult = await pool.query(
@@ -211,6 +216,10 @@ export const transferCOGS = async (req: Request, res: Response) => {
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
+        }
+
+        if (!amount || parseFloat(amount) <= 0) {
+            return res.status(400).json({ message: 'Amount must be positive' });
         }
 
         const businessResult = await pool.query(

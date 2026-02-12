@@ -375,12 +375,18 @@ export default function Finance() {
                             value={transferAmount}
                             onChange={(e) => setTransferAmount(e.target.value)}
                             fullWidth
+                            error={transferAmount && parseFloat(transferAmount) <= 0}
+                            helperText={transferAmount && parseFloat(transferAmount) <= 0 ? "Amount must be positive" : ""}
                         />
                     </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setTransferOpen(false)}>Cancel</Button>
-                    <Button onClick={handleTransfer} variant="contained" disabled={!fromAccount || !toAccount || !transferAmount}>
+                    <Button 
+                        onClick={handleTransfer} 
+                        variant="contained" 
+                        disabled={!fromAccount || !toAccount || !transferAmount || parseFloat(transferAmount) <= 0}
+                    >
                         Transfer
                     </Button>
                 </DialogActions>
@@ -479,12 +485,18 @@ export default function Finance() {
                             value={cogsAmount}
                             onChange={(e) => setCogsAmount(e.target.value)}
                             fullWidth
+                            error={cogsAmount && parseFloat(cogsAmount) <= 0}
+                            helperText={cogsAmount && parseFloat(cogsAmount) <= 0 ? "Amount must be positive" : ""}
                         />
                     </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setCogsTransferOpen(false)}>Cancel</Button>
-                    <Button onClick={handleCogsTransfer} variant="contained" disabled={!cogsCategory || !cogsAccount || !cogsAmount}>
+                    <Button 
+                        onClick={handleCogsTransfer} 
+                        variant="contained" 
+                        disabled={!cogsCategory || !cogsAccount || !cogsAmount || parseFloat(cogsAmount) <= 0}
+                    >
                         Transfer
                     </Button>
                 </DialogActions>
@@ -543,6 +555,8 @@ export default function Finance() {
                             value={payoutAmount}
                             onChange={(e) => setPayoutAmount(e.target.value)}
                             fullWidth
+                            error={payoutAmount && parseFloat(payoutAmount) <= 0}
+                            helperText={payoutAmount && parseFloat(payoutAmount) <= 0 ? "Amount must be positive" : ""}
                         />
                         <TextField
                             label="Description"
@@ -557,7 +571,12 @@ export default function Finance() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setPayoutOpen(false)}>Cancel</Button>
-                    <Button onClick={handleCogsPayoutSubmit} variant="contained" color="error">
+                    <Button 
+                        onClick={handleCogsPayoutSubmit} 
+                        variant="contained" 
+                        color="error"
+                        disabled={!payoutAmount || parseFloat(payoutAmount) <= 0}
+                    >
                         Payout
                     </Button>
                 </DialogActions>

@@ -295,6 +295,8 @@ const Dashboard = () => {
                     fullWidth
                     value={expenseAmount}
                     onChange={(e) => setExpenseAmount(e.target.value)}
+                    error={expenseAmount && parseFloat(expenseAmount) <= 0}
+                    helperText={expenseAmount && parseFloat(expenseAmount) <= 0 ? "Amount must be positive" : ""}
                 />
                 <TextField
                     margin="dense"
@@ -308,7 +310,13 @@ const Dashboard = () => {
             </DialogContent>
             <DialogActions>
                 <Button onClick={() => setExpenseDialog(false)}>Cancel</Button>
-                <Button onClick={handleExpenseSubmit} variant="contained">Add Expense</Button>
+                <Button 
+                    onClick={handleExpenseSubmit} 
+                    variant="contained"
+                    disabled={!expenseAccount || !expenseAmount || parseFloat(expenseAmount) <= 0}
+                >
+                    Add Expense
+                </Button>
             </DialogActions>
             </Dialog>
         </React.Fragment>
