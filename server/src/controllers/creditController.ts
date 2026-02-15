@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
+import * as Creditdb from '../db/Creditdb';
 
 export const getCreditPayables = async (req: Request, res: Response) => {
     try {
@@ -9,27 +11,11 @@ export const getCreditPayables = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
+        const result = await Creditdb.getCreditsByBusiness(business_id);
 
-        const business_id = businessResult.rows[0].business_id;
-
-        const result = await pool.query(
-            `SELECT payable_id, party_name, total_amount, paid_amount, 
-                    (total_amount - paid_amount) as remaining_amount, status, created_at
-             FROM credit_payables 
-             WHERE business_id = $1 
-             ORDER BY created_at DESC`,
-            [business_id]
-        );
-
-        res.json(result.rows);
+        res.json(result);
     } catch (error: any) {
         console.error('Error fetching credit payables:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
@@ -53,22 +39,14 @@ export const payCreditAmount = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
 
             // Get payable details
-            const payableResult = await client.query(
-                'SELECT party_name, total_amount, paid_amount FROM credit_payables WHERE payable_id = $1 AND business_id = $2',
-                [payable_id, business_id]
-            );
+            const payableResult = await Creditdb.getPayableDetails(payable_id, business_id);
 
             if (payableResult.rows.length === 0) {
                 await client.query('ROLLBACK');
@@ -84,10 +62,7 @@ export const payCreditAmount = async (req: Request, res: Response) => {
             }
 
             // Check payment account balance (must be cash or bank)
-            const accountResult = await client.query(
-                'SELECT ba.balance, a.account_name FROM business_account ba JOIN accounts a ON ba.account_id = a.account_id WHERE ba.account_id = $1 AND ba.business_id = $2',
-                [payment_account, business_id]
-            );
+            const accountResult = await Creditdb.getPaymentAccount(payment_account, business_id);
 
             if (accountResult.rows.length === 0) {
                 await client.query('ROLLBACK');
@@ -137,13 +112,7 @@ export const payCreditAmount = async (req: Request, res: Response) => {
             );
 
             // Reduce credit account balance (the account used when inventory was purchased)
-            const creditAccountResult = await client.query(
-                `SELECT ba.account_id 
-                 FROM business_account ba
-                 JOIN accounts a ON ba.account_id = a.account_id
-                 WHERE a.account_name ILIKE '%credit%' AND ba.business_id = $1`,
-                [business_id]
-            );
+            const creditAccountResult = await Creditdb.getCreditAccount(business_id);
 
             if (creditAccountResult.rows.length > 0) {
                 await client.query(

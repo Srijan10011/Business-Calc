@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,12 +41,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addCustomer = exports.getCustomerPayments = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
-const db_1 = __importDefault(require("../db"));
+exports.addCustomer = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
+const Business_pool = __importStar(require("../db/Business_pool"));
+const Customerdb = __importStar(require("../db/Customerdb"));
 const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -21,34 +52,9 @@ const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
-        const result = yield db_1.default.query(`SELECT 
-                ci.customer_id as id,
-                ci.customer_id,
-                ci.name,
-                ci.phone,
-                ci.email,
-                ci.address,
-                ci.created_at,
-                COALESCE(cph.total_purchase, 0) as total_purchases,
-                COALESCE(cph.outstanding_credit, 0) as outstanding_credit,
-                cph.last_purchase
-            FROM customers_info ci
-            INNER JOIN business_customers bc ON ci.customer_id = bc.customer_id
-            LEFT JOIN customer_purchase_history cph ON ci.customer_id = cph.customer_id
-            WHERE bc.business_id = $1
-            ORDER BY ci.created_at DESC`, [business_id]);
-        console.log('=== GET CUSTOMERS DEBUG ===');
-        console.log('Returning customers:', result.rows.length);
-        if (result.rows.length > 0) {
-            console.log('First customer ID:', result.rows[0].id);
-            console.log('First customer customer_id:', result.rows[0].customer_id);
-        }
-        res.json(result.rows);
+        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const result = yield Customerdb.getCustomersByBusiness(business_id);
+        res.json(result);
     }
     catch (error) {
         console.error('Error fetching customers:', error);
@@ -60,35 +66,15 @@ const getCustomerById = (req, res) => __awaiter(void 0, void 0, void 0, function
     var _a;
     try {
         const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        const { id } = req.params;
-        console.log('=== GET CUSTOMER BY ID DEBUG ===');
-        console.log('Received ID parameter:', id);
-        console.log('ID type:', typeof id);
-        console.log('User ID:', user_id);
+        const id = req.params.id;
         if (!id || id === 'undefined') {
             return res.status(400).json({ message: 'Invalid customer ID provided' });
         }
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
-        const result = yield db_1.default.query(`SELECT 
-                ci.customer_id,
-                ci.name,
-                ci.phone,
-                ci.email,
-                ci.created_at,
-                COALESCE(cph.total_purchase, 0) as total_purchases,
-                COALESCE(cph.outstanding_credit, 0) as outstanding_credit,
-                cph.last_purchase
-            FROM customers_info ci
-            INNER JOIN business_customers bc ON ci.customer_id = bc.customer_id
-            LEFT JOIN customer_purchase_history cph ON ci.customer_id = cph.customer_id
-            WHERE bc.business_id = $1 AND ci.customer_id = $2`, [business_id, id]);
+        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const result = yield Customerdb.getCustomerById(id, business_id);
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Customer not found' });
         }
@@ -104,30 +90,16 @@ const getCustomerSales = (req, res) => __awaiter(void 0, void 0, void 0, functio
     var _a;
     try {
         const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        const { id } = req.params;
+        const id = req.params.id;
+        if (!id || id === 'undefined') {
+            return res.status(400).json({ message: 'Invalid customer ID provided' });
+        }
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
-        const result = yield db_1.default.query(`SELECT 
-                si.sale_id,
-                si.total_amount,
-                si.type as payment_type,
-                si.status,
-                si.quantity,
-                si.rate,
-                si.created_at,
-                p.name as product_name
-            FROM sales s
-            INNER JOIN sales_info si ON s.sale_id = si.sale_id
-            INNER JOIN products p ON si.product_id = p.product_id
-            WHERE s.customer_id = $1 AND s.business_id = $2
-            ORDER BY si.created_at DESC`, [id, business_id]);
-        res.json(result.rows);
+        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const result = yield Customerdb.getCustomerSales(id, business_id);
+        res.json(result);
     }
     catch (error) {
         console.error('Error fetching customer sales:', error);
@@ -135,52 +107,6 @@ const getCustomerSales = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.getCustomerSales = getCustomerSales;
-const getCustomerPayments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        const { id } = req.params;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
-        // Get payments: cash/bank sales (immediate) + debit sale payments (when recorded)
-        const result = yield db_1.default.query(`SELECT 
-                si.created_at as payment_date,
-                si.total_amount as amount,
-                si.type as payment_type,
-                'Sale Payment' as payment_source
-            FROM sales s
-            INNER JOIN sales_info si ON s.sale_id = si.sale_id
-            WHERE s.customer_id = $1 
-            AND s.business_id = $2 
-            AND si.type IN ('Cash', 'bank')
-            
-            UNION ALL
-            
-            SELECT 
-                p.created_at as payment_date,
-                p.amount,
-                'Debit Payment' as payment_type,
-                'Installment' as payment_source
-            FROM payments p
-            INNER JOIN sales s ON p.sale_id = s.sale_id
-            WHERE s.customer_id = $1 
-            AND s.business_id = $2
-            
-            ORDER BY payment_date DESC`, [id, business_id]);
-        res.json(result.rows);
-    }
-    catch (error) {
-        console.error('Error fetching customer payments:', error);
-        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
-    }
-});
-exports.getCustomerPayments = getCustomerPayments;
 const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -193,17 +119,10 @@ const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(401).json({ message: 'User ID not found in token' });
         }
         // Get business_id from business_users table
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = yield Business_pool.Get_Business_id(user_id);
         // Insert into customers_info table
-        const customerResult = yield db_1.default.query('INSERT INTO customers_info (name, phone, email, address) VALUES ($1, $2, $3, $4) RETURNING customer_id, name, phone, email, address, created_at', [name, phone, email || null, address || null]);
-        const customer_id = customerResult.rows[0].customer_id;
-        // Link customer to business in business_customers table
-        yield db_1.default.query('INSERT INTO business_customers (customer_id, business_id) VALUES ($1, $2)', [customer_id, business_id]);
-        res.status(201).json(customerResult.rows[0]);
+        const customerResult = yield Customerdb.addCustomer(name, phone, email, address, business_id);
+        res.status(201).json(customerResult);
     }
     catch (error) {
         console.error('Error adding customer:', error);

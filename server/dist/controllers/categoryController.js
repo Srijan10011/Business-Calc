@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,12 +41,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCategory = exports.getCategories = exports.checkCategory = void 0;
-const db_1 = __importDefault(require("../db"));
+const Business_pool = __importStar(require("../db/Business_pool"));
+const Categorydb = __importStar(require("../db/Categorydb"));
 const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -25,20 +56,10 @@ const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
-        // Get business_id from business_users table
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = yield Business_pool.Get_Business_id(user_id);
         // Check if category exists
-        const existingCategory = yield db_1.default.query('SELECT id FROM categories WHERE business_id = $1 AND name = $2 AND cost_behavior = $3 ANd product_id = $4 ', [business_id, name, cost_behaviour, product_id]);
-        if (existingCategory.rows.length > 0) {
-            return res.json({ exists: true, id: existingCategory.rows[0].id });
-        }
-        else {
-            return res.json({ exists: false });
-        }
+        const existingCategory = yield Categorydb.checkCategory(name, cost_behaviour, product_id, business_id);
+        res.json(existingCategory);
     }
     catch (error) {
         console.error('Error checking category:', error);
@@ -53,13 +74,10 @@ const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
-        const result = yield db_1.default.query('SELECT * FROM categories WHERE business_id = $1 ORDER BY created_at DESC', [business_id]);
-        res.json(result.rows);
+        const business_id = yield Business_pool.Get_Business_id(user_id);
+        res.json({ business_id });
+        const result = yield Categorydb.getCategoriesByBusiness(business_id);
+        res.json(result);
     }
     catch (error) {
         console.error('Error fetching categories:', error);
@@ -78,17 +96,10 @@ const createCategory = (req, res) => __awaiter(void 0, void 0, void 0, function*
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
-        // Get business_id from business_users table
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = yield Business_pool.Get_Business_id(user_id);
         // Create new category with product_id
-        const result = yield db_1.default.query(`INSERT INTO categories (business_id, name, type, cost_behavior, product_id)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id`, [business_id, name, type, cost_behaviour, product_id]);
-        res.status(201).json({ id: result.rows[0].id });
+        const result = yield Categorydb.createCategory(name, cost_behaviour, type, product_id, business_id);
+        res.status(201).json({ id: result.id });
     }
     catch (error) {
         console.error('Error creating category:', error);

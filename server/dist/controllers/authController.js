@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,27 +41,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserInfo = exports.setupBusiness = exports.login = exports.register = exports.checkBusiness = void 0;
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const db_1 = __importDefault(require("../db"));
-const accountController_1 = require("./accountController");
-// Check if business exists
+const Authdb = __importStar(require("../db/Authdb"));
+const Accountdb = __importStar(require("../db/Accountdb"));
 const checkBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { business_id } = req.params;
+    const business_id = req.params.business_id;
     try {
-        const business = yield db_1.default.query('SELECT business_id, name, currency FROM businesses WHERE business_id = $1', [business_id]);
-        if (business.rows.length === 0) {
+        const business = yield Authdb.checkBusinessExists(business_id);
+        if (!business)
             return res.status(404).json({ msg: 'Business not found' });
-        }
-        res.json({
-            exists: true,
-            business: business.rows[0]
-        });
+        res.json({ exists: true, business });
     }
     catch (err) {
         console.error(err.message);
@@ -38,127 +61,25 @@ const checkBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 exports.checkBusiness = checkBusiness;
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password, business_id } = req.body;
-    const client = yield db_1.default.connect();
     try {
-        yield client.query('BEGIN');
-        const user = yield client.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (user.rows.length > 0) {
-            yield client.query('ROLLBACK');
-            return res.status(400).json({ msg: 'User already exists' });
-        }
-        let finalBusinessId = business_id;
-        let needsBusinessSetup = false;
-        // If business_id provided, validate it exists
-        if (business_id) {
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-            if (!uuidRegex.test(business_id)) {
-                yield client.query('ROLLBACK');
-                return res.status(400).json({ msg: 'Invalid business ID format' });
-            }
-            const businessExists = yield client.query('SELECT business_id FROM businesses WHERE business_id = $1', [business_id]);
-            if (businessExists.rows.length === 0) {
-                yield client.query('ROLLBACK');
-                return res.status(400).json({ msg: 'Business not found' });
-            }
-        }
-        else {
-            // No business_id provided - user will need to set up business later
-            needsBusinessSetup = true;
-            finalBusinessId = null;
-        }
-        const salt = yield bcryptjs_1.default.genSalt(10);
-        const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
-        const newUser = yield client.query('INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id, name, email, created_at', [name, email, hashedPassword]);
-        const user_id = newUser.rows[0].user_id;
-        // If business_id provided, create pending request instead of direct access
-        if (finalBusinessId) {
-            yield client.query('INSERT INTO user_requests (user_id, business_id, status) VALUES ($1, $2, $3)', [user_id, finalBusinessId, 'pending']);
-        }
-        yield client.query('COMMIT');
-        const payload = {
-            user: {
-                id: user_id
-            }
-        };
-        jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, { expiresIn: 360000 }, (err, token) => {
-            if (err)
-                throw err;
-            res.json({
-                token,
-                needsBusinessSetup: !finalBusinessId,
-                requestPending: !!finalBusinessId
-            });
-        });
+        const result = yield Authdb.registerUser(name, email, password, business_id);
+        res.json(result);
     }
     catch (err) {
-        yield client.query('ROLLBACK');
         console.error(err.message);
-        res.status(500).send('Server error');
-    }
-    finally {
-        client.release();
+        res.status(500).send(err.message || 'Server error');
     }
 });
 exports.register = register;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     try {
-        console.log('=== LOGIN ATTEMPT ===');
-        console.log('Email:', email);
-        const user = yield db_1.default.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (user.rows.length === 0) {
-            console.log('User not found');
-            return res.status(400).json({ msg: 'Invalid Credentials' });
-        }
-        console.log('User found:', user.rows[0].user_id, user.rows[0].name);
-        const isMatch = yield bcryptjs_1.default.compare(password, user.rows[0].password_hash);
-        if (!isMatch) {
-            console.log('Password mismatch');
-            return res.status(400).json({ msg: 'Invalid Credentials' });
-        }
-        const payload = {
-            user: {
-                id: user.rows[0].user_id
-            }
-        };
-        console.log('Creating JWT for user:', user.rows[0].user_id);
-        jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 }, (err, token) => __awaiter(void 0, void 0, void 0, function* () {
-            if (err)
-                throw err;
-            console.log('=== LOGIN SUCCESS ===');
-            console.log('JWT created for user ID:', user.rows[0].user_id);
-            console.log('User name:', user.rows[0].name);
-            console.log('User email:', user.rows[0].email);
-            console.log('Token (first 50 chars):', (token === null || token === void 0 ? void 0 : token.substring(0, 50)) + '...');
-            // Check if user has business access or pending request
-            const businessCheck = yield db_1.default.query('SELECT business_id, role FROM business_users WHERE user_id = $1', [user.rows[0].user_id]);
-            let needsBusinessSetup = false;
-            let requestPending = false;
-            const role = businessCheck.rows.length > 0 ? businessCheck.rows[0].role : null;
-            if (businessCheck.rows.length === 0) {
-                // Check if there's a pending request
-                const requestCheck = yield db_1.default.query('SELECT status FROM user_requests WHERE user_id = $1 AND status = $2', [user.rows[0].user_id, 'pending']);
-                if (requestCheck.rows.length > 0) {
-                    requestPending = true;
-                }
-                else {
-                    needsBusinessSetup = true;
-                }
-            }
-            console.log('Needs business setup:', needsBusinessSetup);
-            console.log('Request pending:', requestPending);
-            console.log('User role:', role);
-            res.json({
-                token,
-                needsBusinessSetup,
-                requestPending,
-                role
-            });
-        }));
+        const result = yield Authdb.loginUser(email, password);
+        res.json(result);
     }
     catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error(err.message || err);
+        res.status(err.statusCode || 500).send(err.message || 'Server error');
     }
 });
 exports.login = login;
@@ -166,58 +87,30 @@ const setupBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     var _a;
     const { businessName, currency } = req.body;
     const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    if (!user_id)
+        return res.status(401).json({ msg: 'Unauthorized' });
     try {
-        if (!businessName || !currency) {
-            return res.status(400).json({ msg: 'Business name and currency are required' });
-        }
-        // Create new business
-        const newBusiness = yield db_1.default.query('INSERT INTO businesses (name, currency) VALUES ($1, $2) RETURNING business_id, name, currency', [businessName, currency]);
-        const business_id = newBusiness.rows[0].business_id;
-        // Add to business_users table with Owner role
-        yield db_1.default.query('INSERT INTO business_users (user_id, business_id, role) VALUES ($1, $2, $3)', [user_id, business_id, 'Owner']);
-        // Create default accounts for the new business
-        yield (0, accountController_1.createDefaultAccounts)(business_id);
-        console.log('Business setup completed for user:', user_id, 'Business:', business_id);
-        res.json({
-            msg: 'Business setup completed',
-            business: newBusiness.rows[0]
-        });
+        const business = yield Authdb.setupBusiness(user_id, businessName, currency, Accountdb.createDefaultAccount);
+        res.json({ msg: 'Business setup completed', business });
     }
     catch (err) {
-        console.error('Business setup error:', err.message);
-        res.status(500).send('Server error');
+        console.error(err.message);
+        res.status(500).send(err.message || 'Server error');
     }
 });
 exports.setupBusiness = setupBusiness;
 const getUserInfo = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a;
     const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    if (!user_id)
+        return res.status(401).json({ msg: 'Unauthorized' });
     try {
-        const userInfo = yield db_1.default.query(`SELECT u.user_id, u.name, u.email, bu.role, bu.role_id
-             FROM users u 
-             LEFT JOIN business_users bu ON u.user_id = bu.user_id 
-             WHERE u.user_id = $1`, [user_id]);
-        if (userInfo.rows.length === 0) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-        const user = userInfo.rows[0];
-        // Get permissions
-        let permissions = [];
-        if (((_b = user.role) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'owner') {
-            permissions = ['*']; // All permissions
-        }
-        else if (user.role_id) {
-            const permResult = yield db_1.default.query(`SELECT p.permission_key 
-                 FROM role_permissions rp
-                 JOIN permissions p ON rp.permission_id = p.permission_id
-                 WHERE rp.role_id = $1`, [user.role_id]);
-            permissions = permResult.rows.map(row => row.permission_key);
-        }
-        res.json(Object.assign(Object.assign({}, user), { permissions }));
+        const userInfo = yield Authdb.getUserInfo(user_id); // you can move getUserInfo to service if needed
+        res.json(userInfo);
     }
     catch (err) {
         console.error(err.message);
-        res.status(500).send('Server error');
+        res.status(500).send(err.message || 'Server error');
     }
 });
 exports.getUserInfo = getUserInfo;
