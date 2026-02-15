@@ -250,68 +250,36 @@ export const payoutSalary = async (req: Request, res: Response) => {
 
         const memberName = memberResult.rows[0].name;
 
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
+        await pool.query('BEGIN');
 
-            // Deduct from COGS balance
-            await client.query(
-                'UPDATE cogs_account SET balance = balance - $1 WHERE account_id = $2',
-                [amount, account_id]
-            );
+        // Deduct from COGS balance
+        await pool.query(
+            'UPDATE cogs_account SET balance = balance - $1 WHERE account_id = $2',
+            [amount, account_id]
+        );
 
-            // Record transaction (no account_id needed for COGS payout)
-            const transactionResult = await client.query(
-                `INSERT INTO transactions (amount, type, note)
-                 VALUES ($1, $2, $3)
-                 RETURNING transaction_id`,
-                [amount, 'Outgoing', `Salary payout for ${memberName} - ${trimmedMonth}`]
-            );
+        // Record transaction (no account_id needed for COGS payout)
+        const transactionResult = await pool.query(
+            `INSERT INTO transactions (amount, type, note)
+             VALUES ($1, $2, $3)
+             RETURNING transaction_id`,
+            [amount, 'Outgoing', `Salary payout for ${memberName} - ${trimmedMonth}`]
+        );
 
-            // Link transaction to business
-            await client.query(
-                'INSERT INTO business_transactions (transaction_id, business_id) VALUES ($1, $2)',
-                [transactionResult.rows[0].transaction_id, business_id]
-            );
+        // Link transaction to business
+        await pool.query(
+            'INSERT INTO business_transactions (transaction_id, business_id) VALUES ($1, $2)',
+            [transactionResult.rows[0].transaction_id, business_id]
+        );
 
-            // Get or create team account
-            let accountResult = await client.query(
-                'SELECT * FROM team_accounts WHERE member_id = $1',
-                [finalMemberId]
-            );
+        await pool.query('COMMIT');
 
-            if (accountResult.rows.length === 0) {
-                await client.query(
-                    'INSERT INTO team_accounts (member_id) VALUES ($1)',
-                    [finalMemberId]
-                );
-            }
-
-            // Deduct from account balance
-            await client.query(
-                'UPDATE team_accounts SET current_balance = current_balance - $1, updated_at = CURRENT_TIMESTAMP WHERE member_id = $2',
-                [amount, finalMemberId]
-            );
-
-            // Record salary transaction
-            await client.query(
-                'INSERT INTO salary_transactions (member_id, amount, distribution_month, transaction_type) VALUES ($1, $2, $3, $4)',
-                [finalMemberId, -parseFloat(amount), trimmedMonth, 'withdrawal']
-            );
-
-            await client.query('COMMIT');
-
-            res.json({ 
-                message: 'Salary payout successful',
-                transaction_id: transactionResult.rows[0].transaction_id
-            });
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+        res.json({ 
+            message: 'Salary payout successful',
+            transaction_id: transactionResult.rows[0].transaction_id
+        });
     } catch (error: any) {
+        await pool.query('ROLLBACK');
         console.error('Error processing salary payout:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
@@ -349,7 +317,7 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
 
         const memberName = memberResult.rows[0].name;
 
-        // Get salary payment history (payouts from both team page and finance page)
+        // Get salary payment history (payouts)
         const payoutHistory = await pool.query(
             `SELECT 
                 t.transaction_id, 
@@ -361,8 +329,8 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
              JOIN business_transactions bt ON t.transaction_id = bt.transaction_id
              WHERE bt.business_id = $1 
              AND t.type = 'Outgoing' 
-             AND (t.note LIKE $2 OR t.note LIKE $3)`,
-            [business_id, `Salary payout for ${memberName}%`, `%Salary for ${memberName}%`]
+             AND t.note LIKE $2`,
+            [business_id, `Salary payout for ${memberName}%`]
         );
 
         // Get salary additions (exclude negative amounts as they're duplicates of payouts)
