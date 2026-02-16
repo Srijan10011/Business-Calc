@@ -70,6 +70,29 @@ export const getCustomerSales = async (req: Request, res: Response) => {
     }
 };
 
+export const getCustomerPayments = async (req: Request, res: Response) => {
+    try {
+        const user_id = req.user?.id;
+        const id = req.params.id as string;
+
+        if (!id || id === 'undefined') {
+            return res.status(400).json({ message: 'Invalid customer ID provided' });
+        }
+
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+
+        const business_id = await Business_pool.Get_Business_id(user_id)
+        const result = await Customerdb.getCustomerPaymentsByBusiness(id, business_id);
+
+        res.json(result);
+    } catch (error: any) {
+        console.error('Error fetching customer payments:', error);
+        res.status(500).json({ message: 'Server error', error: error?.message });
+    }
+};
+
 export const addCustomer = async (req: Request, res: Response) => {
     try {
         const { name, phone, email, address } = req.body;

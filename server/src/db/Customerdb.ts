@@ -78,19 +78,20 @@ export const getCustomerById = async (customer_id: string, business_id: string) 
 
 export const getCustomerSales = async (customer_id: string, business_id: string) => {
     const result = await pool.query(
-        `SELECT 
-            s.id,
-            s.total_amount,
-            s.payment_type,
-            s.created_at,
-            si.quantity,
-            si.rate,
-            p.name as product_name
-        FROM sales s
-        INNER JOIN sale_items si ON s.id = si.sale_id
-        INNER JOIN products p ON si.product_id = p.id
-        WHERE s.customer_id = $1 AND s.business_id = $2
-        ORDER BY s.created_at DESC`,
+        `SELECT
+    si.sale_id,
+    si.total_amount,
+    si.type AS payment_type,
+    si.created_at,
+    si.quantity,
+    si.rate,
+    p.name AS product_name
+FROM sales s
+INNER JOIN sales_info si ON s.sale_id = si.sale_id
+INNER JOIN products p ON si.product_id = p.product_id
+WHERE s.customer_id = $1 AND s.business_id = $2
+ORDER BY si.created_at DESC;
+`,
         [customer_id, business_id]
     );
 

@@ -42,7 +42,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addCustomer = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
+exports.addCustomer = exports.getCustomerPayments = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
 const Business_pool = __importStar(require("../db/Business_pool"));
 const Customerdb = __importStar(require("../db/Customerdb"));
 const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -107,6 +107,27 @@ const getCustomerSales = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.getCustomerSales = getCustomerSales;
+const getCustomerPayments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const id = req.params.id;
+        if (!id || id === 'undefined') {
+            return res.status(400).json({ message: 'Invalid customer ID provided' });
+        }
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const result = yield Customerdb.getCustomerPaymentsByBusiness(id, business_id);
+        res.json(result);
+    }
+    catch (error) {
+        console.error('Error fetching customer payments:', error);
+        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
+    }
+});
+exports.getCustomerPayments = getCustomerPayments;
 const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
