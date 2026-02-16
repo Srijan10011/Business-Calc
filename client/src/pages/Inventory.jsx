@@ -35,6 +35,7 @@ function Inventory() {
     const [suppliers, setSuppliers] = React.useState([]);
     const [isNewSupplier, setIsNewSupplier] = React.useState(false);
     const [showPaymentError, setShowPaymentError] = React.useState(false);
+    const [showSupplierError, setShowSupplierError] = React.useState(false);
 
     React.useEffect(() => {
         fetchItems();
@@ -88,6 +89,7 @@ function Inventory() {
         setSkipPayment(false);
         setPartyName('');
         setShowPaymentError(false);
+        setShowSupplierError(false);
         setAddDialog(true);
     };
 
@@ -95,6 +97,14 @@ function Inventory() {
         // Validate payment account
         if (!skipPayment && !paymentAccount) {
             setShowPaymentError(true);
+            return;
+        }
+
+        // Validate supplier name for credit account
+        const selectedAccount = accounts.find(acc => acc.account_id === paymentAccount);
+        const isCredit = selectedAccount?.account_name?.toLowerCase().includes('credit');
+        if (!skipPayment && isCredit && !partyName) {
+            setShowSupplierError(true);
             return;
         }
 
@@ -348,11 +358,17 @@ function Inventory() {
                             {accounts.find(acc => acc.account_id === paymentAccount)?.account_name?.toLowerCase().includes('credit') && !skipPayment && (
                                 <TextField
                                     margin="dense"
-                                    label="Party Name"
+                                    label="Supplier Name"
                                     fullWidth
                                     value={partyName}
-                                    onChange={(e) => setPartyName(e.target.value)}
+                                    onChange={(e) => {
+                                        setPartyName(e.target.value);
+                                        setShowSupplierError(false);
+                                    }}
                                     placeholder="Enter supplier/vendor name"
+                                    required
+                                    error={showSupplierError}
+                                    helperText={showSupplierError ? "Supplier name is required for credit transactions" : ""}
                                 />
                             )}
                             <Button 

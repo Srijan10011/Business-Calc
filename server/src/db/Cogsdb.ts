@@ -155,14 +155,13 @@ export const deleteCostAllocation = async (allocation_id: string) => {
 export const getCOGSData = async (business_id: string) => {
     const result = await pool.query(
         `SELECT 
-            pca.allocation_id,
-            pca.amount_per_unit AS value,   -- alias for frontend
-            cc.name AS category,            -- alias for frontend
-            cc.type
-         FROM products p
-         LEFT JOIN product_cost_allocation pca ON p.product_id = pca.product_id
-         LEFT JOIN cost_categories cc ON pca.category_id = cc.category_id AND cc.business_id = $1
-         ORDER BY p.product_id, cc.name`,
+            cc.category_id,
+            cc.name AS category_name,
+            COALESCE(ca.balance, 0) AS balance
+          FROM cost_categories cc
+        LEFT JOIN cogs_account ca ON cc.category_id = ca.category_id
+         WHERE cc.business_id = $1
+         ORDER BY cc.name`,
         [business_id]
     );
 
