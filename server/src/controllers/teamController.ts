@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
+import * as Teamdb from '../db/Teamdb';
 
 export const getTeamMembers = async (req: Request, res: Response) => {
     try {
@@ -9,39 +11,12 @@ export const getTeamMembers = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
+        const result = await Teamdb.getTeamMembersByBusiness(business_id);
 
-        const business_id = businessResult.rows[0].business_id;
 
-        const result = await pool.query(
-            `SELECT 
-                tm.member_id,
-                tm.name,
-                tm.email,
-                tm.phone,
-                tm.position,
-                tm.department,
-                tm.salary,
-                tm.enroll_date,
-                tm.status,
-                EXTRACT(YEAR FROM AGE(CURRENT_DATE, tm.enroll_date)) * 12 + 
-                EXTRACT(MONTH FROM AGE(CURRENT_DATE, tm.enroll_date)) as months_working,
-                COALESCE(ta.current_balance, 0) as account_balance
-            FROM team_members tm
-            LEFT JOIN team_accounts ta ON tm.member_id = ta.member_id
-            WHERE tm.business_id = $1 
-            ORDER BY tm.enroll_date DESC`,
-            [business_id]
-        );
-
-        res.json(result.rows);
+        res.json(result);
     } catch (error: any) {
         console.error('Error fetching team members:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
@@ -61,25 +36,19 @@ export const addTeamMember = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Name and position are required' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
+        const business_id = await Business_pool.Get_Business_id(user_id);
+
+        const result = await Teamdb.addTeamMember(
+            business_id,
+            name,
+            email,
+            phone,
+            position,
+            department,
+            salary,
+            enroll_date || new Date()
         );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
-
-        const result = await pool.query(
-            `INSERT INTO team_members (business_id, name, email, phone, position, department, salary, enroll_date)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             RETURNING member_id, name, position`,
-            [business_id, name, email, phone, position, department, salary, enroll_date || new Date()]
-        );
-
-        res.status(201).json({ 
+        res.status(201).json({
             message: 'Team member added successfully',
             member: result.rows[0]
         });
@@ -91,7 +60,7 @@ export const addTeamMember = async (req: Request, res: Response) => {
 
 export const updateTeamMember = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { name, email, phone, position, department, salary, status } = req.body;
         const user_id = req.user?.id;
 
@@ -99,30 +68,24 @@ export const updateTeamMember = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
+        const business_id = await Business_pool.Get_Business_id(user_id);
+
+        const result = await Teamdb.updateTeamMember(
+            id,
+            business_id,
+            name,
+            email,
+            phone,
+            position,
+            department,
+            salary,
+            status
         );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
-
-        const result = await pool.query(
-            `UPDATE team_members 
-             SET name = $1, email = $2, phone = $3, position = $4, department = $5, salary = $6, status = $7, updated_at = CURRENT_TIMESTAMP
-             WHERE member_id = $8 AND business_id = $9
-             RETURNING member_id, name, position`,
-            [name, email, phone, position, department, salary, status, id, business_id]
-        );
-
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Team member not found' });
         }
 
-        res.json({ 
+        res.json({
             message: 'Team member updated successfully',
             member: result.rows[0]
         });
@@ -134,41 +97,16 @@ export const updateTeamMember = async (req: Request, res: Response) => {
 
 export const getTeamMember = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const user_id = req.user?.id;
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
-
-        const result = await pool.query(
-            `SELECT 
-                member_id,
-                name,
-                email,
-                phone,
-                position,
-                department,
-                salary,
-                enroll_date,
-                status,
-                EXTRACT(YEAR FROM AGE(CURRENT_DATE, enroll_date)) * 12 + 
-                EXTRACT(MONTH FROM AGE(CURRENT_DATE, enroll_date)) as months_working
-            FROM team_members 
-            WHERE member_id = $1 AND business_id = $2`,
-            [id, business_id]
-        );
+        const result = await Teamdb.getTeamMemberById(id, business_id);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Team member not found' });
@@ -194,7 +132,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
         const finalMemberId = member_id || memberId || id;
         const trimmedMonth = month?.trim();
         const trimmedDescription = description?.trim();
-        
+
         if (!finalMemberId || !amount || !trimmedMonth || trimmedMonth === '') {
             return res.status(400).json({ message: 'Member ID, amount, and month are required' });
         }
@@ -203,16 +141,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Amount must be positive' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Get COGS account for salary category only
         const cogsResult = await pool.query(
@@ -230,7 +159,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
         const { account_id, balance } = cogsResult.rows[0];
 
         if (parseFloat(balance) < parseFloat(amount)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 message: `Insufficient salary balance`,
                 error: 'INSUFFICIENT_BALANCE',
                 availableBalance: parseFloat(balance),
@@ -274,7 +203,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
 
         await pool.query('COMMIT');
 
-        res.json({ 
+        res.json({
             message: 'Salary payout successful',
             transaction_id: transactionResult.rows[0].transaction_id
         });
@@ -287,25 +216,16 @@ export const payoutSalary = async (req: Request, res: Response) => {
 
 export const getTeamMemberSalaryHistory = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const user_id = req.user?.id;
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
-
-        // Get team member name first
+        const business_id = await Business_pool.Get_Business_id(user_id);
+        const GetMemberSalaryHistoryResult = await Teamdb.getTeamMemberSalaryHistory(id, business_id);
+        /*// Get team member name first
         const memberResult = await pool.query(
             'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2',
             [id, business_id]
@@ -316,9 +236,9 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
         }
 
         const memberName = memberResult.rows[0].name;
-
+        
         // Get salary payment history (payouts)
-        const payoutHistory = await pool.query(
+        /*const payoutHistory = await pool.query(
             `SELECT 
                 t.transaction_id, 
                 t.amount, 
@@ -331,7 +251,7 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
              AND t.type = 'Outgoing' 
              AND t.note LIKE $2`,
             [business_id, `Salary payout for ${memberName}%`]
-        );
+        )
 
         // Get salary additions (exclude negative amounts as they're duplicates of payouts)
         const additionHistory = await pool.query(
@@ -361,9 +281,9 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
             month: row.note.split(' - ')[1] || '',
             description: row.note,
             type: row.transaction_type // 'addition' or 'payout'
-        }));
+        }));*/
 
-        res.json(formattedHistory);
+        res.json(GetMemberSalaryHistoryResult);
     } catch (error: any) {
         console.error('Error fetching salary history:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
@@ -379,16 +299,7 @@ export const deleteTeamMember = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         const result = await pool.query(
             'DELETE FROM team_members WHERE member_id = $1 AND business_id = $2 RETURNING name',
@@ -416,16 +327,7 @@ export const getTeamMemberAccount = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Verify member belongs to business
         const memberCheck = await pool.query(
@@ -477,16 +379,7 @@ export const distributeSalary = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Amount cannot be zero' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         await pool.query('BEGIN');
 
@@ -534,16 +427,7 @@ export const autoDistributeSalaries = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
         const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
         // Get active team members with salaries
@@ -599,7 +483,7 @@ export const autoDistributeSalaries = async (req: Request, res: Response) => {
 
         await pool.query('COMMIT');
 
-        res.json({ 
+        res.json({
             message: `Auto distribution completed. ${distributedCount} salaries distributed.`,
             distributedCount,
             month: currentMonth

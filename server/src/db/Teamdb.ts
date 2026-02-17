@@ -1,17 +1,6 @@
 import pool from '../db';
 
-export const getBusinessIdForUser = async (user_id: string) => {
-    const result = await pool.query(
-        'SELECT business_id FROM business_users WHERE user_id = $1',
-        [user_id]
-    );
 
-    if (result.rows.length === 0) {
-        throw new Error('User not associated with any business');
-    }
-
-    return result.rows[0].business_id;
-};
 
 export const getTeamMembersByBusiness = async (business_id: string) => {
     const result = await pool.query(
@@ -55,7 +44,7 @@ export const addTeamMember = async (
         [business_id, name, email, phone, position, department, salary, enroll_date || new Date()]
     );
 
-    return result.rows[0];
+    return result;
 };
 
 export const updateTeamMember = async (
@@ -77,7 +66,7 @@ export const updateTeamMember = async (
         [name, email, phone, position, department, salary, status, member_id, business_id]
     );
 
-    return result.rows[0] || null;
+    return result;
 };
 
 export const getTeamMemberById = async (member_id: string, business_id: string) => {
@@ -99,7 +88,7 @@ export const getTeamMemberById = async (member_id: string, business_id: string) 
         [member_id, business_id]
     );
 
-    return result.rows[0] || null;
+    return result;
 };
 
 export const deleteTeamMember = async (member_id: string, business_id: string) => {
@@ -270,38 +259,62 @@ export const payoutSalary = async (member_id: string, amount: number, month: str
 };
 
 export const getTeamMemberSalaryHistory = async (member_id: string, business_id: string) => {
-    const memberRes = await pool.query(
-        'SELECT name FROM team_members WHERE member_id=$1 AND business_id=$2',
+    const memberResult = await pool.query(
+        'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2',
         [member_id, business_id]
     );
 
-    if (memberRes.rows.length === 0) throw new Error('Team member not found');
-    const memberName = memberRes.rows[0].name;
+    if (memberResult.rows.length === 0) {
+        throw new Error('Team member not found');
+    }
 
+    const memberName = memberResult.rows[0].name;
+
+    // Get salary payment history (payouts)
     const payoutHistory = await pool.query(
-        `SELECT t.transaction_id, t.amount, t.note, t.created_at, 'payout' AS transaction_type
-         FROM transactions t
-         JOIN business_transactions bt ON t.transaction_id=bt.transaction_id
-         WHERE bt.business_id=$1 AND t.type='Outgoing' AND (t.note LIKE $2 OR t.note LIKE $3)`,
-        [business_id, `Salary payout for ${memberName}%`, `%Salary for ${memberName}%`]
-    );
+        `SELECT 
+                t.transaction_id, 
+                t.amount, 
+                t.note, 
+                t.created_at,
+                'payout' as transaction_type
+             FROM transactions t
+             JOIN business_transactions bt ON t.transaction_id = bt.transaction_id
+             WHERE bt.business_id = $1 
+              AND (t.note LIKE $2 OR t.note LIKE $3)`,
+        [business_id, `Salary payout for ${memberName}%`, `Salary: Salary for ${memberName}%`]
 
+    )
+
+    // Get salary additions (exclude negative amounts as they're duplicates of payouts)
     const additionHistory = await pool.query(
-        `SELECT st.transaction_id, st.amount, ('Salary added for '||$2||' - '||st.distribution_month) AS note, st.created_at, 'addition' AS transaction_type
-         FROM salary_transactions st
-         WHERE st.member_id=$1 AND st.amount>0`,
+        `SELECT 
+                st.transaction_id, 
+                st.amount, 
+                ('Salary added for ' || $2 || ' - ' || st.distribution_month) as note,
+                st.created_at,
+                'addition' as transaction_type
+             FROM salary_transactions st
+             WHERE st.member_id = $1 AND st.amount > 0`,
         [member_id, memberName]
     );
 
-    const allHistory = [...payoutHistory.rows, ...additionHistory.rows].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    // Combine and sort by date
+    const allHistory = [...payoutHistory.rows, ...additionHistory.rows]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    return allHistory.map((row) => ({
+    // Format the response
+    const formattedHistory = allHistory.map(row => ({
         transaction_id: row.transaction_id,
         amount: parseFloat(row.amount),
         note: row.note,
         created_at: row.created_at,
-        type: row.transaction_type
+        date: row.created_at,
+        payment_date: row.created_at,
+        month: row.note.split(' - ')[1] || '',
+        description: row.note,
+        type: row.transaction_type // 'addition' or 'payout'
     }));
+
+    return formattedHistory;
 };

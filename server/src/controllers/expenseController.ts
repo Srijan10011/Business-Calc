@@ -147,7 +147,7 @@ export const cogsPayout = async (req: Request, res: Response) => {
                 `INSERT INTO transactions (amount, type, note)
                  VALUES ($1, $2, $3)
                  RETURNING transaction_id`,
-                [amount, 'Outgoing', `${categoryName}: ${note}`]
+                [amount, 'Outgoing', categoryName.toLowerCase().includes('salary') ? note : `${categoryName}: ${note}`]
             );
 
             // Link to business

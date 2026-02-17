@@ -519,7 +519,7 @@ export default function Finance() {
                                             const employee = teamMembers.find(m => m.member_id === e.target.value);
                                             if (employee) {
                                                 setPayoutAmount(employee.salary || '');
-                                                setPayoutNote(`Salary for ${employee.name} on ${new Date(salaryMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`);
+                                                setPayoutNote(`Salary payout for ${employee.name} - ${salaryMonth}`);
                                             }
                                         }}
                                         label="Employee"
@@ -539,7 +539,7 @@ export default function Finance() {
                                         setSalaryMonth(e.target.value);
                                         const employee = teamMembers.find(m => m.member_id === selectedEmployee);
                                         if (employee) {
-                                            setPayoutNote(`Salary for ${employee.name} on ${new Date(e.target.value).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`);
+                                            setPayoutNote(`Salary payout for ${employee.name} - ${e.target.value}`);
                                         }
                                     }}
                                     InputLabelProps={{ shrink: true }}
