@@ -22,6 +22,7 @@ import requestRoutes from './routes/requestRoutes';
 import roleRoutes from './routes/roleRoutes';
 import businessUsersRoutes from './routes/businessUsers';
 import dependencyRoutes from './routes/dependencyRoutes';
+import recurringCostRoutes from './routes/recurringCostRoutes';
 
 dotenv.config();
 
@@ -74,6 +75,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/business-users', businessUsersRoutes);
 app.use('/api/dependencies', dependencyRoutes);
 app.use('/api', roleRoutes);
+app.use('/api/recurring-costs', recurringCostRoutes);
 
 const server = app.listen(port, () => {
   console.log(`⚡️[server]: Minimal Express Server is running at http://localhost:${port}`);

@@ -225,63 +225,7 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
 
         const business_id = await Business_pool.Get_Business_id(user_id);
         const GetMemberSalaryHistoryResult = await Teamdb.getTeamMemberSalaryHistory(id, business_id);
-        /*// Get team member name first
-        const memberResult = await pool.query(
-            'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2',
-            [id, business_id]
-        );
 
-        if (memberResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Team member not found' });
-        }
-
-        const memberName = memberResult.rows[0].name;
-        
-        // Get salary payment history (payouts)
-        /*const payoutHistory = await pool.query(
-            `SELECT 
-                t.transaction_id, 
-                t.amount, 
-                t.note, 
-                t.created_at,
-                'payout' as transaction_type
-             FROM transactions t
-             JOIN business_transactions bt ON t.transaction_id = bt.transaction_id
-             WHERE bt.business_id = $1 
-             AND t.type = 'Outgoing' 
-             AND t.note LIKE $2`,
-            [business_id, `Salary payout for ${memberName}%`]
-        )
-
-        // Get salary additions (exclude negative amounts as they're duplicates of payouts)
-        const additionHistory = await pool.query(
-            `SELECT 
-                st.transaction_id, 
-                st.amount, 
-                ('Salary added for ' || $2 || ' - ' || st.distribution_month) as note,
-                st.created_at,
-                'addition' as transaction_type
-             FROM salary_transactions st
-             WHERE st.member_id = $1 AND st.amount > 0`,
-            [id, memberName]
-        );
-
-        // Combine and sort by date
-        const allHistory = [...payoutHistory.rows, ...additionHistory.rows]
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-        // Format the response
-        const formattedHistory = allHistory.map(row => ({
-            transaction_id: row.transaction_id,
-            amount: parseFloat(row.amount),
-            note: row.note,
-            created_at: row.created_at,
-            date: row.created_at,
-            payment_date: row.created_at,
-            month: row.note.split(' - ')[1] || '',
-            description: row.note,
-            type: row.transaction_type // 'addition' or 'payout'
-        }));*/
 
         res.json(GetMemberSalaryHistoryResult);
     } catch (error: any) {
@@ -421,76 +365,18 @@ export const distributeSalary = async (req: Request, res: Response) => {
 // Auto distribute salaries
 export const autoDistributeSalaries = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
+        const user_id = req.user?.id as string;
 
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
+        const result = await Teamdb.autoDistributeSalaries(user_id as string);
 
-        const business_id = await Business_pool.Get_Business_id(user_id);
-        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+        return res.json(result);
 
-        // Get active team members with salaries
-        const membersResult = await pool.query(
-            'SELECT member_id, name, salary FROM team_members WHERE business_id = $1 AND status = $2 AND salary > 0',
-            [business_id, 'active']
-        );
-
-        if (membersResult.rows.length === 0) {
-            return res.status(400).json({ message: 'No active team members with salaries found' });
-        }
-
-        await pool.query('BEGIN');
-
-        let distributedCount = 0;
-
-        for (const member of membersResult.rows) {
-            // Check if already distributed this month
-            const existingTransaction = await pool.query(
-                'SELECT transaction_id FROM salary_transactions WHERE member_id = $1 AND distribution_month = $2',
-                [member.member_id, currentMonth]
-            );
-
-            if (existingTransaction.rows.length === 0) {
-                // Get or create account
-                let accountResult = await pool.query(
-                    'SELECT * FROM team_accounts WHERE member_id = $1',
-                    [member.member_id]
-                );
-
-                if (accountResult.rows.length === 0) {
-                    await pool.query(
-                        'INSERT INTO team_accounts (member_id) VALUES ($1)',
-                        [member.member_id]
-                    );
-                }
-
-                // Update account balance
-                await pool.query(
-                    'UPDATE team_accounts SET current_balance = current_balance + $1, updated_at = CURRENT_TIMESTAMP WHERE member_id = $2',
-                    [member.salary, member.member_id]
-                );
-
-                // Record transaction
-                await pool.query(
-                    'INSERT INTO salary_transactions (member_id, amount, distribution_month) VALUES ($1, $2, $3)',
-                    [member.member_id, member.salary, currentMonth]
-                );
-
-                distributedCount++;
-            }
-        }
-
-        await pool.query('COMMIT');
-
-        res.json({
-            message: `Auto distribution completed. ${distributedCount} salaries distributed.`,
-            distributedCount,
-            month: currentMonth
-        });
     } catch (error: any) {
-        await pool.query('ROLLBACK');
         console.error('Error auto distributing salaries:', error);
-        res.status(500).json({ message: 'Server error', error: error?.message });
+
+        return res.status(error?.status || 500).json({
+            message: error?.message || 'Server error',
+            error: error?.message
+        });
     }
 };

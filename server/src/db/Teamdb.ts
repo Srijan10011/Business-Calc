@@ -1,6 +1,6 @@
 import pool from '../db';
 
-
+import * as Business_pool from './Business_pool';
 
 export const getTeamMembersByBusiness = async (business_id: string) => {
     const result = await pool.query(
@@ -152,47 +152,83 @@ export const distributeSalary = async (member_id: string, amount: number, month:
     }
 };
 
-export const autoDistributeSalaries = async (business_id: string, month: string) => {
-    const client = await pool.connect();
+interface AutoDistributeResponse {
+    message: string;
+    distributedCount: number;
+    month: string;
+}
+
+export const autoDistributeSalaries: (
+    user_id: string
+) => Promise<AutoDistributeResponse> = async (user_id) => {
+    if (!user_id) {
+        throw { status: 401, message: 'User ID not found in token' };
+    }
+
+    const business_id = await Business_pool.Get_Business_id(user_id);
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+    const membersResult = await pool.query(
+        'SELECT member_id, name, salary FROM team_members WHERE business_id = $1 AND status = $2 AND salary > 0',
+        [business_id, 'active']
+    );
+
+    if (membersResult.rows.length === 0) {
+        throw { status: 400, message: 'No active team members with salaries found' };
+    }
+
+    await pool.query('BEGIN');
+
+    let distributedCount = 0;
+
     try {
-        await client.query('BEGIN');
-
-        const members = await client.query(
-            'SELECT member_id, salary FROM team_members WHERE business_id=$1 AND status=$2 AND salary>0',
-            [business_id, 'active']
-        );
-
-        let distributedCount = 0;
-
-        for (const member of members.rows) {
-            const existing = await client.query(
-                'SELECT transaction_id FROM salary_transactions WHERE member_id=$1 AND distribution_month=$2',
-                [member.member_id, month]
+        for (const member of membersResult.rows) {
+            const existingTransaction = await pool.query(
+                'SELECT transaction_id FROM salary_transactions WHERE member_id = $1 AND distribution_month = $2',
+                [member.member_id, currentMonth]
             );
 
-            if (existing.rows.length === 0) {
-                await client.query('INSERT INTO team_accounts (member_id) VALUES ($1) ON CONFLICT DO NOTHING', [member.member_id]);
-                await client.query(
-                    'UPDATE team_accounts SET current_balance = current_balance + $1, updated_at=CURRENT_TIMESTAMP WHERE member_id=$2',
+            if (existingTransaction.rows.length === 0) {
+                let accountResult = await pool.query(
+                    'SELECT * FROM team_accounts WHERE member_id = $1',
+                    [member.member_id]
+                );
+
+                if (accountResult.rows.length === 0) {
+                    await pool.query(
+                        'INSERT INTO team_accounts (member_id) VALUES ($1)',
+                        [member.member_id]
+                    );
+                }
+
+                await pool.query(
+                    'UPDATE team_accounts SET current_balance = current_balance + $1, updated_at = CURRENT_TIMESTAMP WHERE member_id = $2',
                     [member.salary, member.member_id]
                 );
-                await client.query(
-                    'INSERT INTO salary_transactions (member_id, amount, distribution_month) VALUES ($1,$2,$3)',
-                    [member.member_id, member.salary, month]
+
+                await pool.query(
+                    'INSERT INTO salary_transactions (member_id, amount, distribution_month) VALUES ($1, $2, $3)',
+                    [member.member_id, member.salary, currentMonth]
                 );
+
                 distributedCount++;
             }
         }
 
-        await client.query('COMMIT');
-        return distributedCount;
-    } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-    } finally {
-        client.release();
+        await pool.query('COMMIT');
+
+        return {
+            message: `Auto distribution completed. ${distributedCount} salaries distributed.`,
+            distributedCount,
+            month: currentMonth
+        };
+
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        throw error;
     }
 };
+
 
 export const payoutSalary = async (member_id: string, amount: number, month: string, business_id: string) => {
     const client = await pool.connect();

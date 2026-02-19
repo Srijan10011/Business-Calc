@@ -69,7 +69,7 @@ export const getSales = async (req: Request, res: Response) => {
         paramCount++;
         const limitParam = `$${paramCount}`;
         queryParams.push(limit);
-        
+
         paramCount++;
         const offsetParam = `$${paramCount}`;
         queryParams.push(offset);
@@ -100,8 +100,8 @@ export const getSales = async (req: Request, res: Response) => {
         const sales = salesResult.rows.map(row => ({
             ...row,
             status: row.status === 'Pending' ? 'Pending' : 'Paid',
-            total: row.payment_type === 'debit' && row.recovered !== null 
-                ? `${row.recovered}/${row.amount_due}` 
+            total: row.payment_type === 'debit' && row.recovered !== null
+                ? `${row.recovered}/${row.amount_due}`
                 : row.total
         }));
 
@@ -170,6 +170,9 @@ export const addSale = async (req: Request, res: Response) => {
         try {
             await client.query('BEGIN');
 
+            console.log('Payment type received:', payment_type);
+            console.log('Payment type check:', payment_type === 'debit');
+
             // Determine status based on payment type
             const status = (payment_type === 'debit') ? 'Pending' : 'Paid';
 
@@ -188,7 +191,9 @@ export const addSale = async (req: Request, res: Response) => {
                 `INSERT INTO sales (sale_id, business_id, customer_id)
                  VALUES ($1, $2, $3)`,
                 [sale_id, business_id, customer_id]
+
             );
+            console.log('Inserted into sales_info and sales tables with sale_id:', sale_id);
 
             // Insert into transactions table (only for non-debit payments)
             if (payment_type !== 'debit') {
@@ -199,7 +204,7 @@ export const addSale = async (req: Request, res: Response) => {
                      WHERE pca.product_id = $2`,
                     [quantity, product_id]
                 );
-                
+
                 const totalCogs = parseFloat(cogsResult.rows[0].total_cogs);
                 const profit = parseFloat(total_amount) - totalCogs;
 
@@ -235,16 +240,18 @@ export const addSale = async (req: Request, res: Response) => {
             // Process COGS allocation (skip for debit sales)
             if (payment_type !== 'debit') {
                 const costAllocations = await client.query(
-                    `SELECT pca.category_id, pca.amount_per_unit, cc.type 
+                    `SELECT pca.category_id, pca.amount_per_unit, cc.type, cc.is_recurring
                      FROM product_cost_allocation pca
                      JOIN cost_categories cc ON pca.category_id = cc.category_id
                      WHERE pca.product_id = $1`,
                     [product_id]
                 );
 
+                const currentMonth = new Date().toISOString().slice(0, 7);
+
                 for (const allocation of costAllocations.rows) {
                     const totalAmount = allocation.amount_per_unit * quantity;
-                    
+
                     if (allocation.type === 'fixed' || allocation.type === 'variable') {
                         // Update or insert into cogs_account
                         const existingCogs = await client.query(
@@ -263,27 +270,66 @@ export const addSale = async (req: Request, res: Response) => {
                                 [allocation.category_id, totalAmount, business_id]
                             );
                         }
+                    } else if (allocation.is_recurring) {
+                        // Handle monthly recurring costs (rent, loan interest)
+                        const monthlyRecovery = await client.query(
+                            'SELECT recovered_amount, target_amount, status FROM monthly_cost_recovery WHERE category_id = $1 AND month = $2',
+                            [allocation.category_id, currentMonth]
+                        );
+
+                        if (monthlyRecovery.rows.length > 0) {
+                            const { recovered_amount, target_amount, status } = monthlyRecovery.rows[0];
+                            const remaining = target_amount - recovered_amount;
+
+                            if (remaining > 0 && status !== 'fulfilled') {
+                                const amountToAdd = Math.min(totalAmount, remaining);
+                                const excessAmount = totalAmount - amountToAdd;
+
+                                await client.query(
+                                    `UPDATE monthly_cost_recovery 
+                                     SET recovered_amount = recovered_amount + $1,
+                                         status = CASE 
+                                             WHEN recovered_amount + $1 >= target_amount THEN 'fulfilled'
+                                             ELSE 'in_progress'
+                                         END
+                                     WHERE category_id = $2 AND month = $3`,
+                                    [amountToAdd, allocation.category_id, currentMonth]
+                                );
+
+                                if (excessAmount > 0) {
+                                    await client.query(
+                                        'UPDATE business_account SET balance = balance + $1 WHERE account_id = $2',
+                                        [excessAmount, account_id]
+                                    );
+                                }
+                            } else {
+                                await client.query(
+                                    'UPDATE business_account SET balance = balance + $1 WHERE account_id = $2',
+                                    [totalAmount, account_id]
+                                );
+                            }
+                        }
                     } else {
                         // Update fixed_cost_assets recovered amount (with limit check)
                         const assetResult = await client.query(
                             'SELECT total_cost, recovered FROM fixed_cost_assets WHERE cateogory_id = $1',
                             [allocation.category_id]
                         );
-                        
+
                         if (assetResult.rows.length > 0) {
                             const { total_cost, recovered } = assetResult.rows[0];
                             const remaining = total_cost - recovered;
-                            
+
                             if (remaining > 0) {
                                 const amountToAdd = Math.min(totalAmount, remaining);
                                 const excessAmount = totalAmount - amountToAdd;
-                                
+
                                 // Update asset recovery
                                 await client.query(
                                     'UPDATE fixed_cost_assets SET recovered = recovered + $1 WHERE cateogory_id = $2',
                                     [amountToAdd, allocation.category_id]
                                 );
-                                
+
                                 // Add excess back to the payment account (cash/bank)
                                 if (excessAmount > 0) {
                                     await client.query(
@@ -303,15 +349,39 @@ export const addSale = async (req: Request, res: Response) => {
                 }
             }
 
-            // If payment type is debit, create debit account entry and update balance
+            // If payment type is debit, create debit_account entry and update Debit balance
             if (payment_type === 'debit') {
+                console.log('Here running 1');
                 await client.query(
                     `INSERT INTO debit_account (customer_id, sale_id, amount, recovered, total, status)
                      VALUES ($1, $2, $3, $4, $5, $6)`,
                     [customer_id, sale_id, total_amount, 0, total_amount, 'Running']
+
                 );
 
-                // For debit sales, don't add to balance immediately (will be added when payment is received)
+                const debitAccountResult = await client.query(
+                    `SELECT a.account_id
+                    FROM accounts a
+                    JOIN business_account ba ON a.account_id = ba.account_id
+                    WHERE ba.business_id = $1
+                    AND a.account_name = 'Debit Account'`,
+                    [business_id]
+                );
+                console.log('Debit account result:', debitAccountResult.rows);
+
+
+                // Increase Debit account balance (accounts receivable)
+                if (debitAccountResult.rows.length > 0) {
+                    const debit_account_id = debitAccountResult.rows[0].account_id;
+
+                    await client.query(
+                        `UPDATE business_account 
+                         SET balance = balance + $1 
+                         WHERE account_id = $2 AND business_id = $3`,
+                        [total_amount, debit_account_id, business_id]
+                    );
+                    console.log('total_amount:', total_amount, 'debit_account_id:', debit_account_id, 'business_id:', business_id);
+                }
             }
 
             // Update customer purchase history
@@ -384,8 +454,8 @@ export const recordPayment = async (req: Request, res: Response) => {
 
             if (amount > remainingDue) {
                 await client.query('ROLLBACK');
-                return res.status(400).json({ 
-                    message: `Credit = ${remainingDue}, only ${remainingDue} is due` 
+                return res.status(400).json({
+                    message: `Credit = ${remainingDue}, only ${remainingDue} is due`
                 });
             }
 
@@ -415,42 +485,28 @@ export const recordPayment = async (req: Request, res: Response) => {
                 [id, amount]
             );
 
-            // Add transaction entry for installment payment
-            const productResult = await client.query(
-                `SELECT p.name, si.product_id, si.quantity FROM products p 
-                 INNER JOIN sales_info si ON p.product_id = si.product_id 
-                 WHERE si.sale_id = $1`,
-                [id]
-            );
-            
-            const { name: productName, product_id, quantity: saleQuantity } = productResult.rows[0];
-            
-            // Calculate COGS for this payment portion
-            const cogsResult = await client.query(
-                `SELECT COALESCE(SUM(pca.amount_per_unit), 0) as cogs_per_unit
-                 FROM product_cost_allocation pca
-                 WHERE pca.product_id = $1`,
-                [product_id]
-            );
-            
-            const cogsPerUnit = parseFloat(cogsResult.rows[0].cogs_per_unit);
-            const paymentQuantity = amount / (currentAmount / saleQuantity); // Calculate quantity for this payment
-            const cogsCost = cogsPerUnit * paymentQuantity;
-            const profit = amount - cogsCost;
-            
-            const transactionResult = await client.query(
-                `INSERT INTO transactions (account_id, amount, type, note)
-                 VALUES ($1, $2, $3, $4)
-                 RETURNING transaction_id`,
-                [account_id, profit, 'Incomming', `Profit from ${productName} installment`]
-            );
-
-            // Insert into business_transactions
+            // Get business_id and product info
             const businessResult = await client.query(
                 'SELECT business_id FROM business_users WHERE user_id = $1',
                 [req.user?.id]
             );
             const business_id = businessResult.rows[0]?.business_id;
+
+            const productResult = await client.query(
+                `SELECT p.name FROM products p 
+                 INNER JOIN sales_info si ON p.product_id = si.product_id 
+                 WHERE si.sale_id = $1`,
+                [id]
+            );
+            const productName = productResult.rows[0]?.name || 'product';
+
+            // Create transaction record
+            const transactionResult = await client.query(
+                `INSERT INTO transactions (account_id, amount, type, note)
+                 VALUES ($1, $2, $3, $4)
+                 RETURNING transaction_id`,
+                [account_id, amount, 'Incomming', `Payment received for ${productName}`]
+            );
 
             await client.query(
                 `INSERT INTO business_transactions (transaction_id, business_id)
@@ -466,39 +522,60 @@ export const recordPayment = async (req: Request, res: Response) => {
                 [amount, id]
             );
 
-            // Update business account balance for installment payment (profit only)
+            // Find Debit account_id
+            const debitAccountResult = await client.query(
+                `SELECT a.account_id
+                    FROM accounts a
+                    JOIN business_account ba ON a.account_id = ba.account_id
+                    WHERE ba.business_id = $1
+                    AND a.account_name = 'Debit Account'`,
+                [business_id]
+            );
+
+            if (debitAccountResult.rows.length > 0) {
+                const debit_account_id = debitAccountResult.rows[0].account_id;
+
+                // Decrease Debit account balance (accounts receivable)
+                await client.query(
+                    `UPDATE business_account 
+                     SET balance = balance - $1 
+                     WHERE account_id = $2 AND business_id = $3`,
+                    [amount, debit_account_id, business_id]
+                );
+            }
+
+            // Increase payment account balance (Cash/Bank)
             await client.query(
                 `UPDATE business_account 
                  SET balance = balance + $1 
-                 WHERE account_id = $2`,
-                [profit, account_id]
+                 WHERE account_id = $2 AND business_id = $3`,
+                [amount, account_id, business_id]
             );
-
-            // Remove the debit account balance reduction since we're not tracking full amounts anymore
-            // The debit account represents what customer owes, not what's in our balance
 
             // Process COGS for debit payment
             const saleInfoResult = await client.query(
                 'SELECT product_id, rate FROM sales_info WHERE sale_id = $1',
                 [id]
             );
-            
+
             if (saleInfoResult.rows.length > 0) {
                 const { product_id, rate } = saleInfoResult.rows[0];
                 const quantity = amount / rate; // Calculate quantity based on payment amount
 
                 // Get cost allocations for this product
                 const costAllocations = await client.query(
-                    `SELECT pca.category_id, pca.amount_per_unit, cc.type 
+                    `SELECT pca.category_id, pca.amount_per_unit, cc.type, cc.is_recurring
                      FROM product_cost_allocation pca
                      JOIN cost_categories cc ON pca.category_id = cc.category_id
                      WHERE pca.product_id = $1`,
                     [product_id]
                 );
 
+                const currentMonth = new Date().toISOString().slice(0, 7);
+
                 for (const allocation of costAllocations.rows) {
                     const totalAmount = allocation.amount_per_unit * quantity;
-                    
+
                     if (allocation.type === 'fixed' || allocation.type === 'variable') {
                         // Update or insert into cogs_account
                         const existingCogs = await client.query(
@@ -517,17 +594,43 @@ export const recordPayment = async (req: Request, res: Response) => {
                                 [allocation.category_id, totalAmount, business_id]
                             );
                         }
+                    } else if (allocation.is_recurring) {
+                        // Handle monthly recurring costs
+                        const monthlyRecovery = await client.query(
+                            'SELECT recovered_amount, target_amount, status FROM monthly_cost_recovery WHERE category_id = $1 AND month = $2',
+                            [allocation.category_id, currentMonth]
+                        );
+
+                        if (monthlyRecovery.rows.length > 0) {
+                            const { recovered_amount, target_amount, status } = monthlyRecovery.rows[0];
+                            const remaining = target_amount - recovered_amount;
+
+                            if (remaining > 0 && status !== 'fulfilled') {
+                                const amountToAdd = Math.min(totalAmount, remaining);
+
+                                await client.query(
+                                    `UPDATE monthly_cost_recovery 
+                                     SET recovered_amount = recovered_amount + $1,
+                                         status = CASE 
+                                             WHEN recovered_amount + $1 >= target_amount THEN 'fulfilled'
+                                             ELSE 'in_progress'
+                                         END
+                                     WHERE category_id = $2 AND month = $3`,
+                                    [amountToAdd, allocation.category_id, currentMonth]
+                                );
+                            }
+                        }
                     } else {
                         // Update fixed_cost_assets recovered amount (with limit check)
                         const assetResult = await client.query(
                             'SELECT total_cost, recovered FROM fixed_cost_assets WHERE cateogory_id = $1',
                             [allocation.category_id]
                         );
-                        
+
                         if (assetResult.rows.length > 0) {
                             const { total_cost, recovered } = assetResult.rows[0];
                             const remaining = total_cost - recovered;
-                            
+
                             if (remaining > 0) {
                                 const amountToAdd = Math.min(totalAmount, remaining);
                                 await client.query(

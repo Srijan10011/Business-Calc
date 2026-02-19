@@ -166,21 +166,21 @@ export const cogsPayout = async (req: Request, res: Response) => {
             );
 
             // If this is a salary payout, also deduct from employee account balance
-            if (categoryName.toLowerCase().includes('salary') && note.includes('Salary for ')) {
-                // Extract employee name from note format: "Salary for [Name] on [Date]"
-                const employeeNameMatch = note.match(/Salary for ([\w\s]+?) on/);
+            if (categoryName.toLowerCase().includes('salary') && note.includes('Salary payout for ')) {
+                // Extract employee name from note format: "Salary payout for [Name] - [Date]"
+                const employeeNameMatch = note.match(/Salary payout for ([\w\s]+?) - /);
                 if (employeeNameMatch) {
                     const employeeName = employeeNameMatch[1];
-                    
+
                     // Find employee by name
                     const employeeResult = await client.query(
                         'SELECT member_id FROM team_members WHERE name = $1 AND business_id = $2',
                         [employeeName, business_id]
                     );
-                    
+
                     if (employeeResult.rows.length > 0) {
                         const memberId = employeeResult.rows[0].member_id;
-                        
+
                         // Get or create account
                         let accountResult = await client.query(
                             'SELECT * FROM team_accounts WHERE member_id = $1',
