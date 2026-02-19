@@ -67,6 +67,7 @@ export default function Team() {
             setTeamMembers(response.data);
         } catch (error) {
             console.error('Error fetching team members:', error);
+            showSnackbar('Failed to fetch team members. Please try again.', 'error');
             console.error('Error response:', error.response?.data);
         } finally {
             setLoading(false);
@@ -178,11 +179,11 @@ export default function Team() {
                 const response = await api.post('/team/auto-distribute', {}, {
                     headers: { 'x-auth-token': token }
                 });
-                alert(response.data.message);
+                showSnackbar(response.data.message, 'success');
                 await fetchTeamMembers(); // Refresh to show updated balances
             } catch (error) {
                 console.error('Error auto distributing salaries:', error);
-                alert('Error distributing salaries');
+                showSnackbar('Error distributing salaries', 'error');
             }
         } else {
             console.log('Opening manual salary distribution...');

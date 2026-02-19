@@ -20,6 +20,7 @@ import {
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
 import { usePermissions } from '../context/PermissionContext';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const statusColors = {
     Pending: 'error',
@@ -29,6 +30,7 @@ const statusColors = {
 
 export default function Credits() {
     const { hasPermission, loading } = usePermissions();
+    const { showSnackbar } = useSnackbar();
     const [payables, setPayables] = React.useState([]);
     const [accounts, setAccounts] = React.useState([]);
     const [paymentDialog, setPaymentDialog] = React.useState(false);
@@ -52,6 +54,7 @@ export default function Credits() {
             setPayables(response.data);
         } catch (error) {
             console.error('Error fetching payables:', error);
+            showSnackbar('Failed to fetch payables. Please try again.', 'error');
         }
     };
 
@@ -64,6 +67,7 @@ export default function Credits() {
             setAccounts(response.data);
         } catch (error) {
             console.error('Error fetching accounts:', error);
+            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
         }
     };
 
@@ -86,10 +90,11 @@ export default function Credits() {
             });
             setPaymentDialog(false);
             fetchPayables();
+            showSnackbar('Payment recorded successfully!', 'success');
         } catch (error) {
             console.error('Error making payment:', error);
             if (error.response?.status !== 403) {
-                alert('Error: ' + (error.response?.data?.message || error.message));
+                showSnackbar(error.response?.data?.message || 'Failed to record payment. Please try again.', 'error');
             }
         }
     };

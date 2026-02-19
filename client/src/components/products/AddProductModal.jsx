@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Button } from '@mui/material';
 import api from '../../utils/api';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 function AddProductModal({ open, onClose }) {
+    const { showSnackbar } = useSnackbar();
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
     const [stock, setStock] = useState('');
@@ -25,6 +27,7 @@ function AddProductModal({ open, onClose }) {
             onClose();
         } catch (error) {
             console.error('Error adding product:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to add product. Please try again.', 'error');
         }
     };
 

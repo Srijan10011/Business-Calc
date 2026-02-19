@@ -5,6 +5,7 @@ import ArrowBack from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 function CustomTabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -35,6 +36,7 @@ function a11yProps(index) {
 
 const CustomerProfile = () => {
     const { customerId } = useParams();
+    const { showSnackbar } = useSnackbar();
     const navigate = useNavigate();
     const [value, setValue] = React.useState(0);
     const [customer, setCustomer] = React.useState(null);
@@ -52,6 +54,7 @@ const CustomerProfile = () => {
                 setCustomer(response.data);
             } catch (error) {
                 console.error('Error fetching customer:', error);
+                showSnackbar('Failed to fetch customer details. Please try again.', 'error');
             } finally {
                 setLoading(false);
             }
@@ -70,6 +73,7 @@ const CustomerProfile = () => {
                 setSales(response.data);
             } catch (error) {
                 console.error('Error fetching sales:', error);
+                showSnackbar('Failed to fetch sales. Please try again.', 'error');
             }
         };
 
@@ -82,6 +86,7 @@ const CustomerProfile = () => {
                 setPayments(response.data);
             } catch (error) {
                 console.error('Error fetching payments:', error);
+                showSnackbar('Failed to fetch payments. Please try again.', 'error');
             }
         };
 

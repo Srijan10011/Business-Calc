@@ -47,10 +47,12 @@ const ProductDetail = () => {
                 // Product not found or removed
                 navigate('/products');
             } else {
+                showSnackbar('Failed to fetch product', 'error');
                 console.error('Failed to fetch product');
             }
         } catch (error) {
             console.error('Error fetching product:', error);
+            showSnackbar('Failed to fetch product details. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -94,10 +96,12 @@ const ProductDetail = () => {
             if (response.ok) {
                 navigate('/products');
             } else {
+                showSnackbar('Failed to delete product', 'error');
                 console.error('Failed to delete product');
             }
         } catch (error) {
             console.error('Error deleting product:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to delete product. Please try again.', 'error');
         }
         setDeleteDialogOpen(false);
     };

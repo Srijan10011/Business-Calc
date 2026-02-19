@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Box, Avatar, Typography, TextField, Button, Grid, Link as MuiLink } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -46,7 +47,7 @@ const Register = () => {
                 
                 // Check if request is pending approval
                 if (res.data.requestPending) {
-                    alert('Your request has been sent to the business owner for approval. You will be notified once approved.');
+                    showSnackbar('Your request has been sent to the business owner for approval. You will be notified once approved.', 'success');
                     navigate('/login');
                 } else if (res.data.needsBusinessSetup) {
                     setShowBusinessSetup(true);
@@ -55,6 +56,7 @@ const Register = () => {
                 }
             } catch (err) {
                 console.error(err.response.data);
+                showSnackbar(err.response?.data?.message || 'Registration failed. Please try again.', 'error');
                 // You might want to set an error state here and display it to the user
             }
         }

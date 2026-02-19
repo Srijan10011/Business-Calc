@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
 import api from '../../utils/api';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 function AddAssetModal({ open, onClose }) {
+    const { showSnackbar } = useSnackbar();
     const [assetName, setAssetName] = useState('');
     const [category, setCategory] = useState('Machinery');
     const [totalCost, setTotalCost] = useState('');
@@ -20,6 +22,7 @@ function AddAssetModal({ open, onClose }) {
             onClose();
         } catch (error) {
             console.error('Error saving asset:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to save asset. Please try again.', 'error');
         }
     };
 

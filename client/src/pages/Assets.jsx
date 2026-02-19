@@ -5,8 +5,10 @@ import HistoryIcon from '@mui/icons-material/History';
 import Title from '../components/dashboard/Title';
 import AddAssetModal from '../components/assets/AddAssetModal';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 function Assets() {
+    const { showSnackbar } = useSnackbar();
     const [open, setOpen] = React.useState(false);
     const [assets, setAssets] = React.useState([]);
     const [tabValue, setTabValue] = React.useState(0);
@@ -25,6 +27,7 @@ function Assets() {
             setAssets(response.data);
         } catch (error) {
             console.error('Error fetching assets:', error);
+            showSnackbar('Failed to fetch assets. Please try again.', 'error');
         }
     };
 
@@ -37,6 +40,7 @@ function Assets() {
             setRecurringCosts(response.data);
         } catch (error) {
             console.error('Error fetching recurring costs:', error);
+            showSnackbar('Failed to fetch recurring costs. Please try again.', 'error');
         }
     };
 
@@ -64,6 +68,7 @@ function Assets() {
             fetchRecurringCosts();
         } catch (error) {
             console.error('Error adding recurring cost:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to add recurring cost. Please try again.', 'error');
         }
     };
 

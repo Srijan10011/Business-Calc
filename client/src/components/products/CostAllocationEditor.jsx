@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useSnackbar } from '../../context/SnackbarContext';
 import { Paper, Table, TableHead, TableRow, TableCell, TableBody, FormControl, InputLabel, Select, MenuItem, TextField, Typography, Button, IconButton, Grid, Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Title from '../dashboard/Title'; // Reusing Title component
 
 function CostAllocationEditor() {
+    const { showSnackbar } = useSnackbar();
     const [rules, setRules] = useState([
         { id: 1, category: 'Raw Material', type: 'monthly_fixed', mode: 'percentage', value: 30 },
         { id: 2, category: 'Labor', type: 'one_time', mode: 'fixed', value: 50 },
@@ -22,6 +24,7 @@ function CostAllocationEditor() {
             setNextId(nextId + 1);
         } catch (error) {
             console.error('Error adding rule:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to add rule. Please try again.', 'error');
         }
     };
 
@@ -31,6 +34,7 @@ function CostAllocationEditor() {
             const productId = window.location.pathname.split('/').pop();
 
             if (!rule.category || !rule.type || !rule.value) {
+                showSnackbar('Please fill in all required fields', 'warning');
                 console.error('Missing required fields');
                 return;
             }
@@ -54,7 +58,7 @@ function CostAllocationEditor() {
 
             if (checkData.exists) {
                 // Category exists, show error that rule is already defined
-                alert('This rule is already defined for this product');
+                showSnackbar('This rule is already defined for this product', 'warning');
                 return;
             } else {
                 // Category doesn't exist, create it
@@ -92,10 +96,11 @@ function CostAllocationEditor() {
                 });
 
                 if (ruleResponse.ok) {
-                    alert('Allocation updated successfully!');
+                    showSnackbar('Allocation updated successfully!', 'success');
                     console.log('Cost rule saved successfully');
                 } else {
-                    alert('Failed to update allocation');
+                    showSnackbar('Failed to update allocation', 'error');
+                    showSnackbar('Failed to save cost rule', 'error');
                     console.error('Failed to save cost rule');
                 }
             }

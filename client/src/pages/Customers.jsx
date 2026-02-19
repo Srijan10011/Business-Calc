@@ -5,8 +5,10 @@ import Title from '../components/dashboard/Title';
 import { Link } from 'react-router-dom';
 import AddCustomerModal from '../components/customers/AddCustomerModal';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 function Customers() {
+    const { showSnackbar } = useSnackbar();
     const [open, setOpen] = React.useState(false);
     const [customers, setCustomers] = React.useState([]);
 
@@ -17,6 +19,7 @@ function Customers() {
             setCustomers(response.data);
         } catch (error) {
             console.error('Error fetching customers:', error);
+            showSnackbar('Failed to fetch customers. Please try again.', 'error');
         }
     };
 

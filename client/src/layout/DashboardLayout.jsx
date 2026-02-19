@@ -20,6 +20,7 @@ import { Avatar, Menu, MenuItem, ListItemIcon } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import axios from "axios";
+import { useSnackbar } from '../context/SnackbarContext';
 
 const drawerWidth = 240;
 
@@ -70,6 +71,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const mdTheme = createTheme();
 
 function DashboardLayout() {
+    const { showSnackbar } = useSnackbar();
     const [open, setOpen] = React.useState(true);
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [user, setUser] = React.useState(null);
@@ -103,6 +105,7 @@ function DashboardLayout() {
                 setUser(response.data);
             } catch (error) {
                 console.error('Error fetching user:', error);
+                showSnackbar('Failed to fetch user details. Please try again.', 'error');
             }
         };
         fetchUser();

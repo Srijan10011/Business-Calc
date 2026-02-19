@@ -22,8 +22,10 @@ import {
 } from '@mui/material';
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 export default function Finance() {
+    const { showSnackbar } = useSnackbar();
     const [typeFilter, setTypeFilter] = React.useState('');
     const [categoryFilter, setCategoryFilter] = React.useState('');
     const [startDate, setStartDate] = React.useState(() => {
@@ -65,6 +67,7 @@ export default function Finance() {
             setAccounts(response.data);
         } catch (error) {
             console.error('Error fetching accounts:', error);
+            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
         }
     };
 
@@ -77,6 +80,7 @@ export default function Finance() {
             setTransactions(response.data);
         } catch (error) {
             console.error('Error fetching transactions:', error);
+            showSnackbar('Failed to fetch transactions. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -91,6 +95,7 @@ export default function Finance() {
             setCogsData(response.data);
         } catch (error) {
             console.error('Error fetching COGS data:', error);
+            showSnackbar('Failed to fetch COGS data. Please try again.', 'error');
         }
     };
 
@@ -103,6 +108,7 @@ export default function Finance() {
             setTeamMembers(response.data);
         } catch (error) {
             console.error('Error fetching team members:', error);
+            showSnackbar('Failed to fetch team members. Please try again.', 'error');
         }
     };
 
@@ -122,8 +128,10 @@ export default function Finance() {
             setTransferAmount('');
             fetchAccounts(); // Refresh account balances
             fetchTransactions(); // Refresh transactions
+            showSnackbar('Transfer completed successfully!', 'success');
         } catch (error) {
             console.error('Error transferring funds:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to transfer funds. Please try again.', 'error');
         }
     };
 
@@ -145,8 +153,10 @@ export default function Finance() {
             fetchAccounts();
             fetchTransactions();
             fetchCOGSData();
+            showSnackbar('COGS transfer completed successfully!', 'success');
         } catch (error) {
             console.error('Error transferring COGS:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to transfer COGS. Please try again.', 'error');
         }
     };
 
@@ -173,10 +183,11 @@ export default function Finance() {
             fetchAccounts();
             fetchTransactions();
             fetchCOGSData();
+            showSnackbar('Payout processed successfully!', 'success');
         } catch (error) {
             console.error('Error processing COGS payout:', error);
             if (error.response?.status !== 403) {
-                alert('Error processing payout: ' + (error.response?.data?.message || error.message));
+                showSnackbar(error.response?.data?.message || 'Failed to process payout. Please try again.', 'error');
             }
         }
     };

@@ -3,6 +3,7 @@ import { Grid, Card, CardContent, Typography, Paper, Box, LinearProgress, Button
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
 import { usePermissions } from '../context/PermissionContext';
+import { useSnackbar } from '../context/SnackbarContext';
 
 function SummaryCard({ title, value }) {
     return (
@@ -47,6 +48,7 @@ function AssetProgress({ name, value, progress, status }) {
 
 const Dashboard = () => {
     const { hasPermission } = usePermissions();
+    const { showSnackbar } = useSnackbar();
     const [accounts, setAccounts] = React.useState([]);
     const [assets, setAssets] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
@@ -66,6 +68,7 @@ const Dashboard = () => {
             setUserStatus(res.data);
         } catch (error) {
             console.error('Error checking user status:', error);
+            showSnackbar('Failed to check user status. Please try again.', 'error');
         }
     };
 
@@ -81,6 +84,7 @@ const Dashboard = () => {
                 setAccounts([]);
             } else {
                 console.error('Error fetching accounts:', error);
+                showSnackbar('Failed to fetch accounts. Please try again.', 'error');
             }
         }
     };
@@ -97,6 +101,7 @@ const Dashboard = () => {
                 setAssets([]);
             } else {
                 console.error('Error fetching assets:', error);
+                showSnackbar('Failed to fetch assets. Please try again.', 'error');
             }
         }
     };
@@ -116,6 +121,7 @@ const Dashboard = () => {
             setMoneyFlow(response.data);
         } catch (error) {
             console.error('Error fetching money flow:', error);
+            showSnackbar('Failed to fetch money flow data. Please try again.', 'error');
         }
     };
 
@@ -152,8 +158,10 @@ const Dashboard = () => {
             setExpenseAmount('');
             setExpenseNote('');
             fetchData(); // Refresh data
+            showSnackbar('Expense added successfully!', 'success');
         } catch (error) {
             console.error('Error adding expense:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to add expense. Please try again.', 'error');
         }
     };
 

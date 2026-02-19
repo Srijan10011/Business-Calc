@@ -6,8 +6,10 @@ import Title from '../components/dashboard/Title';
 import { Link } from 'react-router-dom';
 import AddProductModal from '../components/products/AddProductModal';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 function Products() {
+    const { showSnackbar } = useSnackbar();
     const [open, setOpen] = React.useState(false);
     const [stockDialog, setStockDialog] = React.useState(false);
     const [products, setProducts] = React.useState([]);
@@ -28,10 +30,12 @@ function Products() {
                 const data = await response.json();
                 setProducts(data);
             } else {
+                showSnackbar('Failed to fetch products', 'error');
                 console.error('Failed to fetch products');
             }
         } catch (error) {
             console.error('Error fetching products:', error);
+            showSnackbar('Failed to fetch products. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -68,6 +72,7 @@ function Products() {
             fetchProducts();
         } catch (error) {
             console.error('Error adding stock:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to add stock. Please try again.', 'error');
         }
     };
 

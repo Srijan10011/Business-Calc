@@ -17,8 +17,10 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Title from '../dashboard/Title';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 function COGSEditor({ productId }) {
+    const { showSnackbar } = useSnackbar();
     const [allocations, setAllocations] = useState([]);
     const [existingCategories, setExistingCategories] = useState([]);
     const [newAllocation, setNewAllocation] = useState({
@@ -47,9 +49,11 @@ function COGSEditor({ productId }) {
                 setAllocations(data);
             } else {
                 console.error('Failed to fetch allocations');
+                showSnackbar('Failed to fetch allocations', 'error');
             }
         } catch (error) {
             console.error('Error fetching allocations:', error);
+            showSnackbar('Failed to fetch allocations. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -71,11 +75,13 @@ function COGSEditor({ productId }) {
                 setExistingCategories(categoriesWithSalary);
             } else {
                 console.error('Failed to fetch categories');
+                showSnackbar('Failed to fetch categories', 'error');
                 // If API fails, at least show Salary as default option
                 setExistingCategories(['Salary']);
             }
         } catch (error) {
             console.error('Error fetching categories:', error);
+            showSnackbar('Failed to fetch categories. Please try again.', 'error');
             // If API fails, at least show Salary as default option
             setExistingCategories(['Salary']);
         }
@@ -83,7 +89,7 @@ function COGSEditor({ productId }) {
 
     const handleAddAllocation = async () => {
         if (!newAllocation.category || !newAllocation.value) {
-            alert('Please fill in all fields');
+            showSnackbar('Please fill in all fields', 'warning');
             return;
         }
 
@@ -107,14 +113,14 @@ function COGSEditor({ productId }) {
                 setNewAllocation({ category: '', type: 'variable', value: '' });
                 fetchAllocations(); // Refresh the list
                 fetchExistingCategories(); // Refresh categories if new one was added
-                alert('Cost category added successfully!');
+                showSnackbar('Cost category added successfully!', 'success');
             } else {
                 const error = await response.json();
-                alert(`Failed to add cost category: ${error.message}`);
+                showSnackbar(`Failed to add cost category: ${error.message}`, 'error');
             }
         } catch (error) {
             console.error('Error adding allocation:', error);
-            alert('Error adding cost category');
+            showSnackbar('Error adding cost category', 'error');
         }
     };
 
@@ -130,14 +136,15 @@ function COGSEditor({ productId }) {
 
             if (response.ok) {
                 fetchAllocations(); // Refresh the list
-                alert('Cost allocation deleted successfully!');
+                showSnackbar('Cost allocation deleted successfully!', 'success');
             } else {
-                alert('Failed to delete cost allocation');
+                showSnackbar('Failed to delete cost allocation', 'error');
             }
         } catch (error) {
             console.error('Error deleting allocation:', error);
-            alert('Error deleting cost allocation');
+            showSnackbar('Error deleting cost allocation', 'error');
         }
+        
     };
 
     if (loading) {

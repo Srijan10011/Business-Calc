@@ -32,6 +32,7 @@ export const PermissionProvider = ({ children }) => {
       setPermissions(res.data);
     } catch (err) {
       console.error('Error fetching permissions:', err);
+      showSnackbar('Failed to fetch permissions. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

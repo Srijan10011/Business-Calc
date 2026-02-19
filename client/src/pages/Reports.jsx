@@ -19,6 +19,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const Reports = () => {
     const [selectedMonth, setSelectedMonth] = React.useState(new Date().toISOString().slice(0, 7));
@@ -35,6 +36,7 @@ const Reports = () => {
             setReportData(response.data);
         } catch (error) {
             console.error('Error fetching report:', error);
+            showSnackbar('Failed to fetch report. Please try again.', 'error');
         } finally {
             setLoading(false);
         }

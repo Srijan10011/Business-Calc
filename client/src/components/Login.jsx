@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 import { Container, Box, Avatar, Typography, TextField, Button, Grid, Link as MuiLink, Alert } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import BusinessSetupDialog from './BusinessSetupDialog';
@@ -40,7 +41,7 @@ const Login = () => {
             
             // Check status
             if (res.data.requestPending) {
-                alert('Your request is pending approval from the business owner.');
+                showSnackbar('Your request is pending approval from the business owner.', 'info');
                 navigate('/dashboard');
             } else if (res.data.needsBusinessSetup) {
                 setShowBusinessSetup(true);

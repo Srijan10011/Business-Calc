@@ -24,8 +24,10 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PropTypes from 'prop-types';
 import api from '../../utils/api';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 export default function AddSaleModal({ open, onClose, onAddStock, preselectedProduct }) {
+    const { showSnackbar } = useSnackbar();
     const [rate, setRate] = React.useState(100);
     const [quantity, setQuantity] = React.useState(10);
     const [isNewCustomer, setIsNewCustomer] = React.useState(false);
@@ -75,6 +77,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             }
         } catch (error) {
             console.error('Error fetching products:', error);
+            showSnackbar('Failed to fetch products. Please try again.', 'error');
         }
     };
 
@@ -90,6 +93,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             }
         } catch (error) {
             console.error('Error fetching customers:', error);
+            showSnackbar('Failed to fetch customers. Please try again.', 'error');
         }
     };
 
@@ -119,6 +123,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             }
         } catch (error) {
             console.error('Error fetching accounts:', error);
+            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
         }
     };
 
@@ -165,6 +170,7 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             setNewCustomerAddress('');
         } catch (error) {
             console.error('Error adding customer:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to add customer. Please try again.', 'error');
         }
     };
 
@@ -189,9 +195,11 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             }, {
                 headers: { 'x-auth-token': token }
             });
+            showSnackbar('Sale created successfully!', 'success');
             onClose();
         } catch (error) {
             console.error('Error saving sale:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to save sale. Please try again.', 'error');
             const errorMessage = error.response?.data?.message || 'Error saving sale';
             setError(errorMessage);
         }

@@ -7,6 +7,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import Refresh from '@mui/icons-material/Refresh';
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const statusColors = {
     OK: 'success',
@@ -15,6 +16,7 @@ const statusColors = {
 };
 
 function Inventory() {
+    const { showSnackbar } = useSnackbar();
     const [items, setItems] = React.useState([]);
     const [addDialog, setAddDialog] = React.useState(false);
     const [stockDialog, setStockDialog] = React.useState(false);
@@ -53,6 +55,7 @@ function Inventory() {
             setSuppliers(uniqueSuppliers);
         } catch (error) {
             console.error('Error fetching suppliers:', error);
+            showSnackbar('Failed to fetch suppliers. Please try again.', 'error');
         }
     };
 
@@ -65,6 +68,7 @@ function Inventory() {
             setAccounts(response.data);
         } catch (error) {
             console.error('Error fetching accounts:', error);
+            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
         }
     };
 
@@ -77,6 +81,7 @@ function Inventory() {
             setItems(response.data);
         } catch (error) {
             console.error('Error fetching inventory:', error);
+            showSnackbar('Failed to fetch inventory. Please try again.', 'error');
         }
     };
 
@@ -125,10 +130,11 @@ function Inventory() {
             });
             setAddDialog(false);
             fetchItems();
+            showSnackbar('Inventory item added successfully!', 'success');
         } catch (error) {
             console.error('Error adding inventory item:', error);
             if (error.response?.status !== 403) {
-                alert('Error adding inventory item: ' + (error.response?.data?.message || error.message));
+                showSnackbar(error.response?.data?.message || 'Failed to add inventory item. Please try again.', 'error');
             }
         }
     };
@@ -155,7 +161,7 @@ function Inventory() {
         try {
             // Validation for stock in operations
             if (stockOperation === 'in' && !skipStockPayment && !stockPaymentAccount) {
-                alert('Please select an account or skip payment');
+                showSnackbar('Please select an account or skip payment', 'warning');
                 return;
             }
 
@@ -163,7 +169,7 @@ function Inventory() {
             const selectedAccount = accounts.find(acc => acc.account_id === stockPaymentAccount);
             const isCredit = selectedAccount?.account_name?.toLowerCase().includes('credit');
             if (stockOperation === 'in' && !skipStockPayment && isCredit && !stockPartyName) {
-                alert('Please select or enter a supplier name for credit transactions');
+                showSnackbar('Please select or enter a supplier name for credit transactions', 'warning');
                 return;
             }
 
@@ -186,10 +192,11 @@ function Inventory() {
             );
             setStockDialog(false);
             fetchItems();
+            showSnackbar('Stock updated successfully!', 'success');
         } catch (error) {
             console.error('Error updating stock:', error);
             if (error.response?.status !== 403) {
-                alert('Error updating stock: ' + (error.response?.data?.message || error.message));
+                showSnackbar(error.response?.data?.message || 'Failed to update stock. Please try again.', 'error');
             }
         }
     };

@@ -34,8 +34,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const Admin = () => {
+  const { showSnackbar } = useSnackbar();
   const userRole = localStorage.getItem('userRole');
   const [requests, setRequests] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -89,6 +91,7 @@ const Admin = () => {
       setRequests(res.data);
     } catch (err) {
       console.error('Error fetching requests:', err);
+      showSnackbar('Failed to fetch requests. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -103,6 +106,7 @@ const Admin = () => {
       setRoles(res.data);
     } catch (err) {
       console.error('Error fetching roles:', err);
+      showSnackbar('Failed to fetch roles. Please try again.', 'error');
     }
   };
 
@@ -115,6 +119,7 @@ const Admin = () => {
       setPermissions(res.data);
     } catch (err) {
       console.error('Error fetching permissions:', err);
+      showSnackbar('Failed to fetch permissions. Please try again.', 'error');
     }
   };
 
@@ -127,6 +132,7 @@ const Admin = () => {
       setUsers(res.data);
     } catch (err) {
       console.error('Error fetching users:', err);
+      showSnackbar('Failed to fetch users. Please try again.', 'error');
     }
   };
 
@@ -207,6 +213,7 @@ const Admin = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error creating role:', err);
+      showSnackbar(err.response?.data?.message || 'Failed to create role. Please try again.', 'error');
       console.error('Error response:', err.response?.data);
       
       if (err.response?.data?.msg) {
@@ -304,6 +311,7 @@ const Admin = () => {
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       console.error('Error creating role:', err);
+      showSnackbar(err.response?.data?.message || 'Failed to create role. Please try again.', 'error');
       if (err.response?.data?.msg) {
         setMessage(err.response.data.msg);
       } else {

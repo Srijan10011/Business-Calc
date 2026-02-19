@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Grid, TextField, Button } from '@mui/material';
 import api from '../../utils/api';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 function AddCustomerModal({ open, onClose }) {
+    const { showSnackbar } = useSnackbar();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -85,6 +87,7 @@ function AddCustomerModal({ open, onClose }) {
                 onClose();
             } catch (error) {
                 console.error('Error adding customer:', error.message);
+                showSnackbar(error.response?.data?.message || 'Failed to add customer. Please try again.', 'error');
                 // Optionally, display an error message to the user
             }
         }

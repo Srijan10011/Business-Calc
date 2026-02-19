@@ -22,6 +22,7 @@ import Title from '../components/dashboard/Title';
 import AddSaleModal from '../components/sales/AddSaleModal';
 import api from '../utils/api';
 import { usePermissions } from '../context/PermissionContext';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const statusColors = {
     Paid: 'success',
@@ -30,6 +31,7 @@ const statusColors = {
 
 export default function Sales() {
     const { hasPermission } = usePermissions();
+    const { showSnackbar } = useSnackbar();
     const [open, setOpen] = useState(false);
     const [sales, setSales] = useState([]);
     const [paymentDialog, setPaymentDialog] = useState(false);
@@ -72,6 +74,7 @@ export default function Sales() {
             setTotalSales(response.data.pagination.totalSales);
         } catch (error) {
             console.error('Error fetching sales:', error);
+            showSnackbar('Failed to fetch sales. Please try again.', 'error');
         }
     };
 
@@ -84,6 +87,7 @@ export default function Sales() {
             setProducts(response.data);
         } catch (error) {
             console.error('Error fetching products:', error);
+            showSnackbar('Failed to fetch products. Please try again.', 'error');
         }
     };
 
@@ -101,6 +105,7 @@ export default function Sales() {
             setAccounts(filteredAccounts);
         } catch (error) {
             console.error('Error fetching accounts:', error);
+            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
         }
     };
 
@@ -151,11 +156,14 @@ export default function Sales() {
             );
             setPaymentDialog(false);
             fetchSales();
+            showSnackbar('Payment recorded successfully!', 'success');
         } catch (error) {
             if (error.response?.data?.message) {
                 setPaymentError(error.response.data.message);
+                showSnackbar(error.response.data.message, 'error');
             } else {
                 console.error('Error recording payment:', error);
+                showSnackbar('Failed to record payment. Please try again.', 'error');
             }
         }
     };
@@ -179,8 +187,10 @@ export default function Sales() {
             fetchProducts();
             setPreselectedProduct(selectedProduct);
             setOpen(true);
+            showSnackbar('Stock added successfully!', 'success');
         } catch (error) {
             console.error('Error adding stock:', error);
+            showSnackbar(error.response?.data?.message || 'Failed to add stock. Please try again.', 'error');
         }
     };
 
