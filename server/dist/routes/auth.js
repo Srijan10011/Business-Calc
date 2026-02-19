@@ -7,14 +7,16 @@ const express_1 = __importDefault(require("express"));
 const router = express_1.default.Router();
 const authController_1 = require("../controllers/authController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
+const validateRequest_1 = require("../middleware/validateRequest");
+const validators_1 = require("../validators");
 // @route   POST api/auth/register
 // @desc    Register user
 // @access  Public
-router.post('/register', authController_1.register);
+router.post('/register', (0, validateRequest_1.validateRequest)(validators_1.registerSchema), authController_1.register);
 // @route   POST api/auth/login
 // @desc    Authenticate user & get token
 // @access  Public
-router.post('/login', authController_1.login);
+router.post('/login', (0, validateRequest_1.validateRequest)(validators_1.loginSchema), authController_1.login);
 // @route   GET api/auth/me
 // @desc    Get current user with role
 // @access  Private
@@ -26,5 +28,5 @@ router.get('/check-business/:business_id', authController_1.checkBusiness);
 // @route   POST api/auth/setup-business
 // @desc    Setup business for user
 // @access  Private
-router.post('/setup-business', authMiddleware_1.authMiddleware, authController_1.setupBusiness);
+router.post('/setup-business', authMiddleware_1.authMiddleware, (0, validateRequest_1.validateRequest)(validators_1.setupBusinessSchema), authController_1.setupBusiness);
 exports.default = router;

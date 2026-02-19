@@ -70,6 +70,35 @@ export const addInventoryItem = async (req: Request, res: Response) => {
 
             // Handle payment if not skipped
             if (payment_account && total_amount > 0) {
+                // Check if it's credit account
+                const accountResult = await client.query(
+                    'SELECT account_name FROM accounts WHERE account_id = $1',
+                    [payment_account]
+                );
+                
+                const isCredit = accountResult.rows[0]?.account_name?.toLowerCase().includes('credit');
+
+                // Check balance for non-credit accounts
+                if (!isCredit) {
+                    const balanceResult = await client.query(
+                        'SELECT balance, account_name FROM business_account ba JOIN accounts a ON ba.account_id = a.account_id WHERE ba.account_id = $1 AND ba.business_id = $2',
+                        [payment_account, business_id]
+                    );
+
+                    if (balanceResult.rows.length === 0) {
+                        await client.query('ROLLBACK');
+                        return res.status(404).json({ message: 'Account not found' });
+                    }
+
+                    const { balance, account_name } = balanceResult.rows[0];
+                    if (parseFloat(balance) < parseFloat(total_amount)) {
+                        await client.query('ROLLBACK');
+                        return res.status(400).json({ 
+                            message: `Insufficient balance in ${account_name}. Available: ₹${parseFloat(balance).toLocaleString('en-IN')}, Required: ₹${parseFloat(total_amount).toLocaleString('en-IN')}`
+                        });
+                    }
+                }
+
                 // Create expense transaction
                 const transactionResult = await client.query(
                     `INSERT INTO transactions (account_id, amount, type, note)
@@ -84,14 +113,6 @@ export const addInventoryItem = async (req: Request, res: Response) => {
                      VALUES ($1, $2)`,
                     [transactionResult.rows[0].transaction_id, business_id]
                 );
-
-                // Check if it's credit account
-                const accountResult = await client.query(
-                    'SELECT account_name FROM accounts WHERE account_id = $1',
-                    [payment_account]
-                );
-                
-                const isCredit = accountResult.rows[0]?.account_name?.toLowerCase().includes('credit');
 
                 // Update account balance (add for credit, subtract for cash/bank)
                 await client.query(
@@ -249,6 +270,35 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
 
             // Handle payment for stock in operations
             if (operation === 'in' && payment_account && total_amount > 0) {
+                // Check if it's credit account
+                const accountResult = await client.query(
+                    'SELECT account_name FROM accounts WHERE account_id = $1',
+                    [payment_account]
+                );
+                
+                const isCredit = accountResult.rows[0]?.account_name?.toLowerCase().includes('credit');
+
+                // Check balance for non-credit accounts
+                if (!isCredit) {
+                    const balanceResult = await client.query(
+                        'SELECT balance, account_name FROM business_account ba JOIN accounts a ON ba.account_id = a.account_id WHERE ba.account_id = $1 AND ba.business_id = $2',
+                        [payment_account, business_id]
+                    );
+
+                    if (balanceResult.rows.length === 0) {
+                        await client.query('ROLLBACK');
+                        return res.status(404).json({ message: 'Account not found' });
+                    }
+
+                    const { balance, account_name } = balanceResult.rows[0];
+                    if (parseFloat(balance) < parseFloat(total_amount)) {
+                        await client.query('ROLLBACK');
+                        return res.status(400).json({ 
+                            message: `Insufficient balance in ${account_name}. Available: ₹${parseFloat(balance).toLocaleString('en-IN')}, Required: ₹${parseFloat(total_amount).toLocaleString('en-IN')}`
+                        });
+                    }
+                }
+
                 // Create expense transaction
                 const transactionResult = await client.query(
                     `INSERT INTO transactions (account_id, amount, type, note)
@@ -263,14 +313,6 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
                      VALUES ($1, $2)`,
                     [transactionResult.rows[0].transaction_id, business_id]
                 );
-
-                // Check if it's credit account
-                const accountResult = await client.query(
-                    'SELECT account_name FROM accounts WHERE account_id = $1',
-                    [payment_account]
-                );
-                
-                const isCredit = accountResult.rows[0]?.account_name?.toLowerCase().includes('credit');
 
                 // Update account balance (add for credit, subtract for cash/bank)
                 await client.query(

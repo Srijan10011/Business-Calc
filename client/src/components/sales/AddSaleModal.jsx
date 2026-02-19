@@ -186,12 +186,12 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             const token = localStorage.getItem('token');
             await api.post('/sales', {
                 customer_id: customer,
-                total_amount: total,
+                total_amount: parseFloat(total),
                 payment_type: paymentType,
                 account_id: account,
                 product_id: product,
-                rate: rate,
-                quantity: quantity
+                rate: parseFloat(rate),
+                quantity: parseInt(quantity, 10)
             }, {
                 headers: { 'x-auth-token': token }
             });

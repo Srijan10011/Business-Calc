@@ -155,13 +155,15 @@ export const deleteCostAllocation = async (allocation_id: string) => {
 export const getCOGSData = async (business_id: string) => {
     const result = await pool.query(
         `SELECT 
-            cc.category_id,
-            cc.name AS category_name,
-            COALESCE(ca.balance, 0) AS balance
-          FROM cost_categories cc
-        LEFT JOIN cogs_account ca ON cc.category_id = ca.category_id
-         WHERE cc.business_id = $1
-         ORDER BY cc.name`,
+    ca.balance, 
+    cc.name AS category_name, 
+    cc.category_id
+FROM cogs_account ca
+JOIN cost_categories cc 
+    ON ca.category_id = cc.category_id
+WHERE ca.business_id = $1 
+ORDER BY cc.name;
+`,
         [business_id]
     );
 
