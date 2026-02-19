@@ -544,15 +544,8 @@ export const recordPayment = async (req: Request, res: Response) => {
                 );
             }
 
-            // Increase payment account balance (Cash/Bank)
-            await client.query(
-                `UPDATE business_account 
-                 SET balance = balance + $1 
-                 WHERE account_id = $2 AND business_id = $3`,
-                [amount, account_id, business_id]
-            );
-
-            // Process COGS for debit payment
+            // Process COGS for debit payment and calculate total COGS
+            let totalCOGS = 0;
             const saleInfoResult = await client.query(
                 'SELECT product_id, rate FROM sales_info WHERE sale_id = $1',
                 [id]
@@ -575,6 +568,7 @@ export const recordPayment = async (req: Request, res: Response) => {
 
                 for (const allocation of costAllocations.rows) {
                     const totalAmount = allocation.amount_per_unit * quantity;
+                    totalCOGS += totalAmount; // Accumulate total COGS
 
                     if (allocation.type === 'fixed' || allocation.type === 'variable') {
                         // Update or insert into cogs_account
@@ -643,6 +637,17 @@ export const recordPayment = async (req: Request, res: Response) => {
                 }
             }
 
+
+            // Calculate net amount after COGS deduction
+            const netAmountToCash = amount - totalCOGS;
+
+            // Increase payment account balance with NET amount (after COGS deduction)
+            await client.query(
+                `UPDATE business_account 
+                 SET balance = balance + $1 
+                 WHERE account_id = $2 AND business_id = $3`,
+                [netAmountToCash, account_id, business_id]
+            );
             await client.query('COMMIT');
             res.json({ message: 'Payment recorded successfully' });
         } catch (error) {
