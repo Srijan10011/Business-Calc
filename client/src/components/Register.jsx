@@ -8,6 +8,7 @@ import BusinessSetupDialog from './BusinessSetupDialog';
 
 const Register = () => {
     const navigate = useNavigate();
+    const { showSnackbar } = useSnackbar();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -48,11 +49,16 @@ const Register = () => {
                 // Check if request is pending approval
                 if (res.data.requestPending) {
                     showSnackbar('Your request has been sent to the business owner for approval. You will be notified once approved.', 'success');
-                    navigate('/login');
+                    setTimeout(() => {
+                        navigate('/login');
+                    }, 2000);
                 } else if (res.data.needsBusinessSetup) {
                     setShowBusinessSetup(true);
                 } else {
-                    navigate('/dashboard');
+                    showSnackbar('Registration successful!', 'success');
+                    setTimeout(() => {
+                        navigate('/dashboard');
+                    }, 1500);
                 }
             } catch (err) {
                 console.error(err.response.data);

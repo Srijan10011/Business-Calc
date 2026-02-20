@@ -82,3 +82,28 @@ export const requirePermission = (permission: string) => {
         next();
     };
 };
+
+
+// Middleware to check if user has ANY of the specified permissions (OR logic)
+export const requireAnyPermission = (...permissions: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const userPermissions = req.userPermissions || [];
+
+        // Owner has all permissions
+        if (userPermissions.includes('*')) {
+            return next();
+        }
+
+        // Check if user has any of the required permissions
+        const hasPermission = permissions.some(perm => userPermissions.includes(perm));
+        
+        if (!hasPermission) {
+            return res.status(403).json({ 
+                msg: 'Permission denied',
+                required: permissions.join(' or ')
+            });
+        }
+
+        next();
+    };
+};

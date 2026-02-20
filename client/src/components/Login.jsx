@@ -8,6 +8,7 @@ import BusinessSetupDialog from './BusinessSetupDialog';
 
 const Login = () => {
     const navigate = useNavigate();
+    const { showSnackbar } = useSnackbar();
     const [formData, setFormData] = useState({
         email: '',
         password: ''

@@ -68,7 +68,9 @@ function Inventory() {
             setAccounts(response.data);
         } catch (error) {
             console.error('Error fetching accounts:', error);
-            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
+            if (error.response?.status !== 403) {
+                showSnackbar('Failed to fetch accounts. Please try again.', 'error');
+            }
         }
     };
 

@@ -1,4 +1,5 @@
 import pool from '../db';
+import * as Business_pool from './Business_pool';
 
 // Permissions
 export const getPermissionsByBusiness = async (business_id: string) => {
@@ -179,4 +180,21 @@ export const checkDuplicateRole = async (
         }
     }
     return null;
+};
+
+
+// ============================================
+// NEW HELPER FUNCTIONS - MIGRATION
+// ============================================
+
+export const verifyBusinessAccess = async (user_id: string) => {
+    const business_id = await Business_pool.Get_Business_id(user_id);
+    return business_id;
+};
+
+export const verifyOwnerAccess = async (user_id: string) => {
+    const business_id = await Business_pool.Get_Business_id(user_id);
+    const isOwner = await isUserOwner(user_id);
+    if (!isOwner) throw { status: 403, message: 'Only owners can perform this action' };
+    return business_id;
 };

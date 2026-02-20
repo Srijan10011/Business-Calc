@@ -44,12 +44,20 @@ export const PermissionProvider = ({ children }) => {
     return permissions.some(p => p.permission_key === permissionKey);
   };
 
+  const hasAnyPermission = (...permissionKeys) => {
+    const userRole = localStorage.getItem('userRole');
+    if (userRole?.toLowerCase() === 'owner') return true;
+    return permissionKeys.some(key => 
+      permissions.some(p => p.permission_key === key)
+    );
+  };
+
   const refreshPermissions = () => {
     fetchPermissions();
   };
 
   return (
-    <PermissionContext.Provider value={{ permissions, hasPermission, loading, refreshPermissions }}>
+    <PermissionContext.Provider value={{ permissions, hasPermission, hasAnyPermission, loading, refreshPermissions }}>
       {children}
     </PermissionContext.Provider>
   );

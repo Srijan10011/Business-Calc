@@ -36,7 +36,7 @@ const App = () => {
           <Route element={<PrivateRoute />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/sales" element={<ProtectedRoute permission="sales.view"><Sales /></ProtectedRoute>} />
+              <Route path="/sales" element={<ProtectedRoute anyPermission={['sales.view', 'sales.create']}><Sales /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute permission="customers.view"><Customers /></ProtectedRoute>} />
               <Route path="/customers/:customerId" element={<ProtectedRoute permission="customers.view"><CustomerProfile /></ProtectedRoute>} />
               <Route path="/inventory" element={<ProtectedRoute permission="inventory.view"><Inventory /></ProtectedRoute>} />

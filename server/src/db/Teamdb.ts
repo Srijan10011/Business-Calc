@@ -1,3 +1,4 @@
+import { number } from 'zod';
 import pool from '../db';
 
 import * as Business_pool from './Business_pool';
@@ -107,6 +108,7 @@ export const getTeamMemberAccount = async (member_id: string, business_id: strin
     );
 
     if (memberCheck.rows.length === 0) return null;
+    // Get or create account
 
     let account = await pool.query(
         'SELECT * FROM team_accounts WHERE member_id=$1',
@@ -132,18 +134,23 @@ export const distributeSalary = async (member_id: string, amount: number, month:
         if (accountResult.rows.length === 0) {
             await client.query('INSERT INTO team_accounts (member_id) VALUES ($1)', [member_id]);
         }
-
+        // Update account balance
         await client.query(
             'UPDATE team_accounts SET current_balance = current_balance + $1, updated_at=CURRENT_TIMESTAMP WHERE member_id=$2',
             [amount, member_id]
         );
 
+        // Record transaction
         await client.query(
             'INSERT INTO salary_transactions (member_id, amount, distribution_month) VALUES ($1,$2,$3)',
             [member_id, amount, month]
         );
 
         await client.query('COMMIT');
+        return {
+            account: accountResult.rows[0],
+
+        };
     } catch (err) {
         await client.query('ROLLBACK');
         throw err;
@@ -230,62 +237,68 @@ export const autoDistributeSalaries: (
 };
 
 
-export const payoutSalary = async (member_id: string, amount: number, month: string, business_id: string) => {
+export const payoutSalary = async (member_id: string, amount: number, trimmedMonth: string, business_id: string) => {
     const client = await pool.connect();
     try {
-        await client.query('BEGIN');
 
-        // Salary COGS account
-        const cogs = await client.query(
+        // Get COGS account for salary category only
+        const cogsResult = await pool.query(
             `SELECT ca.account_id, ca.balance 
              FROM cogs_account ca
-             JOIN cost_categories cc ON ca.category_id=cc.category_id
-             WHERE ca.business_id=$1 AND LOWER(cc.name)='salary'`,
+             JOIN cost_categories cc ON ca.category_id = cc.category_id
+             WHERE ca.business_id = $1 AND LOWER(cc.name) = 'salary'`,
             [business_id]
         );
 
-        if (cogs.rows.length === 0) throw new Error('Salary COGS account not found');
+        if (cogsResult.rows.length === 0) {
+            throw { status: 400, message: 'Salary COGS account not found' };
+        }
 
-        const { account_id, balance } = cogs.rows[0];
-        if ((balance) < (amount)) throw new Error('Insufficient balance');
+        const { account_id, balance } = cogsResult.rows[0];
 
-        const memberRes = await client.query(
-            'SELECT name FROM team_members WHERE member_id=$1 AND business_id=$2',
+        if (Number(balance) < Number(amount)) {
+            throw { status: 400, message: 'Insufficient funds in COGS account for salary payout' };
+        };
+
+
+        // Get team member name
+        const memberResult = await pool.query(
+            'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2',
             [member_id, business_id]
         );
 
-        if (memberRes.rows.length === 0) throw new Error('Team member not found');
-        const memberName = memberRes.rows[0].name;
-
-        await client.query('UPDATE cogs_account SET balance = balance - $1 WHERE account_id=$2', [amount, account_id]);
-
-        const transaction = await client.query(
-            'INSERT INTO transactions (amount, type, note) VALUES ($1,$2,$3) RETURNING transaction_id',
-            [amount, 'Outgoing', `Salary payout for ${memberName} - ${month}`]
-        );
-
-        await client.query('INSERT INTO business_transactions (transaction_id, business_id) VALUES ($1,$2)', [
-            transaction.rows[0].transaction_id,
-            business_id
-        ]);
-
-        let account = await client.query('SELECT * FROM team_accounts WHERE member_id=$1', [member_id]);
-        if (account.rows.length === 0) {
-            await client.query('INSERT INTO team_accounts (member_id) VALUES ($1)', [member_id]);
+        if (memberResult.rows.length === 0) {
+            throw { status: 404, message: 'Team member not found' };
         }
 
-        await client.query(
-            'UPDATE team_accounts SET current_balance = current_balance - $1, updated_at=CURRENT_TIMESTAMP WHERE member_id=$2',
-            [amount, member_id]
+        const memberName = memberResult.rows[0].name;
+
+        await pool.query('BEGIN');
+
+        // Deduct from COGS balance
+        await pool.query(
+            'UPDATE cogs_account SET balance = balance - $1 WHERE account_id = $2',
+            [amount, account_id]
         );
 
-        await client.query(
-            'INSERT INTO salary_transactions (member_id, amount, distribution_month, transaction_type) VALUES ($1,$2,$3,$4)',
-            [member_id, -(amount), month, 'withdrawal']
+        // Record transaction (no account_id needed for COGS payout)
+        const transactionResult = await pool.query(
+            `INSERT INTO transactions (amount, type, note)
+             VALUES ($1, $2, $3)
+             RETURNING transaction_id`,
+            [amount, 'Outgoing', `Salary payout for ${memberName} - ${trimmedMonth}`]
         );
 
-        await client.query('COMMIT');
-        return transaction.rows[0].transaction_id;
+        // Link transaction to business
+        await pool.query(
+            'INSERT INTO business_transactions (transaction_id, business_id) VALUES ($1, $2)',
+            [transactionResult.rows[0].transaction_id, business_id]
+        );
+
+        await pool.query('COMMIT');
+
+
+        return transactionResult.rows[0].transaction_id;
     } catch (err) {
         await client.query('ROLLBACK');
         throw err;

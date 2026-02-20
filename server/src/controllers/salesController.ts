@@ -1,125 +1,46 @@
 import { Request, Response } from 'express';
 import pool from '../db';
-
+import * as Business_pool from '../db/Business_pool';
+import * as Salesdb from '../db/Salesdb';
 export const getSales = async (req: Request, res: Response) => {
     try {
         const user_id = req.user?.id;
-        const { status, product, date_from, date_to, page = 1, limit = 20 } = req.query;
 
         if (!user_id) {
             return res.status(401).json({ message: 'User ID not found in token' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
+        const { status, product, date_from, date_to } = req.query;
+
+        // Normalize pagination safely
+        const page = Math.max(1, Number(req.query.page) || 1);
+        const limit = Math.max(1, Number(req.query.limit) || 20);
+
+        const business_id = await Business_pool.Get_Business_id(user_id);
+
+        const result = await Salesdb.getSalesWithPagination(
+            business_id,
+            { status, product, date_from, date_to },
+            page,
+            limit
         );
 
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
+        return res.json(result);
 
-        const business_id = businessResult.rows[0].business_id;
-        const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
-
-        let whereClause = 'WHERE s.business_id = $1';
-        const queryParams = [business_id];
-        let paramCount = 1;
-
-        if (status) {
-            paramCount++;
-            whereClause += ` AND si.status = $${paramCount}`;
-            queryParams.push(status);
-        }
-
-        if (product) {
-            paramCount++;
-            whereClause += ` AND p.product_id = $${paramCount}`;
-            queryParams.push(product);
-        }
-
-        if (date_from) {
-            paramCount++;
-            whereClause += ` AND DATE(si.created_at) >= $${paramCount}`;
-            queryParams.push(date_from);
-        }
-
-        if (date_to) {
-            paramCount++;
-            whereClause += ` AND DATE(si.created_at) <= $${paramCount}`;
-            queryParams.push(date_to);
-        }
-
-        // Get total count
-        const countResult = await pool.query(
-            `SELECT COUNT(*) as total
-            FROM sales_info si
-            INNER JOIN sales s ON si.sale_id = s.sale_id
-            INNER JOIN customers_info ci ON s.customer_id = ci.customer_id
-            INNER JOIN products p ON si.product_id = p.product_id
-            LEFT JOIN debit_account da ON si.sale_id = da.sale_id
-            ${whereClause}`,
-            queryParams
-        );
-
-        const totalSales = parseInt(countResult.rows[0].total);
-        const totalPages = Math.ceil(totalSales / parseInt(limit as string));
-
-        // Add pagination to query params
-        paramCount++;
-        const limitParam = `$${paramCount}`;
-        queryParams.push(limit);
-
-        paramCount++;
-        const offsetParam = `$${paramCount}`;
-        queryParams.push(offset);
-
-        const salesResult = await pool.query(
-            `SELECT 
-                si.sale_id,
-                si.created_at as date,
-                ci.name as customer,
-                p.name as product,
-                si.quantity,
-                si.total_amount as total,
-                si.type as payment_type,
-                si.status,
-                da.amount as amount_due,
-                da.recovered
-            FROM sales_info si
-            INNER JOIN sales s ON si.sale_id = s.sale_id
-            INNER JOIN customers_info ci ON s.customer_id = ci.customer_id
-            INNER JOIN products p ON si.product_id = p.product_id
-            LEFT JOIN debit_account da ON si.sale_id = da.sale_id
-            ${whereClause}
-            ORDER BY si.created_at DESC, si.sale_id DESC
-            LIMIT ${limitParam} OFFSET ${offsetParam}`,
-            queryParams
-        );
-
-        const sales = salesResult.rows.map(row => ({
-            ...row,
-            status: row.status === 'Pending' ? 'Pending' : 'Paid',
-            total: row.payment_type === 'debit' && row.recovered !== null
-                ? `${row.recovered}/${row.amount_due}`
-                : row.total
-        }));
-
-        res.json({
-            sales,
-            pagination: {
-                currentPage: parseInt(page as string),
-                totalPages,
-                totalSales,
-                limit: parseInt(limit as string)
-            }
-        });
     } catch (error: any) {
         console.error('Error fetching sales:', error);
-        res.status(500).json({ message: 'Server error', error: error?.message });
+        return res.status(500).json({
+            message: 'Server error',
+            error: error?.message
+        });
     }
 };
 
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// TO BE REMOVED AFTER NEW CODE IS VERIFIED
+// ============================================
+/*
 export const addSale = async (req: Request, res: Response) => {
     try {
         const { customer_id, total_amount, payment_type, account_id, product_id, rate, quantity } = req.body;
@@ -142,99 +63,68 @@ export const addSale = async (req: Request, res: Response) => {
         }
 
         // Get business_id from business_users table
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Get product name for transaction note
-        const productResult = await pool.query(
-            'SELECT name FROM products WHERE product_id = $1',
-            [product_id]
-        );
+        const productResult = await Salesdb.productResult(product_id);
 
-        if (productResult.rows.length === 0) {
-            return res.status(400).json({ message: 'Product not found' });
-        }
-
-        const product_name = productResult.rows[0].name;
+        const product_name = productResult;
 
         // Start transaction
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
 
-            console.log('Payment type received:', payment_type);
-            console.log('Payment type check:', payment_type === 'debit');
-
             // Determine status based on payment type
             const status = (payment_type === 'debit') ? 'Pending' : 'Paid';
 
             // Insert into sales_info
-            const saleInfoResult = await client.query(
-                `INSERT INTO sales_info (product_id, quantity, rate, total_amount, account_id, type, status)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)
-                 RETURNING sale_id`,
-                [product_id, quantity, rate, total_amount, account_id, payment_type === 'cash' ? 'Cash' : payment_type, status]
+            const saleInfoResult = await Salesdb.saleInfoResult(
+                product_id,
+                quantity,
+                rate,
+                total_amount,
+                account_id,
+                payment_type === 'cash' ? 'Cash' : payment_type,
+
             );
 
-            const sale_id = saleInfoResult.rows[0].sale_id;
+            const sale_id = saleInfoResult;
 
             // Insert into sales table (sales_id + business_id + customer_id)
-            await client.query(
-                `INSERT INTO sales (sale_id, business_id, customer_id)
-                 VALUES ($1, $2, $3)`,
-                [sale_id, business_id, customer_id]
-
+            await Salesdb.Insert_Into_sales(
+                sale_id,
+                business_id,
+                customer_id
             );
-            console.log('Inserted into sales_info and sales tables with sale_id:', sale_id);
-
             // Insert into transactions table (only for non-debit payments)
             if (payment_type !== 'debit') {
                 // Calculate total COGS for this sale
-                const cogsResult = await client.query(
-                    `SELECT COALESCE(SUM(pca.amount_per_unit * $1), 0) as total_cogs
-                     FROM product_cost_allocation pca
-                     WHERE pca.product_id = $2`,
-                    [quantity, product_id]
-                );
+                const cogsResult = await Salesdb.cogsResult(product_id, quantity);
 
                 const totalCogs = parseFloat(cogsResult.rows[0].total_cogs);
                 const profit = parseFloat(total_amount) - totalCogs;
 
-                const transactionResult = await client.query(
-                    `INSERT INTO transactions (account_id, amount, type, note)
-                     VALUES ($1, $2, $3, $4)
-                     RETURNING transaction_id`,
-                    [account_id, profit, 'Incomming', `Profit from sale of ${product_name}`]
-                );
+                const transactionResult = await Salesdb.Transaction_result(account_id, profit, product_name);
 
                 // Insert into business_transactions
-                await client.query(
-                    `INSERT INTO business_transactions (transaction_id, business_id)
-                     VALUES ($1, $2)`,
-                    [transactionResult.rows[0].transaction_id, business_id]
+                await Salesdb.insert_into_business_transactions(
+                    business_id,
+                    transactionResult.rows[0].transaction_id
                 );
 
                 // Update business account balance with profit only
-                await client.query(
-                    `UPDATE business_account 
-                     SET balance = balance + $1 
-                     WHERE account_id = $2`,
-                    [profit, account_id]
+                await Salesdb.Update_business_with_profit(
+                    account_id,
+                    profit
+
                 );
             }
 
             // Decrease product stock
-            await client.query(
-                `UPDATE products SET stock = stock - $1 WHERE product_id = $2`,
-                [quantity, product_id]
+            await Salesdb.decrease_product_stock(
+                product_id,
+                quantity
             );
 
             // Process COGS allocation (skip for debit sales)
@@ -422,7 +312,80 @@ export const addSale = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN & MODULAR
+// ============================================
+export const addSale = async (req: Request, res: Response) => {
+    try {
+        const { customer_id, total_amount, payment_type, account_id, product_id, rate, quantity } = req.body;
+        const user_id = req.user?.id;
+
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+
+        if (!customer_id) {
+            return res.status(400).json({ message: 'Customer selection is required' });
+        }
+
+        if (parseFloat(rate) < 0) {
+            return res.status(400).json({ message: 'Rate cannot be negative' });
+        }
+
+        if (parseInt(quantity) < 0) {
+            return res.status(400).json({ message: 'Quantity cannot be negative' });
+        }
+
+        const business_id = await Business_pool.Get_Business_id(user_id);
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            let result;
+            if (payment_type === 'debit') {
+                result = await Salesdb.createDebitSaleNew(client, business_id, {
+                    customer_id,
+                    product_id,
+                    quantity,
+                    rate,
+                    total_amount,
+                    account_id
+                });
+            } else {
+                result = await Salesdb.createCashSaleNew(client, business_id, {
+                    customer_id,
+                    product_id,
+                    quantity,
+                    rate,
+                    total_amount,
+                    account_id,
+                    payment_type
+                });
+            }
+
+            await client.query('COMMIT');
+            return res.status(201).json(result);
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    } catch (error: any) {
+        console.error('Error adding sale:', error);
+        return res.status(error?.status || 500).json({
+            message: error?.message || 'Server error'
+        });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 export const recordPayment = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -661,3 +624,48 @@ export const recordPayment = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
+*/
+
+// ============================================
+// NEW IMPLEMENTATION - CLEAN & MODULAR
+// ============================================
+export const recordPayment = async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const { amount, account_id } = req.body;
+        const user_id = req.user?.id;
+
+        if (!user_id) {
+            return res.status(401).json({ message: 'User ID not found in token' });
+        }
+
+        const business_id = await Business_pool.Get_Business_id(user_id);
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            const result = await Salesdb.recordDebitPaymentNew(
+                client,
+                id,
+                amount,
+                account_id,
+                business_id
+            );
+
+            await client.query('COMMIT');
+            return res.json(result);
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    } catch (error: any) {
+        console.error('Error recording payment:', error);
+        return res.status(error?.status || 500).json({
+            message: error?.message || 'Server error'
+        });
+    }
+};
+

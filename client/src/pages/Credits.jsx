@@ -67,7 +67,9 @@ export default function Credits() {
             setAccounts(response.data);
         } catch (error) {
             console.error('Error fetching accounts:', error);
-            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
+            if (error.response?.status !== 403) {
+                showSnackbar('Failed to fetch accounts. Please try again.', 'error');
+            }
         }
     };
 
@@ -94,7 +96,7 @@ export default function Credits() {
         } catch (error) {
             console.error('Error making payment:', error);
             if (error.response?.status !== 403) {
-                showSnackbar(error.response?.data?.message || 'Failed to record payment. Please try again.', 'error');
+            showSnackbar(error.response?.data?.msg || error.response?.data?.message || 'Failed to record payment. Please try again.', 'error');
             }
         }
     };

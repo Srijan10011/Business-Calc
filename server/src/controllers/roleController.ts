@@ -1,6 +1,11 @@
 import { Request, Response } from 'express';
 import pool from '../db';
+import * as Roledb from '../db/Roledb';
 
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Get all permissions (system + custom for business)
 export const getPermissions = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -30,7 +35,25 @@ export const getPermissions = async (req: Request, res: Response) => {
         res.status(500).send('Server error');
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const getPermissions = async (req: Request, res: Response) => {
+    try {
+        const business_id = await Roledb.verifyBusinessAccess(req.user?.id as string);
+        const permissions = await Roledb.getPermissionsByBusiness(business_id);
+        res.json(permissions);
+    } catch (error: any) {
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Create custom permission (owner only)
 export const createPermission = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -60,7 +83,32 @@ export const createPermission = async (req: Request, res: Response) => {
         res.status(500).send('Server error');
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const createPermission = async (req: Request, res: Response) => {
+    try {
+        const business_id = await Roledb.verifyOwnerAccess(req.user?.id as string);
+        const { permission_key, permission_name, category, description } = req.body;
+        const newPermission = await Roledb.createPermission(
+            business_id,
+            permission_key,
+            permission_name,
+            category,
+            description
+        );
+        res.json(newPermission);
+    } catch (error: any) {
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Get all roles for business
 export const getRoles = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -94,7 +142,25 @@ export const getRoles = async (req: Request, res: Response) => {
         res.status(500).send('Server error');
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const getRoles = async (req: Request, res: Response) => {
+    try {
+        const business_id = await Roledb.verifyBusinessAccess(req.user?.id as string);
+        const roles = await Roledb.getRolesByBusiness(business_id);
+        res.json(roles);
+    } catch (error: any) {
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Create role (owner only)
 export const createRole = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -148,7 +214,29 @@ export const createRole = async (req: Request, res: Response) => {
         client.release();
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const createRole = async (req: Request, res: Response) => {
+    try {
+        const business_id = await Roledb.verifyOwnerAccess(req.user?.id as string);
+        const { role_name, description, permissions } = req.body;
+        const newRole = await Roledb.createRole(business_id, role_name, description, permissions);
+        res.json(newRole);
+    } catch (error: any) {
+        if (error.code === '23505') {
+            return res.status(400).json({ msg: 'A role with this name already exists in your business' });
+        }
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Check if role with same permissions exists
 export const checkDuplicateRole = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -203,7 +291,37 @@ export const checkDuplicateRole = async (req: Request, res: Response) => {
         res.status(500).json({ msg: 'Server error' });
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const checkDuplicateRole = async (req: Request, res: Response) => {
+    try {
+        const user_id = req.user?.id as string;
+        const business_id = await Roledb.verifyBusinessAccess(user_id);
+        const { permissions, exclude_role_id } = req.body;
+
+        if (!permissions || permissions.length === 0) {
+            return res.json({ exists: false });
+        }
+
+        const duplicate = await Roledb.checkDuplicateRole(business_id, permissions, exclude_role_id);
+
+        if (duplicate) {
+            return res.json({ exists: true, ...duplicate });
+        }
+
+        res.json({ exists: false });
+    } catch (error: any) {
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Get role with permissions
 export const getRoleDetails = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -246,7 +364,31 @@ export const getRoleDetails = async (req: Request, res: Response) => {
         res.status(500).send('Server error');
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const getRoleDetails = async (req: Request, res: Response) => {
+    try {
+        const business_id = await Roledb.verifyBusinessAccess(req.user?.id as string);
+        const role_id = req.params.role_id as string;
+        const roleDetails = await Roledb.getRoleDetails(role_id, business_id);
+
+        if (!roleDetails) {
+            return res.status(404).json({ msg: 'Role not found' });
+        }
+
+        res.json(roleDetails);
+    } catch (error: any) {
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Update role permissions
 export const updateRolePermissions = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -300,7 +442,34 @@ export const updateRolePermissions = async (req: Request, res: Response) => {
         client.release();
     }
 };
+*/
 
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const updateRolePermissions = async (req: Request, res: Response) => {
+    try {
+        const business_id = await Roledb.verifyOwnerAccess(req.user?.id as string);
+        const role_id = req.params.role_id as string;
+        const { permissions } = req.body;
+
+        // Verify role belongs to business
+        const roleDetails = await Roledb.getRoleDetails(role_id, business_id);
+        if (!roleDetails) {
+            return res.status(404).json({ msg: 'Role not found' });
+        }
+
+        await Roledb.updateRolePermissions(role_id, permissions);
+        res.json({ msg: 'Role permissions updated successfully' });
+    } catch (error: any) {
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
+    }
+};
+
+// ============================================
+// OLD IMPLEMENTATION - COMMENTED OUT
+// ============================================
+/*
 // Delete role
 export const deleteRole = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
@@ -331,5 +500,25 @@ export const deleteRole = async (req: Request, res: Response) => {
     } catch (err: any) {
         console.error(err.message);
         res.status(500).send('Server error');
+    }
+};
+*/
+
+// ============================================
+// NEW IMPLEMENTATION - CLEAN
+// ============================================
+export const deleteRole = async (req: Request, res: Response) => {
+    try {
+        const business_id = await Roledb.verifyOwnerAccess(req.user?.id as string);
+        const role_id = req.params.role_id as string;
+        const deleted = await Roledb.deleteRole(role_id, business_id);
+
+        if (!deleted) {
+            return res.status(404).json({ msg: 'Role not found' });
+        }
+
+        res.json({ msg: 'Role deleted successfully' });
+    } catch (error: any) {
+        res.status(error?.status || 500).json({ msg: error?.message || 'Server error' });
     }
 };

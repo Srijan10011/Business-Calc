@@ -87,7 +87,9 @@ export default function Sales() {
             setProducts(response.data);
         } catch (error) {
             console.error('Error fetching products:', error);
-            showSnackbar('Failed to fetch products. Please try again.', 'error');
+            if (error.response?.status !== 403) {
+                showSnackbar('Failed to fetch products. Please try again.', 'error');
+            }
         }
     };
 
@@ -105,7 +107,11 @@ export default function Sales() {
             setAccounts(filteredAccounts);
         } catch (error) {
             console.error('Error fetching accounts:', error);
-            showSnackbar('Failed to fetch accounts. Please try again.', 'error');
+            // Only show error if it's not a permission issue
+            if (error.response?.status !== 403) {
+                showSnackbar('Failed to fetch accounts. Please try again.', 'error');
+            }
+            // If 403, silently fail - user doesn't have permission to create sales anyway
         }
     };
 
@@ -158,9 +164,10 @@ export default function Sales() {
             fetchSales();
             showSnackbar('Payment recorded successfully!', 'success');
         } catch (error) {
-            if (error.response?.data?.message) {
-                setPaymentError(error.response.data.message);
-                showSnackbar(error.response.data.message, 'error');
+            if (error.response?.data?.msg || error.response?.data?.message) {
+                const errorMsg = error.response.data.msg || error.response.data.message;
+                setPaymentError(errorMsg);
+                showSnackbar(errorMsg, 'error');
             } else {
                 console.error('Error recording payment:', error);
                 showSnackbar('Failed to record payment. Please try again.', 'error');
@@ -190,7 +197,7 @@ export default function Sales() {
             showSnackbar('Stock added successfully!', 'success');
         } catch (error) {
             console.error('Error adding stock:', error);
-            showSnackbar(error.response?.data?.message || 'Failed to add stock. Please try again.', 'error');
+            showSnackbar(error.response?.data?.msg || error.response?.data?.message || 'Failed to add stock. Please try again.', 'error');
         }
     };
 

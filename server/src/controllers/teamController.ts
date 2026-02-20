@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import pool from '../db';
+
 import * as Business_pool from '../db/Business_pool';
 import * as Teamdb from '../db/Teamdb';
 
@@ -121,7 +121,7 @@ export const getTeamMember = async (req: Request, res: Response) => {
 
 export const payoutSalary = async (req: Request, res: Response) => {
     try {
-        console.log('Request body:', req.body);
+
         const { member_id, memberId, id, amount, month, description } = req.body;
         const user_id = req.user?.id;
 
@@ -144,71 +144,14 @@ export const payoutSalary = async (req: Request, res: Response) => {
         const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Get COGS account for salary category only
-        const cogsResult = await pool.query(
-            `SELECT ca.account_id, ca.balance 
-             FROM cogs_account ca
-             JOIN cost_categories cc ON ca.category_id = cc.category_id
-             WHERE ca.business_id = $1 AND LOWER(cc.name) = 'salary'`,
-            [business_id]
-        );
-
-        if (cogsResult.rows.length === 0) {
-            return res.status(400).json({ message: 'Salary COGS account not found' });
-        }
-
-        const { account_id, balance } = cogsResult.rows[0];
-
-        if (parseFloat(balance) < parseFloat(amount)) {
-            return res.status(400).json({
-                message: `Insufficient salary balance`,
-                error: 'INSUFFICIENT_BALANCE',
-                availableBalance: parseFloat(balance),
-                requestedAmount: parseFloat(amount)
-            });
-        }
-
-        // Get team member name
-        const memberResult = await pool.query(
-            'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2',
-            [finalMemberId, business_id]
-        );
-
-        if (memberResult.rows.length === 0) {
-            return res.status(404).json({ message: 'Team member not found' });
-        }
-
-        const memberName = memberResult.rows[0].name;
-
-        await pool.query('BEGIN');
-
-        // Deduct from COGS balance
-        await pool.query(
-            'UPDATE cogs_account SET balance = balance - $1 WHERE account_id = $2',
-            [amount, account_id]
-        );
-
-        // Record transaction (no account_id needed for COGS payout)
-        const transactionResult = await pool.query(
-            `INSERT INTO transactions (amount, type, note)
-             VALUES ($1, $2, $3)
-             RETURNING transaction_id`,
-            [amount, 'Outgoing', `Salary payout for ${memberName} - ${trimmedMonth}`]
-        );
-
-        // Link transaction to business
-        await pool.query(
-            'INSERT INTO business_transactions (transaction_id, business_id) VALUES ($1, $2)',
-            [transactionResult.rows[0].transaction_id, business_id]
-        );
-
-        await pool.query('COMMIT');
+        const cogsResult = await Teamdb.payoutSalary(finalMemberId, parseFloat(amount), trimmedMonth, business_id);
 
         res.json({
             message: 'Salary payout successful',
-            transaction_id: transactionResult.rows[0].transaction_id
+            transaction_id: cogsResult.transaction_id
         });
     } catch (error: any) {
-        await pool.query('ROLLBACK');
+
         console.error('Error processing salary payout:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
@@ -236,7 +179,7 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
 
 export const deleteTeamMember = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const user_id = req.user?.id;
 
         if (!user_id) {
@@ -245,16 +188,9 @@ export const deleteTeamMember = async (req: Request, res: Response) => {
 
         const business_id = await Business_pool.Get_Business_id(user_id);
 
-        const result = await pool.query(
-            'DELETE FROM team_members WHERE member_id = $1 AND business_id = $2 RETURNING name',
-            [id, business_id]
-        );
+        const result = await Teamdb.deleteTeamMember(id, business_id);
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Team member not found' });
-        }
-
-        res.json({ message: 'Team member deleted successfully' });
+        res.json({ message: 'Team member deleted successfully', result });
     } catch (error: any) {
         console.error('Error deleting team member:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
@@ -264,7 +200,7 @@ export const deleteTeamMember = async (req: Request, res: Response) => {
 // Get or create team account
 export const getTeamMemberAccount = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const user_id = req.user?.id;
 
         if (!user_id) {
@@ -274,30 +210,11 @@ export const getTeamMemberAccount = async (req: Request, res: Response) => {
         const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Verify member belongs to business
-        const memberCheck = await pool.query(
-            'SELECT member_id FROM team_members WHERE member_id = $1 AND business_id = $2',
-            [id, business_id]
-        );
+        const get_teammemberaccount = await Teamdb.getTeamMemberAccount(id, business_id);
 
-        if (memberCheck.rows.length === 0) {
-            return res.status(404).json({ message: 'Team member not found' });
-        }
 
-        // Get or create account
-        let accountResult = await pool.query(
-            'SELECT * FROM team_accounts WHERE member_id = $1',
-            [id]
-        );
 
-        if (accountResult.rows.length === 0) {
-            // Create account if doesn't exist
-            accountResult = await pool.query(
-                'INSERT INTO team_accounts (member_id) VALUES ($1) RETURNING *',
-                [id]
-            );
-        }
-
-        res.json(accountResult.rows[0]);
+        res.json(get_teammemberaccount);
     } catch (error: any) {
         console.error('Error fetching team account:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
@@ -325,38 +242,13 @@ export const distributeSalary = async (req: Request, res: Response) => {
 
         const business_id = await Business_pool.Get_Business_id(user_id);
 
-        await pool.query('BEGIN');
+
 
         // Get or create account
-        let accountResult = await pool.query(
-            'SELECT * FROM team_accounts WHERE member_id = $1',
-            [member_id]
-        );
-
-        if (accountResult.rows.length === 0) {
-            accountResult = await pool.query(
-                'INSERT INTO team_accounts (member_id) VALUES ($1) RETURNING *',
-                [member_id]
-            );
-        }
-
-        // Update account balance
-        await pool.query(
-            'UPDATE team_accounts SET current_balance = current_balance + $1, updated_at = CURRENT_TIMESTAMP WHERE member_id = $2',
-            [amount, member_id]
-        );
-
-        // Record transaction
-        await pool.query(
-            'INSERT INTO salary_transactions (member_id, amount, distribution_month) VALUES ($1, $2, $3)',
-            [member_id, amount, month]
-        );
-
-        await pool.query('COMMIT');
-
-        res.json({ message: 'Salary distributed successfully' });
+        let accountResult = await Teamdb.distributeSalary(member_id, amount, month, business_id);
+        res.json({ message: 'Salary distributed successfully', data: accountResult });
     } catch (error: any) {
-        await pool.query('ROLLBACK');
+
         console.error('Error distributing salary:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }

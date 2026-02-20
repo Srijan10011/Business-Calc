@@ -19,7 +19,7 @@ import { usePermissions } from "../context/PermissionContext";
 
 export const MainListItems = () => {
   const userRole = localStorage.getItem('userRole');
-  const { hasPermission } = usePermissions();
+  const { hasPermission, hasAnyPermission } = usePermissions();
 
   return (
     <React.Fragment>
@@ -30,7 +30,7 @@ export const MainListItems = () => {
         <ListItemText primary="Dashboard"/>
       </ListItemButton>
       
-      {hasPermission('sales.view') && (
+      {hasAnyPermission('sales.view', 'sales.create') && (
         <ListItemButton component={Link} to="/sales">
           <ListItemIcon>
             <ShoppingCartIcon />

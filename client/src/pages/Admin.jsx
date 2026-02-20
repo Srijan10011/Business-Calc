@@ -74,12 +74,14 @@ const Admin = () => {
   const [duplicateRoleDialog, setDuplicateRoleDialog] = useState(false);
   const [duplicateRoleName, setDuplicateRoleName] = useState('');
   const [duplicateRoleId, setDuplicateRoleId] = useState(null);
+  const [businessId, setBusinessId] = useState('');
 
   useEffect(() => {
     fetchRequests();
     fetchRoles();
     fetchPermissions();
     fetchUsers();
+    fetchBusinessId();
   }, []);
 
   const fetchRequests = async () => {
@@ -133,6 +135,18 @@ const Admin = () => {
     } catch (err) {
       console.error('Error fetching users:', err);
       showSnackbar('Failed to fetch users. Please try again.', 'error');
+    }
+  };
+
+  const fetchBusinessId = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.get('/auth/business-id', {
+        headers: { 'x-auth-token': token }
+      });
+      setBusinessId(res.data.business_id);
+    } catch (err) {
+      console.error('Error fetching business ID:', err);
     }
   };
 
@@ -619,9 +633,19 @@ const Admin = () => {
           <Typography variant="h6" gutterBottom>
             Settings
           </Typography>
-          <Typography color="text.secondary">
-            Business settings will appear here
-          </Typography>
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+              Business Information
+            </Typography>
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Business ID
+              </Typography>
+              <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.95rem' }}>
+                {businessId || 'Loading...'}
+              </Typography>
+            </Box>
+          </Box>
         </Paper>
       )}
 
