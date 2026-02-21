@@ -10,14 +10,10 @@ function AddProductModal({ open, onClose }) {
     const [stock, setStock] = useState('');
 
     const handleSaveProduct = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post('/products', {
+        try {            await api.post('/products', {
                 name,
                 price: parseFloat(price),
                 stock: parseInt(stock),
-            }, {
-                headers: { 'x-auth-token': token }
             });
 
             setName('');

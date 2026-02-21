@@ -1,6 +1,7 @@
 import pool from '../db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import logger from '../utils/logger';
 import * as Accountdb from './Accountdb';
 
 interface User {
@@ -243,28 +244,54 @@ export const storeRefreshToken = async (
     );
 };
 
-// Validate refresh token
-export const validateRefreshToken = async (refreshToken: string, user_id: string) => {
+// Validate refresh token with security checks
+export const validateRefreshToken = async (
+    refreshToken: string, 
+    user_id: string,
+    ipAddress?: string,
+    userAgent?: string
+) => {
     const result = await pool.query(
-        `SELECT token_id, token_hash, expires_at 
+        `SELECT token_id, token_hash, expires_at, ip_address, user_agent, last_used 
          FROM refresh_tokens 
-         WHERE user_id = $1 AND expires_at > NOW()`,
+         WHERE user_id = $1 AND expires_at > NOW()
+         ORDER BY created_at DESC`,
         [user_id]
     );
 
     for (const row of result.rows) {
         const isValid = await bcrypt.compare(refreshToken, row.token_hash);
         if (isValid) {
+            // Security check: Detect token replay from different IP/device
+            const ipMismatch = ipAddress && row.ip_address && ipAddress !== row.ip_address.toString();
+            const userAgentMismatch = userAgent && row.user_agent && userAgent !== row.user_agent;
+            
+            if (ipMismatch || userAgentMismatch) {
+                // Log suspicious activity
+                logger.warn('Refresh token replay detected', {
+                    user_id,
+                    original_ip: row.ip_address,
+                    request_ip: ipAddress,
+                    ip_mismatch: ipMismatch,
+                    user_agent_mismatch: userAgentMismatch
+                });
+                
+                // Optionally: Revoke token on suspicious activity
+                // await pool.query('DELETE FROM refresh_tokens WHERE token_id = $1', [row.token_id]);
+                // return false;
+            }
+            
             // Update last_used timestamp
             await pool.query(
                 'UPDATE refresh_tokens SET last_used = NOW() WHERE token_id = $1',
                 [row.token_id]
             );
-            return true;
+            
+            return { valid: true, token_id: row.token_id };
         }
     }
     
-    return false;
+    return { valid: false };
 };
 
 // Delete specific refresh token (logout)
@@ -283,6 +310,11 @@ export const deleteRefreshToken = async (refreshToken: string, user_id: string) 
     }
     
     return false;
+};
+
+// Delete refresh token by ID (for token rotation)
+export const deleteRefreshTokenById = async (token_id: string) => {
+    await pool.query('DELETE FROM refresh_tokens WHERE token_id = $1', [token_id]);
 };
 
 // Delete all refresh tokens for a user (force logout all sessions)

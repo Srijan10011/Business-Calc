@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import helmet from 'helmet';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
@@ -8,7 +9,9 @@ import pool from './db';
 import logger from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { httpsRedirect } from './middleware/httpsRedirect';
+import { validateCsrfToken } from './middleware/csrfMiddleware';
 import healthRoutes from './routes/healthRoutes';
+import csrfRoutes from './routes/csrfRoutes';
 import customerRoutes from './routes/customerRoutes';
 import productRoutes from './routes/productRoutes';
 import categoryRoutes from './routes/categoryRoutes';
@@ -31,7 +34,8 @@ import businessUsersRoutes from './routes/businessUsers';
 import dependencyRoutes from './routes/dependencyRoutes';
 import recurringCostRoutes from './routes/recurringCostRoutes';
 
-dotenv.config();
+// Load .env from project root (two levels up from dist/index.js)
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app: Express = express();
 const port = 5000;
@@ -52,12 +56,38 @@ app.use(helmet({
 }));
 
 // Security: CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'x-auth-token', 'x-permission-context']
-}));
+const configureCORS = () => {
+  // In production, FRONTEND_URL must be set
+  if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+    throw new Error('FRONTEND_URL environment variable is required in production');
+  }
+
+  // Support multiple origins (comma-separated)
+  const allowedOrigins = process.env.FRONTEND_URL 
+    ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim())
+    : ['http://localhost:5173', 'http://localhost:3000']; // Dev defaults
+
+  return cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'x-auth-token', 'x-permission-context', 'x-csrf-token']
+  });
+};
+
+app.use(configureCORS());
 
 // Security: Rate limiting for authentication endpoints
 const authLimiter = rateLimit({
@@ -131,8 +161,14 @@ const authLimiterMiddleware = (req: Request, res: Response, next: any) => {
 
 app.use('/api/auth', authLimiterMiddleware, authRoutes);
 
+// CSRF token endpoint (no CSRF protection needed for GET)
+app.use('/api', csrfRoutes);
+
 // Apply general rate limiting to all API routes (after auth middleware extracts user)
 app.use('/api', apiLimiter);
+
+// Apply CSRF protection to all state-changing API routes
+app.use('/api', validateCsrfToken);
 
 app.use('/api/customers', customerRoutes);
 app.use('/api/products', productRoutes);

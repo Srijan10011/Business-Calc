@@ -3,7 +3,8 @@ import { useSnackbar } from '../../context/SnackbarContext';
 import { Paper, Table, TableHead, TableRow, TableCell, TableBody, FormControl, InputLabel, Select, MenuItem, TextField, Typography, Button, IconButton, Grid, Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import Title from '../dashboard/Title'; // Reusing Title component
+import Title from '../dashboard/Title';
+import api from '../../utils/api';
 
 function CostAllocationEditor() {
     const { showSnackbar } = useSnackbar();
@@ -15,10 +16,7 @@ function CostAllocationEditor() {
 
     const handleAddRule = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const productId = window.location.pathname.split('/').pop(); // Get product ID from URL
-
-            // Create new rule with empty values
+            const productId = window.location.pathname.split('/').pop();
             const newRule = { id: nextId, category: '', type: '', mode: 'percentage', value: '' };
             setRules([...rules, newRule]);
             setNextId(nextId + 1);
@@ -29,7 +27,6 @@ function CostAllocationEditor() {
 
     const handleSaveRule = async (rule) => {
         try {
-            const token = localStorage.getItem('token');
             const productId = window.location.pathname.split('/').pop();
 
             if (!rule.category || !rule.type || !rule.value) {
@@ -37,70 +34,40 @@ function CostAllocationEditor() {
                 return;
             }
 
-            // Step 1: Check if category exists
-            let checkResponse = await fetch(`http://localhost:5000/api/categories/check`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': token || '',
-                },
-                body: JSON.stringify({
-                    name: rule.category,
-                    cost_behaviour: rule.type,
-		    product_id: productId
-                }),
+            // Check if category exists
+            const checkResponse = await api.post('/categories/check', {
+                name: rule.category,
+                cost_behaviour: rule.type,
+                product_id: productId
             });
 
-            let checkData = await checkResponse.json();
-            let categoryId;
-
-            if (checkData.exists) {
-                // Category exists, show error that rule is already defined
+            if (checkResponse.data.exists) {
                 showSnackbar('This rule is already defined for this product', 'warning');
                 return;
-            } else {
-                // Category doesn't exist, create it
-                let createResponse = await fetch(`http://localhost:5000/api/categories`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-auth-token': token || '',
-                    },
-                    body: JSON.stringify({
-                        name: rule.category,
-                        cost_behaviour: rule.type,
-                        type: 'outgoing',
-			product_id: productId
-
-                    }),
-                });
-
-                let createData = await createResponse.json();
-                categoryId = createData.id;
-
-                // Step 2: Save to product_cost_rules table
-                const ruleResponse = await fetch(`http://localhost:5000/api/product-cost-rules`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-auth-token': token || '',
-                    },
-                    body: JSON.stringify({
-                        product_id: productId,
-                        category_id: categoryId,
-                        mode: rule.mode === 'percentage' ? 'percent' : 'fixed',
-                        value: parseFloat(rule.value.toString())
-                    }),
-                });
-
-                if (ruleResponse.ok) {
-                    showSnackbar('Allocation updated successfully!', 'success');
-                } else {
-                    showSnackbar('Failed to update allocation', 'error');
-                }
             }
+
+            // Create category
+            const createResponse = await api.post('/categories', {
+                name: rule.category,
+                cost_behaviour: rule.type,
+                type: 'outgoing',
+                product_id: productId
+            });
+
+            const categoryId = createResponse.data.id;
+
+            // Save to product_cost_rules
+            await api.post('/product-cost-rules', {
+                product_id: productId,
+                category_id: categoryId,
+                mode: rule.mode === 'percentage' ? 'percent' : 'fixed',
+                value: parseFloat(rule.value.toString())
+            });
+
+            showSnackbar('Allocation updated successfully!', 'success');
         } catch (error) {
-            showSnackbar(error.response?.data?.message || 'Failed to save rule. Please try again.', 'error');}
+            showSnackbar(error.response?.data?.message || 'Failed to save rule. Please try again.', 'error');
+        }
     };
 
     const handleRemoveRule = (id) => {
@@ -113,8 +80,7 @@ function CostAllocationEditor() {
         ));
     };
 
-    // Placeholder for live total allocation calculation
-    const allocatedPercentage = 24; // Static for now
+    const allocatedPercentage = 24;
     const remainingPercentage = 100 - allocatedPercentage;
 
     return (

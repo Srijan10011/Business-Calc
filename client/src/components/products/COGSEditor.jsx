@@ -18,6 +18,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Title from '../dashboard/Title';
 import { useSnackbar } from '../../context/SnackbarContext';
+import api from '../../utils/api';
 
 function COGSEditor({ productId }) {
     const { showSnackbar } = useSnackbar();
@@ -37,19 +38,8 @@ function COGSEditor({ productId }) {
 
     const fetchAllocations = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/cogs/product/${productId}/allocations`, {
-                headers: {
-                    'x-auth-token': token || '',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setAllocations(data);
-            } else {
-                showSnackbar('Failed to fetch allocations', 'error');
-            }
+            const response = await api.get(`/cogs/product/${productId}/allocations`);
+            setAllocations(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch allocations. Please try again.', 'error');
         } finally {
@@ -59,26 +49,11 @@ function COGSEditor({ productId }) {
 
     const fetchExistingCategories = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/cogs/categories', {
-                headers: {
-                    'x-auth-token': token || '',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                // Add Salary as first option, then other categories
-                const categoriesWithSalary = ['Salary', ...data.filter(cat => cat !== 'Salary')];
-                setExistingCategories(categoriesWithSalary);
-            } else {
-                showSnackbar('Failed to fetch categories', 'error');
-                // If API fails, at least show Salary as default option
-                setExistingCategories(['Salary']);
-            }
+            const response = await api.get('/cogs/categories');
+            const categoriesWithSalary = ['Salary', ...response.data.filter(cat => cat !== 'Salary')];
+            setExistingCategories(categoriesWithSalary);
         } catch (error) {
             showSnackbar('Failed to fetch categories. Please try again.', 'error');
-            // If API fails, at least show Salary as default option
             setExistingCategories(['Salary']);
         }
     };
@@ -90,51 +65,26 @@ function COGSEditor({ productId }) {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/cogs/cost-category', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': token || '',
-                },
-                body: JSON.stringify({
-                    category: newAllocation.category,
-                    type: newAllocation.type,
-                    value: parseFloat(newAllocation.value),
-                    product_id: productId
-                }),
+            await api.post('/cogs/cost-category', {
+                category: newAllocation.category,
+                type: newAllocation.type,
+                value: parseFloat(newAllocation.value),
+                product_id: productId
             });
-
-            if (response.ok) {
-                setNewAllocation({ category: '', type: 'variable', value: '' });
-                fetchAllocations(); // Refresh the list
-                fetchExistingCategories(); // Refresh categories if new one was added
-                showSnackbar('Cost category added successfully!', 'success');
-            } else {
-                const error = await response.json();
-                showSnackbar(`Failed to add cost category: ${error.message}`, 'error');
-            }
+            setNewAllocation({ category: '', type: 'variable', value: '' });
+            fetchAllocations();
+            fetchExistingCategories();
+            showSnackbar('Cost category added successfully!', 'success');
         } catch (error) {
-            showSnackbar('Error adding cost category', 'error');
+            showSnackbar(`Failed to add cost category: ${error.response?.data?.message || error.message}`, 'error');
         }
     };
 
     const handleDeleteAllocation = async (allocationId) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/cogs/allocation/${allocationId}`, {
-                method: 'DELETE',
-                headers: {
-                    'x-auth-token': token || '',
-                },
-            });
-
-            if (response.ok) {
-                fetchAllocations(); // Refresh the list
-                showSnackbar('Cost allocation deleted successfully!', 'success');
-            } else {
-                showSnackbar('Failed to delete cost allocation', 'error');
-            }
+            await api.delete(`/cogs/allocation/${allocationId}`);
+            fetchAllocations();
+            showSnackbar('Cost allocation deleted successfully!', 'success');
         } catch (error) {
             showSnackbar('Error deleting cost allocation', 'error');
         }

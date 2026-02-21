@@ -60,11 +60,7 @@ const Dashboard = () => {
     const [userStatus, setUserStatus] = React.useState(null);
 
     const checkUserStatus = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await api.get('/requests/status', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const res = await api.get('/requests/status');
             setUserStatus(res.data);
         } catch (error) {
             showSnackbar('Failed to check user status. Please try again.', 'error');
@@ -72,11 +68,7 @@ const Dashboard = () => {
     };
 
     const fetchAccounts = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/accounts', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/accounts');
             setAccounts(response.data);
         } catch (error) {
             if (error.response?.status === 403) {
@@ -88,11 +80,7 @@ const Dashboard = () => {
     };
 
     const fetchAssets = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/assets', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/assets');
             setAssets(response.data);
         } catch (error) {
             if (error.response?.status === 403) {
@@ -110,11 +98,7 @@ const Dashboard = () => {
     };
 
     const fetchMoneyFlow = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/dashboard/money-flow', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/dashboard/money-flow');
             setMoneyFlow(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch money flow data. Please try again.', 'error');
@@ -140,14 +124,10 @@ const Dashboard = () => {
     const totalBalance = cashBalance + bankBalance + debitBalance;
 
     const handleExpenseSubmit = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post('/expenses', {
+        try {            await api.post('/expenses', {
                 account_id: expenseAccount,
                 amount: parseFloat(expenseAmount),
                 note: expenseNote
-            }, {
-                headers: { 'x-auth-token': token }
             });
             setExpenseDialog(false);
             setExpenseAccount('');

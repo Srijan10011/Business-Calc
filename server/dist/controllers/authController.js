@@ -48,6 +48,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.refreshAccessToken = exports.logout = exports.verifyToken = exports.getUserInfo = exports.setupBusiness = exports.login = exports.register = exports.checkBusiness = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const securityAudit_1 = require("../utils/securityAudit");
 const Authdb = __importStar(require("../db/Authdb"));
 const Accountdb = __importStar(require("../db/Accountdb"));
 const checkBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -90,35 +91,65 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const normalizedEmail = email.toLowerCase().trim();
         const user = yield Authdb.getUserByEmail(normalizedEmail);
         if (!user) {
+            // Log failed login attempt
+            yield (0, securityAudit_1.logSecurityEvent)({
+                event_type: 'login_failure',
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent'],
+                details: { email: normalizedEmail, reason: 'user_not_found' },
+                severity: 'medium'
+            });
             return res.status(400).json({ msg: 'Invalid Credentials' });
         }
         const user_id = user.user_id;
         // Perform login (validates password and checks business access)
-        const result = yield Authdb.loginUser(email, password);
-        // Generate access token (15 minutes)
-        const accessToken = jsonwebtoken_1.default.sign({ user: { id: user_id } }, process.env.JWT_SECRET, { expiresIn: '15m' });
-        // Generate refresh token (7 days)
-        const refreshToken = jsonwebtoken_1.default.sign({ user: { id: user_id } }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-        // Store refresh token in database
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-        yield Authdb.storeRefreshToken(user_id, refreshToken, expiresAt, req.ip, req.headers['user-agent']);
-        // Set access token cookie (15 minutes)
-        res.cookie('token', accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 15 * 60 * 1000 // 15 minutes
-        });
-        // Set refresh token cookie (7 days)
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-        // Send response (backward compatibility)
-        res.json(Object.assign(Object.assign({}, result), { token: accessToken // For backward compatibility
-         }));
+        try {
+            const result = yield Authdb.loginUser(email, password);
+            // Generate access token (15 minutes)
+            const accessToken = jsonwebtoken_1.default.sign({ user: { id: user_id } }, process.env.JWT_SECRET, { expiresIn: '15m' });
+            // Generate refresh token (7 days)
+            const refreshToken = jsonwebtoken_1.default.sign({ user: { id: user_id } }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+            // Store refresh token in database
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+            yield Authdb.storeRefreshToken(user_id, refreshToken, expiresAt, req.ip, req.headers['user-agent']);
+            // Set access token cookie (15 minutes)
+            res.cookie('token', accessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 15 * 60 * 1000 // 15 minutes
+            });
+            // Set refresh token cookie (7 days)
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+            // Log successful login
+            yield (0, securityAudit_1.logSecurityEvent)({
+                event_type: 'login_success',
+                user_id,
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent'],
+                severity: 'low'
+            });
+            // Send response (backward compatibility)
+            res.json(Object.assign(Object.assign({}, result), { token: accessToken // For backward compatibility
+             }));
+        }
+        catch (loginError) {
+            // Log failed login (wrong password or no business access)
+            yield (0, securityAudit_1.logSecurityEvent)({
+                event_type: 'login_failure',
+                user_id,
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent'],
+                details: { reason: loginError.message },
+                severity: 'medium'
+            });
+            throw loginError;
+        }
     }
     catch (err) {
         logger_1.default.error(err.message || err);
@@ -198,14 +229,30 @@ const refreshAccessToken = (req, res) => __awaiter(void 0, void 0, void 0, funct
         return res.status(401).json({ msg: 'Refresh token not found' });
     }
     try {
-        // Verify refresh token
+        // Verify refresh token JWT signature
         const decoded = jsonwebtoken_1.default.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
         const user_id = decoded.user.id;
-        // Check if refresh token exists in database and is valid
-        const isValid = yield Authdb.validateRefreshToken(refreshToken, user_id);
-        if (!isValid) {
+        // Validate refresh token in database with security checks
+        const validation = yield Authdb.validateRefreshToken(refreshToken, user_id, req.ip, req.headers['user-agent']);
+        if (!validation.valid) {
+            // Log failed refresh attempt
+            yield (0, securityAudit_1.logSecurityEvent)({
+                event_type: 'invalid_token',
+                user_id,
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent'],
+                details: { reason: 'refresh_token_invalid' },
+                severity: 'medium'
+            });
             return res.status(401).json({ msg: 'Invalid refresh token' });
         }
+        // Token rotation: Generate new refresh token
+        const newRefreshToken = jsonwebtoken_1.default.sign({ user: { id: user_id } }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+        // Delete old refresh token
+        yield Authdb.deleteRefreshTokenById(validation.token_id);
+        // Store new refresh token
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        yield Authdb.storeRefreshToken(user_id, newRefreshToken, expiresAt, req.ip, req.headers['user-agent']);
         // Generate new access token (15 minutes)
         const newAccessToken = jsonwebtoken_1.default.sign({ user: { id: user_id } }, process.env.JWT_SECRET, { expiresIn: '15m' });
         // Set new access token cookie
@@ -213,7 +260,22 @@ const refreshAccessToken = (req, res) => __awaiter(void 0, void 0, void 0, funct
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 15 * 60 * 1000 // 15 minutes
+            maxAge: 15 * 60 * 1000
+        });
+        // Set new refresh token cookie
+        res.cookie('refreshToken', newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+        // Log successful token refresh
+        yield (0, securityAudit_1.logSecurityEvent)({
+            event_type: 'token_refresh',
+            user_id,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent'],
+            severity: 'low'
         });
         res.json({ msg: 'Token refreshed successfully' });
     }

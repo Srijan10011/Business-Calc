@@ -46,11 +46,7 @@ const CustomerProfile = () => {
 
     React.useEffect(() => {
         const fetchCustomer = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await api.get(`/customers/${customerId}`, {
-                    headers: { 'x-auth-token': token }
-                });
+            try {                const response = await api.get(`/customers/${customerId}`);
                 setCustomer(response.data);
             } catch (error) {
                 showSnackbar('Failed to fetch customer details. Please try again.', 'error');
@@ -64,11 +60,7 @@ const CustomerProfile = () => {
 
     React.useEffect(() => {
         const fetchSales = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await api.get(`/customers/${customerId}/sales`, {
-                    headers: { 'x-auth-token': token }
-                });
+            try {                const response = await api.get(`/customers/${customerId}/sales`);
                 setSales(response.data);
             } catch (error) {
                 showSnackbar('Failed to fetch sales. Please try again.', 'error');
@@ -76,11 +68,7 @@ const CustomerProfile = () => {
         };
 
         const fetchPayments = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await api.get(`/customers/${customerId}/payments`, {
-                    headers: { 'x-auth-token': token }
-                });
+            try {                const response = await api.get(`/customers/${customerId}/payments`);
                 setPayments(response.data);
             } catch (error) {
                 showSnackbar('Failed to fetch payments. Please try again.', 'error');

@@ -62,10 +62,7 @@ export default function Team() {
     const fetchTeamMembers = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await api.get('/team', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/team');
             setTeamMembers(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch team members. Please try again.', 'error');
@@ -119,7 +116,6 @@ export default function Team() {
         setError('');
 
         try {
-            const token = localStorage.getItem('token');
             const data = {
                 ...formData,
                 salary: formData.salary ? parseFloat(formData.salary) : null

@@ -1,8 +1,10 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
 import logger from './utils/logger';
 
-dotenv.config();
+// Load .env from project root (two levels up from dist/db.js)
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Validate required environment variables
 if (!process.env.DB_PASSWORD) {
@@ -11,6 +13,10 @@ if (!process.env.DB_PASSWORD) {
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
+}
+
+if (!process.env.REFRESH_TOKEN_SECRET) {
+  throw new Error('REFRESH_TOKEN_SECRET environment variable is required');
 }
 
 const pool = new Pool({

@@ -28,11 +28,7 @@ const Reports = () => {
 
     const fetchMonthlyReport = async () => {
         setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/reports/monthly?month=${selectedMonth}`, {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get(`/reports/monthly?month=${selectedMonth}`);
             setReportData(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch report. Please try again.', 'error');

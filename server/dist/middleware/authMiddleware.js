@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const securityAudit_1 = require("../utils/securityAudit");
 const authMiddleware = (req, res, next) => {
     var _a;
     // Try cookie first, then header (backward compatibility)
@@ -18,6 +19,18 @@ const authMiddleware = (req, res, next) => {
         next();
     }
     catch (err) {
+        // Log invalid token attempt
+        (0, securityAudit_1.logSecurityEvent)({
+            event_type: 'invalid_token',
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent'],
+            details: {
+                error: err.message,
+                path: req.path,
+                method: req.method
+            },
+            severity: 'medium'
+        });
         res.status(401).json({ msg: 'Token is not valid' });
     }
 };

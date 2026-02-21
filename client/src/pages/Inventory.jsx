@@ -46,11 +46,7 @@ function Inventory() {
     }, []);
 
     const fetchSuppliers = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/credits', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/credits');
             const uniqueSuppliers = [...new Set(response.data.map(p => p.party_name))];
             setSuppliers(uniqueSuppliers);
         } catch (error) {
@@ -59,11 +55,7 @@ function Inventory() {
     };
 
     const fetchAccounts = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/dependencies/accounts', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/dependencies/accounts');
             setAccounts(response.data);
         } catch (error) {
             if (error.response?.status !== 403) {
@@ -73,11 +65,7 @@ function Inventory() {
     };
 
     const fetchItems = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/inventory', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/inventory');
             setItems(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch inventory. Please try again.', 'error');
@@ -112,9 +100,7 @@ function Inventory() {
             return;
         }
 
-        try {
-            const token = localStorage.getItem('token');
-            const totalAmount = skipPayment ? 0 : (parseFloat(stock) * parseFloat(unitCost));
+        try {            const totalAmount = skipPayment ? 0 : (parseFloat(stock) * parseFloat(unitCost));
             
             await api.post('/inventory', {
                 name,
@@ -124,8 +110,6 @@ function Inventory() {
                 payment_account: skipPayment ? null : paymentAccount,
                 total_amount: totalAmount,
                 party_name: partyName
-            }, {
-                headers: { 'x-auth-token': token }
             });
             setAddDialog(false);
             fetchItems();
@@ -169,10 +153,7 @@ function Inventory() {
             if (stockOperation === 'in' && !skipStockPayment && isCredit && !stockPartyName) {
                 showSnackbar('Please select or enter a supplier name for credit transactions', 'warning');
                 return;
-            }
-
-            const token = localStorage.getItem('token');
-            const selectedItemData = items.find(item => item.id === selectedItem);
+            }            const selectedItemData = items.find(item => item.id === selectedItem);
             const totalAmount = (stockOperation === 'in' && !skipStockPayment) 
                 ? parseFloat(stockQuantity) * parseFloat(selectedItemData?.unit_cost || 0) 
                 : 0;
@@ -185,8 +166,7 @@ function Inventory() {
                     payment_account: (stockOperation === 'in' && !skipStockPayment) ? stockPaymentAccount : null,
                     total_amount: totalAmount,
                     party_name: stockPartyName
-                },
-                { headers: { 'x-auth-token': token } }
+                }
             );
             setStockDialog(false);
             fetchItems();

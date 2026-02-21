@@ -59,11 +59,7 @@ export default function Finance() {
     const [salaryMonth, setSalaryMonth] = React.useState(new Date().toISOString().slice(0, 7));
 
     const fetchAccounts = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/accounts', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/accounts');
             setAccounts(response.data);
         } catch (error) {
             if (error.response?.status !== 403) {
@@ -73,11 +69,7 @@ export default function Finance() {
     };
 
     const fetchTransactions = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/accounts/transactions', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/accounts/transactions');
             setTransactions(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch transactions. Please try again.', 'error');
@@ -87,11 +79,7 @@ export default function Finance() {
     };
 
     const fetchCOGSData = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/cogs/data', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/cogs/data');
             setCogsData(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch COGS data. Please try again.', 'error');
@@ -99,11 +87,7 @@ export default function Finance() {
     };
 
     const fetchTeamMembers = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/team', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/team');
             setTeamMembers(response.data);
         } catch (error) {
             if (error.response?.status !== 403) {
@@ -113,14 +97,10 @@ export default function Finance() {
     };
 
     const handleTransfer = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post('/accounts/transfer', {
+        try {            await api.post('/accounts/transfer', {
                 fromAccountId: fromAccount,
                 toAccountId: toAccount,
                 amount: parseFloat(transferAmount)
-            }, {
-                headers: { 'x-auth-token': token }
             });
             setTransferOpen(false);
             setFromAccount('');
@@ -136,15 +116,11 @@ export default function Finance() {
     };
 
     const handleCogsTransfer = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post('/accounts/transfer-cogs', {
+        try {            await api.post('/accounts/transfer-cogs', {
                 categoryId: cogsCategory,
                 accountId: cogsAccount,
                 amount: parseFloat(cogsAmount),
                 direction: cogsDirection
-            }, {
-                headers: { 'x-auth-token': token }
             });
             setCogsTransferOpen(false);
             setCogsCategory('');
@@ -169,14 +145,10 @@ export default function Finance() {
     };
 
     const handleCogsPayoutSubmit = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post('/expenses/cogs-payout', {
+        try {            await api.post('/expenses/cogs-payout', {
                 category_id: payoutCategory.category_id,
                 amount: parseFloat(payoutAmount),
                 note: payoutNote
-            }, {
-                headers: { 'x-auth-token': token }
             });
             setPayoutOpen(false);
             fetchAccounts();

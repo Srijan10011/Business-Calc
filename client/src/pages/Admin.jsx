@@ -85,11 +85,7 @@ const Admin = () => {
   }, []);
 
   const fetchRequests = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await api.get('/requests', {
-        headers: { 'x-auth-token': token }
-      });
+    try {      const res = await api.get('/requests');
       setRequests(res.data);
     } catch (err) {
       showSnackbar('Failed to fetch requests. Please try again.', 'error');
@@ -99,11 +95,7 @@ const Admin = () => {
   };
 
   const fetchRoles = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await api.get('/roles', {
-        headers: { 'x-auth-token': token }
-      });
+    try {      const res = await api.get('/roles');
       setRoles(res.data);
     } catch (err) {
       showSnackbar('Failed to fetch roles. Please try again.', 'error');
@@ -111,11 +103,7 @@ const Admin = () => {
   };
 
   const fetchPermissions = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await api.get('/permissions', {
-        headers: { 'x-auth-token': token }
-      });
+    try {      const res = await api.get('/permissions');
       setPermissions(res.data);
     } catch (err) {
       showSnackbar('Failed to fetch permissions. Please try again.', 'error');
@@ -123,11 +111,7 @@ const Admin = () => {
   };
 
   const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await api.get('/business-users', {
-        headers: { 'x-auth-token': token }
-      });
+    try {      const res = await api.get('/business-users');
       setUsers(res.data);
     } catch (err) {
       showSnackbar('Failed to fetch users. Please try again.', 'error');
@@ -135,11 +119,7 @@ const Admin = () => {
   };
 
   const fetchBusinessId = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await api.get('/auth/business-id', {
-        headers: { 'x-auth-token': token }
-      });
+    try {      const res = await api.get('/auth/business-id');
       setBusinessId(res.data.business_id);
     } catch (err) {
       showSnackbar('Failed to fetch business ID.', 'error');
@@ -154,16 +134,12 @@ const Admin = () => {
       return;
     }
 
-    try {
-      const token = localStorage.getItem('token');
-      
+    try {      
       if (isEditingRole) {
         // First check if duplicate exists
         const checkRes = await api.post('/roles/check-duplicate', {
           permissions: selectedPermissions,
           exclude_role_id: editingRoleId
-        }, {
-          headers: { 'x-auth-token': token }
         });
 
         if (checkRes.data.exists) {
@@ -226,12 +202,8 @@ const Admin = () => {
   };
 
   const confirmRoleChange = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await api.put(`/business-users/${selectedUserForView.user_id}/role`, {
+    try {      await api.put(`/business-users/${selectedUserForView.user_id}/role`, {
         role_id: newRoleForUser
-      }, {
-        headers: { 'x-auth-token': token }
       });
       setMessage('User role updated successfully');
       setConfirmChangeDialog(false);
@@ -247,12 +219,8 @@ const Admin = () => {
   const handleUseDuplicateRole = async () => {
     setDuplicateRoleDialog(false);
     // Directly assign the existing role to the user
-    try {
-      const token = localStorage.getItem('token');
-      await api.put(`/business-users/${editingUserId}/role`, {
+    try {      await api.put(`/business-users/${editingUserId}/role`, {
         role_id: duplicateRoleId
-      }, {
-        headers: { 'x-auth-token': token }
       });
       
       setMessage(`User assigned to existing role: ${duplicateRoleName}`);
@@ -276,20 +244,14 @@ const Admin = () => {
   const handleCreateDuplicateAnyway = async () => {
     setDuplicateRoleDialog(false);
     // Proceed with creating the role
-    try {
-      const token = localStorage.getItem('token');
-      const roleRes = await api.post('/roles', {
+    try {      const roleRes = await api.post('/roles', {
         role_name: roleName,
         description: roleDescription,
         permissions: selectedPermissions
-      }, {
-        headers: { 'x-auth-token': token }
       });
       
       await api.put(`/business-users/${editingUserId}/role`, {
         role_id: roleRes.data.role_id
-      }, {
-        headers: { 'x-auth-token': token }
       });
       
       setMessage('New role created and assigned to user');
@@ -328,11 +290,7 @@ const Admin = () => {
   };
 
   const handleViewPermissions = async (roleId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await api.get(`/roles/${roleId}`, {
-        headers: { 'x-auth-token': token }
-      });
+    try {      const res = await api.get(`/roles/${roleId}`);
       setRolePermissions(res.data.permissions || []);
       setViewPermissionsDialog(true);
     } catch (err) {
@@ -341,12 +299,8 @@ const Admin = () => {
   };
 
   const handleApproveRequest = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await api.post(`/requests/${selectedRequest}/approve`, {
+    try {      await api.post(`/requests/${selectedRequest}/approve`, {
         role_id: selectedRoleForApproval || null
-      }, {
-        headers: { 'x-auth-token': token }
       });
       setMessage('Request approved successfully');
       setApprovalDialog(false);
@@ -360,11 +314,7 @@ const Admin = () => {
   };
 
   const handleReject = async (requestId) => {
-    try {
-      const token = localStorage.getItem('token');
-      await api.post(`/requests/${requestId}/reject`, {}, {
-        headers: { 'x-auth-token': token }
-      });
+    try {      await api.post(`/requests/${requestId}/reject`, {});
       setMessage('Request rejected');
       fetchRequests();
       setTimeout(() => setMessage(''), 3000);

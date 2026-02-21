@@ -13,12 +13,42 @@ export const setSnackbarFunction = (fn) => {
   showSnackbarFn = fn;
 };
 
-// Add request interceptor for permission context
+// CSRF token management
+let csrfToken = null;
+
+// Fetch CSRF token
+const fetchCsrfToken = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/csrf-token', {
+      withCredentials: true
+    });
+    csrfToken = response.data.csrfToken;
+    return csrfToken;
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error);
+    return null;
+  }
+};
+
+// Initialize CSRF token on module load
+fetchCsrfToken();
+
+// Add request interceptor for permission context and CSRF token
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Add permission context if specified
     if (config.permissionContext) {
       config.headers['x-permission-context'] = config.permissionContext;
+    }
+    
+    // Add CSRF token for state-changing requests
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method?.toUpperCase())) {
+      if (!csrfToken) {
+        await fetchCsrfToken();
+      }
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
     }
     
     return config;
@@ -33,6 +63,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Handle 403 CSRF token errors
+    if (error.response?.status === 403 && 
+        (error.response?.data?.code === 'CSRF_TOKEN_MISSING' || 
+         error.response?.data?.code === 'CSRF_TOKEN_INVALID')) {
+      // Refresh CSRF token and retry
+      await fetchCsrfToken();
+      if (csrfToken && !originalRequest._csrfRetry) {
+        originalRequest._csrfRetry = true;
+        originalRequest.headers['X-CSRF-Token'] = csrfToken;
+        return api(originalRequest);
+      }
+    }
     
     // Handle 401 Unauthorized - try to refresh token
     if (error.response?.status === 401) {

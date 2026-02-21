@@ -48,6 +48,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importStar(require("express-rate-limit"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -55,7 +56,9 @@ const db_1 = __importDefault(require("./db"));
 const logger_1 = __importDefault(require("./utils/logger"));
 const errorHandler_1 = require("./middleware/errorHandler");
 const httpsRedirect_1 = require("./middleware/httpsRedirect");
+const csrfMiddleware_1 = require("./middleware/csrfMiddleware");
 const healthRoutes_1 = __importDefault(require("./routes/healthRoutes"));
+const csrfRoutes_1 = __importDefault(require("./routes/csrfRoutes"));
 const customerRoutes_1 = __importDefault(require("./routes/customerRoutes"));
 const productRoutes_1 = __importDefault(require("./routes/productRoutes"));
 const categoryRoutes_1 = __importDefault(require("./routes/categoryRoutes"));
@@ -77,7 +80,8 @@ const roleRoutes_1 = __importDefault(require("./routes/roleRoutes"));
 const businessUsers_1 = __importDefault(require("./routes/businessUsers"));
 const dependencyRoutes_1 = __importDefault(require("./routes/dependencyRoutes"));
 const recurringCostRoutes_1 = __importDefault(require("./routes/recurringCostRoutes"));
-dotenv_1.default.config();
+// Load .env from project root (two levels up from dist/index.js)
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../.env') });
 const app = (0, express_1.default)();
 const port = 5000;
 // Security: HTTPS redirect in production
@@ -94,12 +98,35 @@ app.use((0, helmet_1.default)({
     }
 }));
 // Security: CORS configuration
-app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'x-auth-token', 'x-permission-context']
-}));
+const configureCORS = () => {
+    // In production, FRONTEND_URL must be set
+    if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+        throw new Error('FRONTEND_URL environment variable is required in production');
+    }
+    // Support multiple origins (comma-separated)
+    const allowedOrigins = process.env.FRONTEND_URL
+        ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim())
+        : ['http://localhost:5173', 'http://localhost:3000']; // Dev defaults
+    return (0, cors_1.default)({
+        origin: (origin, callback) => {
+            // Allow requests with no origin (mobile apps, Postman, etc.)
+            if (!origin) {
+                return callback(null, true);
+            }
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true);
+            }
+            else {
+                logger_1.default.warn(`CORS blocked request from origin: ${origin}`);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'x-auth-token', 'x-permission-context', 'x-csrf-token']
+    });
+};
+app.use(configureCORS());
 // Security: Rate limiting for authentication endpoints
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -166,8 +193,12 @@ const authLimiterMiddleware = (req, res, next) => {
     return authLimiter(req, res, next);
 };
 app.use('/api/auth', authLimiterMiddleware, auth_1.default);
+// CSRF token endpoint (no CSRF protection needed for GET)
+app.use('/api', csrfRoutes_1.default);
 // Apply general rate limiting to all API routes (after auth middleware extracts user)
 app.use('/api', apiLimiter);
+// Apply CSRF protection to all state-changing API routes
+app.use('/api', csrfMiddleware_1.validateCsrfToken);
 app.use('/api/customers', customerRoutes_1.default);
 app.use('/api/products', productRoutes_1.default);
 app.use('/api/categories', categoryRoutes_1.default);

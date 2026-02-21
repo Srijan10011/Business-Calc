@@ -51,11 +51,7 @@ export default function TeamProfile() {
     }, [memberId]);
 
     const fetchMemberData = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/team/${memberId}`, {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get(`/team/${memberId}`);
             setMember(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch member details. Please try again.', 'error');
@@ -63,11 +59,7 @@ export default function TeamProfile() {
     };
 
     const fetchAccountBalance = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/team/${memberId}/account`, {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get(`/team/${memberId}/account`);
             setAccountBalance(response.data.current_balance || 0);
         } catch (error) {
             showSnackbar('Failed to fetch account balance. Please try again.', 'error');
@@ -75,11 +67,7 @@ export default function TeamProfile() {
     };
 
     const fetchAttendance = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/team/${memberId}/attendance`, {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get(`/team/${memberId}/attendance`);
             setAttendance(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch attendance. Please try again.', 'error');
@@ -87,11 +75,7 @@ export default function TeamProfile() {
     };
 
     const fetchSalaryHistory = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get(`/team/${memberId}/salary-history`, {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get(`/team/${memberId}/salary-history`);
             setSalaryHistory(response.data);
             // Only sum payout transactions for total paid
             const total = response.data
@@ -105,16 +89,12 @@ export default function TeamProfile() {
 
     const handleSalaryPayout = async () => {
         try {
-            setPayoutError('');
-            const token = localStorage.getItem('token');
-            
+            setPayoutError('');            
             await api.post('/team/salary-payout', {
                 memberId,
                 amount: parseFloat(payoutAmount),
                 month: payoutMonth,
                 description: `Salary for ${member.name} on ${new Date(payoutMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
-            }, {
-                headers: { 'x-auth-token': token }
             });
             
             // Deduct from account balance (can go negative for advances)
@@ -122,8 +102,6 @@ export default function TeamProfile() {
                 member_id: memberId,
                 amount: -parseFloat(payoutAmount), // Negative to deduct
                 month: payoutMonth
-            }, {
-                headers: { 'x-auth-token': token }
             });
             
             setPayoutDialog(false);
@@ -143,14 +121,10 @@ export default function TeamProfile() {
     };
 
     const handleAddSalary = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post('/team/distribute-salary', {
+        try {            await api.post('/team/distribute-salary', {
                 member_id: memberId,
                 amount: parseFloat(addSalaryAmount),
                 month: new Date().toISOString().slice(0, 7)
-            }, {
-                headers: { 'x-auth-token': token }
             });
             setAddSalaryDialog(false);
             setAddSalaryAmount('');

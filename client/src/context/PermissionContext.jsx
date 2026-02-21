@@ -4,14 +4,6 @@ import { useSnackbar } from './SnackbarContext';
 
 const PermissionContext = createContext();
 
-export const usePermissions = () => {
-  const context = useContext(PermissionContext);
-  if (!context) {
-    throw new Error('usePermissions must be used within PermissionProvider');
-  }
-  return context;
-};
-
 export const PermissionProvider = ({ children }) => {
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,4 +52,13 @@ export const PermissionProvider = ({ children }) => {
       {children}
     </PermissionContext.Provider>
   );
+};
+
+// Export hook separately at the end
+export const usePermissions = () => {
+  const context = useContext(PermissionContext);
+  if (!context) {
+    throw new Error('usePermissions must be used within PermissionProvider');
+  }
+  return context;
 };

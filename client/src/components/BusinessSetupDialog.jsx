@@ -29,12 +29,10 @@ const BusinessSetupDialog = ({ open, onComplete }) => {
         setLoading(true);
         setError('');
 
-        try {
-            const token = localStorage.getItem('token');
-            const config = {
+        try {            const config = {
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-auth-token': token
+                    
                 }
             };
 

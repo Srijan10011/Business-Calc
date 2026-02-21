@@ -56,9 +56,7 @@ export default function Sales() {
     const [totalSales, setTotalSales] = useState(0);
 
     const fetchSales = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const params = new URLSearchParams();
+        try {            const params = new URLSearchParams();
             if (statusFilter) params.append('status', statusFilter);
             if (productFilter) params.append('product', productFilter);
             if (dateFromFilter) params.append('date_from', dateFromFilter);
@@ -66,9 +64,7 @@ export default function Sales() {
             params.append('page', currentPage.toString());
             params.append('limit', '20');
             
-            const response = await api.get(`/sales?${params}`, {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get(`/sales?${params}`);
             setSales(response.data.sales);
             setTotalPages(response.data.pagination.totalPages);
             setTotalSales(response.data.pagination.totalSales);
@@ -78,11 +74,7 @@ export default function Sales() {
     };
 
     const fetchProducts = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/dependencies/products', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/dependencies/products');
             setProducts(response.data);
         } catch (error) {
             if (error.response?.status !== 403) {
@@ -92,11 +84,7 @@ export default function Sales() {
     };
 
     const fetchAccounts = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/dependencies/accounts', {
-                headers: { 'x-auth-token': token }
-            });
+        try {            const response = await api.get('/dependencies/accounts');
             // Filter out Credit and Debit accounts for payment
             const filteredAccounts = response.data.filter(
                 (account) => !account.account_name.toLowerCase().includes('credit') && 
@@ -147,15 +135,12 @@ export default function Sales() {
     };
 
     const handlePaymentSubmit = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post(
+        try {            await api.post(
                 `/sales/${selectedSale.sale_id}/payment`,
                 { 
                     amount: parseFloat(paymentAmount),
                     account_id: selectedAccount
-                },
-                { headers: { 'x-auth-token': token } }
+                }
             );
             setPaymentDialog(false);
             fetchSales();
@@ -179,12 +164,9 @@ export default function Sales() {
     };
 
     const handleStockSubmit = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            await api.post(
+        try {            await api.post(
                 '/products/add-stock',
-                { product_id: selectedProduct, stock: parseInt(stockAmount) },
-                { headers: { 'x-auth-token': token } }
+                { product_id: selectedProduct, stock: parseInt(stockAmount) }
             );
             setStockDialog(false);
             fetchProducts();

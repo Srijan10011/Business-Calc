@@ -6,10 +6,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import Title from '../components/dashboard/Title';
 import COGSEditor from '../components/products/COGSEditor';
+import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 const ProductDetail = () => {
     const { productId } = useParams();
     const navigate = useNavigate();
+    const { showSnackbar } = useSnackbar();
     
     const [product, setProduct] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
@@ -30,27 +33,17 @@ const ProductDetail = () => {
 
     const fetchProduct = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
-                headers: {
-                    'x-auth-token': token || '',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setProduct(data);
-                setName(data.name);
-                setPrice(data.price);
-                setStock(data.stock);
-            } else if (response.status === 404) {
-                // Product not found or removed
+            const response = await api.get(`/products/${productId}`);
+            setProduct(response.data);
+            setName(response.data.name);
+            setPrice(response.data.price);
+            setStock(response.data.stock);
+        } catch (error) {
+            if (error.response?.status === 404) {
                 navigate('/products');
             } else {
-                showSnackbar('Failed to fetch product', 'error');
+                showSnackbar('Failed to fetch product details. Please try again.', 'error');
             }
-        } catch (error) {
-            showSnackbar('Failed to fetch product details. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -81,19 +74,9 @@ const ProductDetail = () => {
 
     const handleDeleteConfirm = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
-                method: 'DELETE',
-                headers: {
-                    'x-auth-token': token || '',
-                },
-            });
-
-            if (response.ok) {
-                navigate('/products');
-            } else {
-                showSnackbar('Failed to delete product', 'error');
-            }
+            await api.delete(`/products/${productId}`);
+            showSnackbar('Product deleted successfully', 'success');
+            navigate('/products');
         } catch (error) {
             showSnackbar(error.response?.data?.message || 'Failed to delete product. Please try again.', 'error');
         }

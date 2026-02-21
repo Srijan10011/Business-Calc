@@ -47,10 +47,7 @@ export default function Credits() {
 
     const fetchPayables = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/credits', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/credits');
             setPayables(response.data);
         } catch (error) {
             showSnackbar('Failed to fetch payables. Please try again.', 'error');
@@ -59,10 +56,7 @@ export default function Credits() {
 
     const fetchAccounts = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/dependencies/accounts', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/dependencies/accounts');
             setAccounts(response.data);
         } catch (error) {
             if (error.response?.status !== 403) {
@@ -80,13 +74,10 @@ export default function Credits() {
 
     const handlePaymentSubmit = async () => {
         try {
-            const token = localStorage.getItem('token');
             await api.post('/credits/pay', {
                 payable_id: selectedPayable.payable_id,
                 amount: parseFloat(paymentAmount),
                 payment_account: paymentAccount
-            }, {
-                headers: { 'x-auth-token': token }
             });
             setPaymentDialog(false);
             fetchPayables();
