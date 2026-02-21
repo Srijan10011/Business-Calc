@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import * as Business_pool from '../db/Business_pool';
 import * as Salesdb from '../db/Salesdb';
@@ -28,7 +29,7 @@ export const getSales = async (req: Request, res: Response) => {
         return res.json(result);
 
     } catch (error: any) {
-        console.error('Error fetching sales:', error);
+        logger.error('Error fetching sales:', error);
         return res.status(500).json({
             message: 'Server error',
             error: error?.message
@@ -241,7 +242,7 @@ export const addSale = async (req: Request, res: Response) => {
 
             // If payment type is debit, create debit_account entry and update Debit balance
             if (payment_type === 'debit') {
-                console.log('Here running 1');
+                logger.info('Here running 1');
                 await client.query(
                     `INSERT INTO debit_account (customer_id, sale_id, amount, recovered, total, status)
                      VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -257,7 +258,7 @@ export const addSale = async (req: Request, res: Response) => {
                     AND a.account_name = 'Debit Account'`,
                     [business_id]
                 );
-                console.log('Debit account result:', debitAccountResult.rows);
+                logger.info('Debit account result:', debitAccountResult.rows);
 
 
                 // Increase Debit account balance (accounts receivable)
@@ -270,7 +271,7 @@ export const addSale = async (req: Request, res: Response) => {
                          WHERE account_id = $2 AND business_id = $3`,
                         [total_amount, debit_account_id, business_id]
                     );
-                    console.log('total_amount:', total_amount, 'debit_account_id:', debit_account_id, 'business_id:', business_id);
+                    logger.info('total_amount:', total_amount, 'debit_account_id:', debit_account_id, 'business_id:', business_id);
                 }
             }
 
@@ -308,7 +309,7 @@ export const addSale = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error adding sale:', error);
+        logger.error('Error adding sale:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -375,7 +376,7 @@ export const addSale = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error adding sale:', error);
+        logger.error('Error adding sale:', error);
         return res.status(error?.status || 500).json({
             message: error?.message || 'Server error'
         });
@@ -620,7 +621,7 @@ export const recordPayment = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error recording payment:', error);
+        logger.error('Error recording payment:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -662,7 +663,7 @@ export const recordPayment = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error recording payment:', error);
+        logger.error('Error recording payment:', error);
         return res.status(error?.status || 500).json({
             message: error?.message || 'Server error'
         });

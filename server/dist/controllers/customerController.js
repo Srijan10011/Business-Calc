@@ -41,8 +41,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addCustomer = exports.getCustomerPayments = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
+const logger_1 = __importDefault(require("../utils/logger"));
 const Business_pool = __importStar(require("../db/Business_pool"));
 const Customerdb = __importStar(require("../db/Customerdb"));
 const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -57,7 +61,7 @@ const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.json(result);
     }
     catch (error) {
-        console.error('Error fetching customers:', error);
+        logger_1.default.error('Error fetching customers:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -81,7 +85,7 @@ const getCustomerById = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.json(result.rows[0]);
     }
     catch (error) {
-        console.error('Error fetching customer:', error);
+        logger_1.default.error('Error fetching customer:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -102,7 +106,7 @@ const getCustomerSales = (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.json(result);
     }
     catch (error) {
-        console.error('Error fetching customer sales:', error);
+        logger_1.default.error('Error fetching customer sales:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -123,7 +127,7 @@ const getCustomerPayments = (req, res) => __awaiter(void 0, void 0, void 0, func
         res.json(result);
     }
     catch (error) {
-        console.error('Error fetching customer payments:', error);
+        logger_1.default.error('Error fetching customer payments:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -146,7 +150,7 @@ const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.status(201).json(customerResult);
     }
     catch (error) {
-        console.error('Error adding customer:', error);
+        logger_1.default.error('Error adding customer:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });

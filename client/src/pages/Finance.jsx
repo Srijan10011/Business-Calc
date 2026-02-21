@@ -66,7 +66,6 @@ export default function Finance() {
             });
             setAccounts(response.data);
         } catch (error) {
-            console.error('Error fetching accounts:', error);
             if (error.response?.status !== 403) {
                 showSnackbar('Failed to fetch accounts. Please try again.', 'error');
             }
@@ -81,7 +80,6 @@ export default function Finance() {
             });
             setTransactions(response.data);
         } catch (error) {
-            console.error('Error fetching transactions:', error);
             showSnackbar('Failed to fetch transactions. Please try again.', 'error');
         } finally {
             setLoading(false);
@@ -96,7 +94,6 @@ export default function Finance() {
             });
             setCogsData(response.data);
         } catch (error) {
-            console.error('Error fetching COGS data:', error);
             showSnackbar('Failed to fetch COGS data. Please try again.', 'error');
         }
     };
@@ -109,7 +106,6 @@ export default function Finance() {
             });
             setTeamMembers(response.data);
         } catch (error) {
-            console.error('Error fetching team members:', error);
             if (error.response?.status !== 403) {
                 showSnackbar('Failed to fetch team members. Please try again.', 'error');
             }
@@ -134,7 +130,6 @@ export default function Finance() {
             fetchTransactions(); // Refresh transactions
             showSnackbar('Transfer completed successfully!', 'success');
         } catch (error) {
-            console.error('Error transferring funds:', error);
             const errorMessage = error.response?.data?.msg || error.response?.data?.message || 'Failed to transfer funds. Please try again.';
             showSnackbar(errorMessage, 'error');
         }
@@ -160,7 +155,6 @@ export default function Finance() {
             fetchCOGSData();
             showSnackbar('COGS transfer completed successfully!', 'success');
         } catch (error) {
-            console.error('Error transferring COGS:', error);
             showSnackbar(error.response?.data?.msg || error.response?.data?.message || 'Failed to transfer COGS. Please try again.', 'error');
         }
     };
@@ -190,7 +184,6 @@ export default function Finance() {
             fetchCOGSData();
             showSnackbar('Payout processed successfully!', 'success');
         } catch (error) {
-            console.error('Error processing COGS payout:', error);
             if (error.response?.status !== 403) {
                 showSnackbar(error.response?.data?.msg || error.response?.data?.message || 'Failed to process payout. Please try again.', 'error');
             }

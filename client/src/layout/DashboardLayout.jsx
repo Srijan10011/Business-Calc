@@ -21,6 +21,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import axios from "axios";
 import { useSnackbar } from '../context/SnackbarContext';
+import api from "../utils/api";
 
 const drawerWidth = 240;
 
@@ -90,21 +91,24 @@ function DashboardLayout() {
         setAnchorEl(null);
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        navigate('/login');
+    const handleLogout = async () => {
+        try {
+            await api.post('/auth/logout');
+            localStorage.removeItem('userRole');
+            navigate('/login');
+        } catch (error) {
+            // Even if logout fails, clear local data and redirect
+            localStorage.removeItem('userRole');
+            navigate('/login');
+        }
     };
 
     React.useEffect(() => {
         const fetchUser = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get('/auth/me', {
-                    headers: { 'x-auth-token': token }
-                });
+                const response = await api.get('/auth/me');
                 setUser(response.data);
             } catch (error) {
-                console.error('Error fetching user:', error);
                 showSnackbar('Failed to fetch user details. Please try again.', 'error');
             }
         };

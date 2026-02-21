@@ -53,7 +53,6 @@ export default function Credits() {
             });
             setPayables(response.data);
         } catch (error) {
-            console.error('Error fetching payables:', error);
             showSnackbar('Failed to fetch payables. Please try again.', 'error');
         }
     };
@@ -66,7 +65,6 @@ export default function Credits() {
             });
             setAccounts(response.data);
         } catch (error) {
-            console.error('Error fetching accounts:', error);
             if (error.response?.status !== 403) {
                 showSnackbar('Failed to fetch accounts. Please try again.', 'error');
             }
@@ -94,7 +92,7 @@ export default function Credits() {
             fetchPayables();
             showSnackbar('Payment recorded successfully!', 'success');
         } catch (error) {
-            console.error('Error making payment:', error);
+            
             if (error.response?.status !== 403) {
             showSnackbar(error.response?.data?.msg || error.response?.data?.message || 'Failed to record payment. Please try again.', 'error');
             }

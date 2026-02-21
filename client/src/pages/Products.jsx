@@ -19,22 +19,9 @@ function Products() {
 
     const fetchProducts = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/products', {
-                headers: {
-                    'x-auth-token': token || '',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setProducts(data);
-            } else {
-                showSnackbar('Failed to fetch products', 'error');
-                console.error('Failed to fetch products');
-            }
+            const response = await api.get('/products');
+            setProducts(response.data);
         } catch (error) {
-            console.error('Error fetching products:', error);
             showSnackbar('Failed to fetch products. Please try again.', 'error');
         } finally {
             setLoading(false);
@@ -62,16 +49,14 @@ function Products() {
 
     const handleStockSubmit = async () => {
         try {
-            const token = localStorage.getItem('token');
-            await api.post(
-                '/products/add-stock',
-                { product_id: selectedProduct, stock: parseInt(stockAmount) },
-                { headers: { 'x-auth-token': token } }
-            );
+            await api.post('/products/add-stock', { 
+                product_id: selectedProduct, 
+                stock: parseInt(stockAmount) 
+            });
             setStockDialog(false);
             fetchProducts();
+            showSnackbar('Stock added successfully', 'success');
         } catch (error) {
-            console.error('Error adding stock:', error);
             showSnackbar(error.response?.data?.message || 'Failed to add stock. Please try again.', 'error');
         }
     };

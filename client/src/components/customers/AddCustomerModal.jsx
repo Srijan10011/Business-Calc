@@ -69,8 +69,6 @@ function AddCustomerModal({ open, onClose }) {
                     address: fullAddress,
                 });
 
-                console.log('Customer added successfully:', response.data);
-
                 // Reset fields and close the dialog after saving
                 setName('');
                 setPhone('');
@@ -86,9 +84,7 @@ function AddCustomerModal({ open, onClose }) {
                 setEmailError(false);
                 onClose();
             } catch (error) {
-                console.error('Error adding customer:', error.message);
                 showSnackbar(error.response?.data?.message || 'Failed to add customer. Please try again.', 'error');
-                // Optionally, display an error message to the user
             }
         }
     };

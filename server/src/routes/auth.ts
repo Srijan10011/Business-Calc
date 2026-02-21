@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { register, login, setupBusiness, checkBusiness, getUserInfo } from '../controllers/authController';
+import { register, login, setupBusiness, checkBusiness, getUserInfo, verifyToken, logout, refreshAccessToken } from '../controllers/authController';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { validateRequest } from '../middleware/validateRequest';
 import { registerSchema, loginSchema, setupBusinessSchema } from '../validators';
@@ -16,6 +16,21 @@ router.post('/register', validateRequest(registerSchema), register);
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', validateRequest(loginSchema), login);
+
+// @route   POST api/auth/logout
+// @desc    Logout user (clear cookie)
+// @access  Private
+router.post('/logout', authMiddleware, logout);
+
+// @route   POST api/auth/refresh
+// @desc    Refresh access token using refresh token
+// @access  Public (uses refresh token from cookie)
+router.post('/refresh', refreshAccessToken);
+
+// @route   GET api/auth/verify
+// @desc    Verify token is valid
+// @access  Private
+router.get('/verify', authMiddleware, verifyToken);
 
 // @route   GET api/auth/me
 // @desc    Get current user with role

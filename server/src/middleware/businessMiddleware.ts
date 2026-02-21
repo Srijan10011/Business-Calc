@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export interface AuthRequest extends Request {
@@ -36,7 +37,7 @@ export const attachBusinessId = async (
 
         next();
     } catch (error: any) {
-        console.error('Error fetching business ID:', error);
+        logger.error('Error fetching business ID:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

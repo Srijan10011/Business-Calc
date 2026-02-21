@@ -20,54 +20,44 @@ function Assets() {
 
     const fetchAssets = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/assets', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/assets');
             setAssets(response.data);
         } catch (error) {
-            console.error('Error fetching assets:', error);
+            
             showSnackbar('Failed to fetch assets. Please try again.', 'error');
         }
     };
 
     const fetchRecurringCosts = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/recurring-costs', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/recurring-costs');
             setRecurringCosts(response.data);
         } catch (error) {
-            console.error('Error fetching recurring costs:', error);
+            
             showSnackbar('Failed to fetch recurring costs. Please try again.', 'error');
         }
     };
 
     const fetchHistory = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await api.get('/recurring-costs/history', {
-                headers: { 'x-auth-token': token }
-            });
+            const response = await api.get('/recurring-costs/history');
             setHistory(response.data);
             setHistoryOpen(true);
         } catch (error) {
-            console.error('Error fetching history:', error);
+            
+            showSnackbar('Failed to fetch history. Please try again.', 'error');
         }
     };
 
     const handleAddRecurringCost = async () => {
         try {
-            const token = localStorage.getItem('token');
-            await api.post('/recurring-costs', newCost, {
-                headers: { 'x-auth-token': token }
-            });
+            await api.post('/recurring-costs', newCost);
+            showSnackbar('Recurring cost added successfully!', 'success');
             setAddRecurringOpen(false);
             setNewCost({ name: '', type: 'rent', monthlyTarget: '' });
             fetchRecurringCosts();
         } catch (error) {
-            console.error('Error adding recurring cost:', error);
+            
             showSnackbar(error.response?.data?.message || 'Failed to add recurring cost. Please try again.', 'error');
         }
     };

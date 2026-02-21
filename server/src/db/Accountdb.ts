@@ -1,4 +1,5 @@
 import pool from '../db';
+import logger from '../utils/logger';
 
 export const createDefaultAccount = async (business_id: string) => {
 
@@ -26,9 +27,9 @@ export const createDefaultAccount = async (business_id: string) => {
             );
         }
 
-        console.log(`Default accounts created for business_id: ${business_id}`);
+        logger.info(`Default accounts created for business_id: ${business_id}`);
     } catch (error) {
-        console.error('Error creating default accounts:', error);
+        logger.error('Error creating default accounts:', error);
         throw error;
     }
 

@@ -14,8 +14,3 @@ export const Get_Business_id = async (user_id: string) => {
         return result.rows[0].business_id;
     }
 }
-
-
-export function Get_business_id(user_id: string) {
-    throw new Error('Function not implemented.');
-}

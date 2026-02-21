@@ -23,7 +23,6 @@ function CostAllocationEditor() {
             setRules([...rules, newRule]);
             setNextId(nextId + 1);
         } catch (error) {
-            console.error('Error adding rule:', error);
             showSnackbar(error.response?.data?.message || 'Failed to add rule. Please try again.', 'error');
         }
     };
@@ -35,7 +34,6 @@ function CostAllocationEditor() {
 
             if (!rule.category || !rule.type || !rule.value) {
                 showSnackbar('Please fill in all required fields', 'warning');
-                console.error('Missing required fields');
                 return;
             }
 
@@ -97,16 +95,12 @@ function CostAllocationEditor() {
 
                 if (ruleResponse.ok) {
                     showSnackbar('Allocation updated successfully!', 'success');
-                    console.log('Cost rule saved successfully');
                 } else {
                     showSnackbar('Failed to update allocation', 'error');
-                    showSnackbar('Failed to save cost rule', 'error');
-                    console.error('Failed to save cost rule');
                 }
             }
         } catch (error) {
-            console.error('Error saving rule:', error);
-        }
+            showSnackbar(error.response?.data?.message || 'Failed to save rule. Please try again.', 'error');}
     };
 
     const handleRemoveRule = (id) => {

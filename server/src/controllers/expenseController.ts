@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export const addExpense = async (req: Request, res: Response) => {
@@ -85,7 +86,7 @@ export const addExpense = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error adding expense:', error);
+        logger.error('Error adding expense:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -219,7 +220,7 @@ export const cogsPayout = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error processing COGS payout:', error);
+        logger.error('Error processing COGS payout:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

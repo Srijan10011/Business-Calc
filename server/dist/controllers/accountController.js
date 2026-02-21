@@ -41,8 +41,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transferCOGS = exports.transferFunds = exports.getTransactions = exports.getAccounts = exports.createDefaultAccounts = void 0;
+const logger_1 = __importDefault(require("../utils/logger"));
 const Accountdb = __importStar(require("../db/Accountdb"));
 const Business_pool = __importStar(require("../db/Business_pool"));
 const createDefaultAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -55,7 +59,7 @@ const createDefaultAccounts = (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.status(201).json({ message });
     }
     catch (error) {
-        console.error('Error creating default accounts:', error);
+        logger_1.default.error('Error creating default accounts:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -72,7 +76,7 @@ const getAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.json(result);
     }
     catch (error) {
-        console.error('Error fetching accounts:', error);
+        logger_1.default.error('Error fetching accounts:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -90,7 +94,7 @@ const getTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.json(gettransaction);
     }
     catch (error) {
-        console.error('Error fetching transactions:', error);
+        logger_1.default.error('Error fetching transactions:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });

@@ -15,10 +15,8 @@ function Customers() {
     const fetchCustomers = async () => {
         try {
             const response = await api.get('/customers');
-            console.log('Customers data:', response.data);
             setCustomers(response.data);
         } catch (error) {
-            console.error('Error fetching customers:', error);
             showSnackbar('Failed to fetch customers. Please try again.', 'error');
         }
     };

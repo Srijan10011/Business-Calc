@@ -24,47 +24,44 @@ const Register = () => {
     const onSubmit = async (e) => {
         e.preventDefault();
         if (password !== password2) {
-            console.log('Passwords do not match');
-            // You might want to set an error state here and display it to the user
-        } else {
-            const newUser = {
-                name,
-                email,
-                password,
-                business_id: business_id || undefined
-            };
+            showSnackbar('Passwords do not match', 'error');
+            return;
+        }
+        
+        const newUser = {
+            name,
+            email,
+            password,
+            business_id: business_id || undefined
+        };
 
-            try {
-                const config = {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                };
-                const body = JSON.stringify(newUser);
-                const res = await api.post('/auth/register', body, config);
-                
-                // Store the token
-                localStorage.setItem('token', res.data.token);
-                
-                // Check if request is pending approval
-                if (res.data.requestPending) {
-                    showSnackbar('Your request has been sent to the business owner for approval. You will be notified once approved.', 'success');
-                    setTimeout(() => {
-                        navigate('/login');
-                    }, 2000);
-                } else if (res.data.needsBusinessSetup) {
-                    setShowBusinessSetup(true);
-                } else {
-                    showSnackbar('Registration successful!', 'success');
-                    setTimeout(() => {
-                        navigate('/dashboard');
-                    }, 1500);
+        try {
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json'
                 }
-            } catch (err) {
-                console.error(err.response.data);
-                showSnackbar(err.response?.data?.message || 'Registration failed. Please try again.', 'error');
-                // You might want to set an error state here and display it to the user
+            };
+            const body = JSON.stringify(newUser);
+            const res = await api.post('/auth/register', body, config);
+            
+            // Token is now in httpOnly cookie (automatic)
+            
+            // Check if request is pending approval
+            if (res.data.requestPending) {
+                showSnackbar('Your request has been sent to the business owner for approval. You will be notified once approved.', 'success');
+                setTimeout(() => {
+                    navigate('/login');
+                }, 2000);
+            } else if (res.data.needsBusinessSetup) {
+                setShowBusinessSetup(true);
+            } else {
+                showSnackbar('Registration successful!', 'success');
+                setTimeout(() => {
+                    navigate('/dashboard');
+                }, 1500);
             }
+        } catch (err) {
+            showSnackbar(err.response?.data?.message || 'Registration failed. Please try again.', 'error');
         }
     };
 

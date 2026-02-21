@@ -54,7 +54,6 @@ function Inventory() {
             const uniqueSuppliers = [...new Set(response.data.map(p => p.party_name))];
             setSuppliers(uniqueSuppliers);
         } catch (error) {
-            console.error('Error fetching suppliers:', error);
             showSnackbar('Failed to fetch suppliers. Please try again.', 'error');
         }
     };
@@ -67,7 +66,6 @@ function Inventory() {
             });
             setAccounts(response.data);
         } catch (error) {
-            console.error('Error fetching accounts:', error);
             if (error.response?.status !== 403) {
                 showSnackbar('Failed to fetch accounts. Please try again.', 'error');
             }
@@ -82,7 +80,6 @@ function Inventory() {
             });
             setItems(response.data);
         } catch (error) {
-            console.error('Error fetching inventory:', error);
             showSnackbar('Failed to fetch inventory. Please try again.', 'error');
         }
     };
@@ -134,7 +131,6 @@ function Inventory() {
             fetchItems();
             showSnackbar('Inventory item added successfully!', 'success');
         } catch (error) {
-            console.error('Error adding inventory item:', error);
             if (error.response?.status !== 403) {
                 showSnackbar(error.response?.data?.message || 'Failed to add inventory item. Please try again.', 'error');
             }
@@ -196,7 +192,6 @@ function Inventory() {
             fetchItems();
             showSnackbar('Stock updated successfully!', 'success');
         } catch (error) {
-            console.error('Error updating stock:', error);
             if (error.response?.status !== 403) {
                 showSnackbar(error.response?.data?.message || 'Failed to update stock. Please try again.', 'error');
             }
@@ -204,11 +199,11 @@ function Inventory() {
     };
 
     const handleView = (id) => {
-        console.log(`View item ${id}`);
+        // View functionality to be implemented
     };
 
     const handleRestock = (id) => {
-        console.log(`Restock item ${id}`);
+        // Restock functionality to be implemented
     };
 
     const getStatus = (stock) => {

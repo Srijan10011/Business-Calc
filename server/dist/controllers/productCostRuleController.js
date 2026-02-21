@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addProductCostRule = void 0;
+const logger_1 = __importDefault(require("../utils/logger"));
 const db_1 = __importDefault(require("../db"));
 const addProductCostRule = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -31,7 +32,7 @@ const addProductCostRule = (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(201).json(result.rows[0]);
     }
     catch (error) {
-        console.error('Error adding product cost rule:', error);
+        logger_1.default.error('Error adding product cost rule:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });

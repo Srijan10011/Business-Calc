@@ -41,8 +41,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCategory = exports.getCategories = exports.checkCategory = void 0;
+const logger_1 = __importDefault(require("../utils/logger"));
 const Business_pool = __importStar(require("../db/Business_pool"));
 const Categorydb = __importStar(require("../db/Categorydb"));
 const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -62,7 +66,7 @@ const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.json(existingCategory);
     }
     catch (error) {
-        console.error('Error checking category:', error);
+        logger_1.default.error('Error checking category:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -80,7 +84,7 @@ const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.json(result);
     }
     catch (error) {
-        console.error('Error fetching categories:', error);
+        logger_1.default.error('Error fetching categories:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -102,7 +106,7 @@ const createCategory = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.status(201).json({ id: result.id });
     }
     catch (error) {
-        console.error('Error creating category:', error);
+        logger_1.default.error('Error creating category:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });

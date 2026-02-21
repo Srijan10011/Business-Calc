@@ -9,27 +9,53 @@ export const emailSchema = z.string()
     .email('Invalid email format')
     .max(255, 'Email must be less than 255 characters');
 
-// Password validation (minimum 6 characters)
+// Password validation (minimum 8 characters with complexity requirements)
 export const passwordSchema = z.string()
-    .min(6, 'Password must be at least 6 characters');
+    .min(8, 'Password must be at least 8 characters')
+    .refine(
+        (password) => /[A-Z]/.test(password),
+        { message: 'Password must contain at least one uppercase letter' }
+    )
+    .refine(
+        (password) => /[a-z]/.test(password),
+        { message: 'Password must contain at least one lowercase letter' }
+    )
+    .refine(
+        (password) => /[0-9]/.test(password),
+        { message: 'Password must contain at least one number' }
+    )
+    .refine(
+        (password) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+        { message: 'Password must contain at least one special character' }
+    )
+    .refine(
+        (password) => !/\s/.test(password),
+        { message: 'Password cannot contain spaces' }
+    );
 
-// Positive number validation
+// Positive number validation with max limit
 export const positiveNumberSchema = z.number()
-    .positive('Must be a positive number');
+    .positive('Must be a positive number')
+    .max(999999999.99, 'Amount too large')
+    .finite('Must be a finite number');
 
 // Non-negative number validation
 export const nonNegativeNumberSchema = z.number()
-    .nonnegative('Must be a non-negative number');
+    .nonnegative('Must be a non-negative number')
+    .max(999999999.99, 'Amount too large')
+    .finite('Must be a finite number');
 
 // Positive integer validation
 export const positiveIntegerSchema = z.number()
     .int('Must be an integer')
-    .positive('Must be a positive number');
+    .positive('Must be a positive number')
+    .max(999999999, 'Value too large');
 
 // Non-negative integer validation
 export const nonNegativeIntegerSchema = z.number()
     .int('Must be an integer')
-    .nonnegative('Must be a non-negative number');
+    .nonnegative('Must be a non-negative number')
+    .max(999999999, 'Value too large');
 
 // String with min/max length
 export const nameSchema = z.string()

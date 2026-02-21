@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import * as Accountdb from '../db/Accountdb';
 import * as Business_pool from '../db/Business_pool';
@@ -12,7 +13,7 @@ export const createDefaultAccounts = async (req: Request, res: Response) => {
         res.status(201).json({ message });
 
     } catch (error: any) {
-        console.error('Error creating default accounts:', error);
+        logger.error('Error creating default accounts:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -28,7 +29,7 @@ export const getAccounts = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching accounts:', error);
+        logger.error('Error fetching accounts:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -49,7 +50,7 @@ export const getTransactions = async (req: Request, res: Response) => {
 
         res.json(gettransaction);
     } catch (error: any) {
-        console.error('Error fetching transactions:', error);
+        logger.error('Error fetching transactions:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

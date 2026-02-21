@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import * as RecurringCostdb from '../db/RecurringCostdb';
 import * as Business_pool from '../db/Business_pool';
 
@@ -20,7 +21,7 @@ export const createRecurringCost = async (req: Request, res: Response) => {
 
         res.json({ message: 'Recurring cost created successfully', data: result });
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -33,7 +34,7 @@ export const getRecurringCosts = async (req: Request, res: Response) => {
 
         res.json(costs);
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -48,7 +49,7 @@ export const getRecurringCostHistory = async (req: Request, res: Response) => {
 
         res.json(history);
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -61,7 +62,7 @@ export const transitionMonth = async (req: Request, res: Response) => {
 
         res.json({ message: 'Month transition completed', data: result });
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };

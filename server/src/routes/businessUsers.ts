@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import { authMiddleware } from '../middleware/authMiddleware';
 
@@ -44,7 +45,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -81,7 +82,7 @@ router.get('/permissions', authMiddleware, async (req: Request, res: Response) =
 
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -117,7 +118,7 @@ router.put('/:user_id/role', authMiddleware, async (req: Request, res: Response)
 
     res.json({ message: 'User role updated successfully' });
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });

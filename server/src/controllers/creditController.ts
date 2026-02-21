@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import * as Business_pool from '../db/Business_pool';
 import * as Creditdb from '../db/Creditdb';
@@ -17,7 +18,7 @@ export const getCreditPayables = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching credit payables:', error);
+        logger.error('Error fetching credit payables:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -130,7 +131,7 @@ export const payCreditAmount = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error processing credit payment:', error);
+        logger.error('Error processing credit payment:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

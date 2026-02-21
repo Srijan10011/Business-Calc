@@ -48,10 +48,8 @@ const ProductDetail = () => {
                 navigate('/products');
             } else {
                 showSnackbar('Failed to fetch product', 'error');
-                console.error('Failed to fetch product');
             }
         } catch (error) {
-            console.error('Error fetching product:', error);
             showSnackbar('Failed to fetch product details. Please try again.', 'error');
         } finally {
             setLoading(false);
@@ -59,7 +57,6 @@ const ProductDetail = () => {
     };
 
     const handleSaveBasicInfo = () => {
-        console.log('Saving Basic Info:', { name });
         setIsBasicInfoEditing(false);
     };
 
@@ -69,7 +66,6 @@ const ProductDetail = () => {
     };
 
     const handleSaveInventory = () => {
-        console.log('Saving Inventory Info:', { price, stock });
         setIsInventoryEditing(false);
     };
 
@@ -97,10 +93,8 @@ const ProductDetail = () => {
                 navigate('/products');
             } else {
                 showSnackbar('Failed to delete product', 'error');
-                console.error('Failed to delete product');
             }
         } catch (error) {
-            console.error('Error deleting product:', error);
             showSnackbar(error.response?.data?.message || 'Failed to delete product. Please try again.', 'error');
         }
         setDeleteDialogOpen(false);

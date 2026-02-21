@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export const getMonthlyReport = async (req: Request, res: Response) => {
@@ -114,7 +115,7 @@ export const getMonthlyReport = async (req: Request, res: Response) => {
             accountBalances
         });
     } catch (error) {
-        console.error('Error generating monthly report:', error);
+        logger.error('Error generating monthly report:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

@@ -2,5 +2,14 @@ node_modules/
 dist/
 build/
 *.log
-.env
 .DS_Store
+
+# Environment files (contains secrets)
+.env
+server/.env
+client/.env
+
+# Keep example templates
+!.env.example
+!server/.env.example
+!client/.env.example

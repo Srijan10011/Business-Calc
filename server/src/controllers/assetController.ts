@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 
 import * as Assetdb from '../db/Assetdb';
 import * as Business_pool from '../db/Business_pool';
@@ -16,7 +17,7 @@ export const getAssets = async (req: Request, res: Response) => {
 
         res.json(assets);
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -40,7 +41,7 @@ export const createAsset = async (req: Request, res: Response) => {
         const categoryResult = await Assetdb.createAsset(name, category, (totalCost), businessId);
         res.json(categoryResult);
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };

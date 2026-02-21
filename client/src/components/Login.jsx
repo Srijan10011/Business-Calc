@@ -31,13 +31,10 @@ const Login = () => {
             const body = JSON.stringify(user);
             const res = await api.post('/auth/login', body, config);
             
-            console.log('Login response:', res.data);
-            
-            // Store the token and role in localStorage
-            localStorage.setItem('token', res.data.token);
+            // Token is now in httpOnly cookie (automatic)
+            // Only store role for UI purposes (not sensitive)
             if (res.data.role) {
                 localStorage.setItem('userRole', res.data.role);
-                console.log('Stored role:', res.data.role);
             }
             
             // Check status

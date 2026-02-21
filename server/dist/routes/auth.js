@@ -60,6 +60,18 @@ router.post('/register', (0, validateRequest_1.validateRequest)(validators_1.reg
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', (0, validateRequest_1.validateRequest)(validators_1.loginSchema), authController_1.login);
+// @route   POST api/auth/logout
+// @desc    Logout user (clear cookie)
+// @access  Private
+router.post('/logout', authMiddleware_1.authMiddleware, authController_1.logout);
+// @route   POST api/auth/refresh
+// @desc    Refresh access token using refresh token
+// @access  Public (uses refresh token from cookie)
+router.post('/refresh', authController_1.refreshAccessToken);
+// @route   GET api/auth/verify
+// @desc    Verify token is valid
+// @access  Private
+router.get('/verify', authMiddleware_1.authMiddleware, authController_1.verifyToken);
 // @route   GET api/auth/me
 // @desc    Get current user with role
 // @access  Private

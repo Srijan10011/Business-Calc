@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addStock = exports.getProductById = exports.getProducts = exports.addProduct = void 0;
+const logger_1 = __importDefault(require("../utils/logger"));
 const db_1 = __importDefault(require("../db"));
 const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -45,7 +46,7 @@ const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.status(201).json(productResult.rows[0]);
     }
     catch (error) {
-        console.error('Error adding product:', error);
+        logger_1.default.error('Error adding product:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -78,7 +79,7 @@ const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.json(result.rows);
     }
     catch (error) {
-        console.error('Error fetching products:', error);
+        logger_1.default.error('Error fetching products:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -114,7 +115,7 @@ const getProductById = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.json(result.rows[0]);
     }
     catch (error) {
-        console.error('Error fetching product:', error);
+        logger_1.default.error('Error fetching product:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });
@@ -148,7 +149,7 @@ const addStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.json(result.rows[0]);
     }
     catch (error) {
-        console.error('Error adding stock:', error);
+        logger_1.default.error('Error adding stock:', error);
         res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
     }
 });

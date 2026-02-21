@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import * as Roledb from '../db/Roledb';
 
@@ -31,7 +32,7 @@ export const getPermissions = async (req: Request, res: Response) => {
 
         res.json(permissions.rows);
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };
@@ -79,7 +80,7 @@ export const createPermission = async (req: Request, res: Response) => {
 
         res.json(newPermission.rows[0]);
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };
@@ -138,7 +139,7 @@ export const getRoles = async (req: Request, res: Response) => {
 
         res.json(roles.rows);
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };
@@ -203,7 +204,7 @@ export const createRole = async (req: Request, res: Response) => {
         res.json(newRole.rows[0]);
     } catch (err: any) {
         await client.query('ROLLBACK');
-        console.error('Error creating role:', err.message);
+        logger.error('Error creating role:', err.message);
         
         if (err.code === '23505') { // Unique constraint violation
             return res.status(400).json({ msg: 'A role with this name already exists in your business' });
@@ -287,7 +288,7 @@ export const checkDuplicateRole = async (req: Request, res: Response) => {
 
         res.json({ exists: false });
     } catch (err: any) {
-        console.error('Error checking duplicate role:', err.message);
+        logger.error('Error checking duplicate role:', err.message);
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -360,7 +361,7 @@ export const getRoleDetails = async (req: Request, res: Response) => {
             permissions: permissions.rows
         });
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };
@@ -436,7 +437,7 @@ export const updateRolePermissions = async (req: Request, res: Response) => {
         res.json({ msg: 'Role permissions updated successfully' });
     } catch (err: any) {
         await client.query('ROLLBACK');
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     } finally {
         client.release();
@@ -498,7 +499,7 @@ export const deleteRole = async (req: Request, res: Response) => {
 
         res.json({ msg: 'Role deleted successfully' });
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };

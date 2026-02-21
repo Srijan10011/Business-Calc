@@ -9,14 +9,14 @@ import { emailSchema, passwordSchema, nameSchema, uuidSchema } from './commonVal
 export const registerSchema = z.object({
     name: nameSchema,
     email: emailSchema,
-    password: passwordSchema,
+    password: passwordSchema, // Strong password validation
     business_id: uuidSchema.optional()
 });
 
 // POST /api/auth/login
 export const loginSchema = z.object({
     email: emailSchema,
-    password: passwordSchema
+    password: z.string().min(1, 'Password is required') // Simple validation for login
 });
 
 // POST /api/auth/setup-business

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export const getPendingRequests = async (req: Request, res: Response) => {
@@ -28,7 +29,7 @@ export const getPendingRequests = async (req: Request, res: Response) => {
 
         res.json(requests.rows);
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };
@@ -81,7 +82,7 @@ export const approveRequest = async (req: Request, res: Response) => {
         res.json({ msg: 'Request approved successfully' });
     } catch (err: any) {
         await client.query('ROLLBACK');
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     } finally {
         client.release();
@@ -115,7 +116,7 @@ export const rejectRequest = async (req: Request, res: Response) => {
 
         res.json({ msg: 'Request rejected successfully' });
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };
@@ -144,7 +145,7 @@ export const checkUserStatus = async (req: Request, res: Response) => {
 
         res.json({ status: 'none', hasAccess: false });
     } catch (err: any) {
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     }
 };

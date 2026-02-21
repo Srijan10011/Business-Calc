@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export const addProduct = async (req: Request, res: Response) => {
@@ -50,7 +51,7 @@ export const addProduct = async (req: Request, res: Response) => {
 
         res.status(201).json(productResult.rows[0]);
     } catch (error: any) {
-        console.error('Error adding product:', error);
+        logger.error('Error adding product:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -93,7 +94,7 @@ export const getProducts = async (req: Request, res: Response) => {
 
         res.json(result.rows);
     } catch (error: any) {
-        console.error('Error fetching products:', error);
+        logger.error('Error fetching products:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -140,7 +141,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
         res.json(result.rows[0]);
     } catch (error: any) {
-        console.error('Error fetching product:', error);
+        logger.error('Error fetching product:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -186,7 +187,7 @@ export const addStock = async (req: Request, res: Response) => {
 
         res.json(result.rows[0]);
     } catch (error: any) {
-        console.error('Error adding stock:', error);
+        logger.error('Error adding stock:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

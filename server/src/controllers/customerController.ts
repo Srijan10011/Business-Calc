@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import jwt from 'jsonwebtoken';
 import * as Business_pool from '../db/Business_pool';
@@ -15,7 +16,7 @@ export const getCustomers = async (req: Request, res: Response) => {
         const result = await Customerdb.getCustomersByBusiness(business_id)
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching customers:', error);
+        logger.error('Error fetching customers:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -42,7 +43,7 @@ export const getCustomerById = async (req: Request, res: Response) => {
 
         res.json(result.rows[0]);
     } catch (error: any) {
-        console.error('Error fetching customer:', error);
+        logger.error('Error fetching customer:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -65,7 +66,7 @@ export const getCustomerSales = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching customer sales:', error);
+        logger.error('Error fetching customer sales:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -88,7 +89,7 @@ export const getCustomerPayments = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching customer payments:', error);
+        logger.error('Error fetching customer payments:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -113,7 +114,7 @@ export const addCustomer = async (req: Request, res: Response) => {
 
         res.status(201).json(customerResult);
     } catch (error: any) {
-        console.error('Error adding customer:', error);
+        logger.error('Error adding customer:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

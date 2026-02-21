@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export const addInventoryItem = async (req: Request, res: Response) => {
@@ -141,7 +142,7 @@ export const addInventoryItem = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error adding inventory item:', error);
+        logger.error('Error adding inventory item:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -176,7 +177,7 @@ export const getInventoryItems = async (req: Request, res: Response) => {
 
         res.json(result.rows);
     } catch (error: any) {
-        console.error('Error fetching inventory items:', error);
+        logger.error('Error fetching inventory items:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -324,7 +325,7 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
 
                 // Handle credit payable for stock in
                 if (isCredit && party_name) {
-                    console.log('Creating credit payable for:', party_name, 'amount:', total_amount);
+                    logger.info('Creating credit payable for:', party_name, 'amount:', total_amount);
                     
                     // Check if payable already exists for this party
                     const existingPayable = await client.query(
@@ -332,7 +333,7 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
                         [business_id, party_name, 'Paid']
                     );
 
-                    console.log('Existing payable found:', existingPayable.rows.length);
+                    logger.info('Existing payable found:', existingPayable.rows.length);
 
                     if (existingPayable.rows.length > 0) {
                         // Add to existing payable
@@ -340,7 +341,7 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
                             'UPDATE credit_payables SET total_amount = total_amount + $1 WHERE payable_id = $2',
                             [total_amount, existingPayable.rows[0].payable_id]
                         );
-                        console.log('Updated existing payable');
+                        logger.info('Updated existing payable');
                     } else {
                         // Create new payable
                         const newPayableResult = await client.query(
@@ -348,10 +349,10 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
                              VALUES ($1, $2, $3) RETURNING payable_id`,
                             [business_id, party_name, total_amount]
                         );
-                        console.log('Created new payable with ID:', newPayableResult.rows[0].payable_id);
+                        logger.info('Created new payable with ID:', newPayableResult.rows[0].payable_id);
                     }
                 } else {
-                    console.log('Credit payable not created - isCredit:', isCredit, 'party_name:', party_name);
+                    logger.info('Credit payable not created - isCredit:', isCredit, 'party_name:', party_name);
                 }
             }
 
@@ -375,7 +376,7 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
             client.release();
         }
     } catch (error: any) {
-        console.error('Error updating inventory stock:', error);
+        logger.error('Error updating inventory stock:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

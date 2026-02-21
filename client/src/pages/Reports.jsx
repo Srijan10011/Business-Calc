@@ -35,7 +35,6 @@ const Reports = () => {
             });
             setReportData(response.data);
         } catch (error) {
-            console.error('Error fetching report:', error);
             showSnackbar('Failed to fetch report. Please try again.', 'error');
         } finally {
             setLoading(false);

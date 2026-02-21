@@ -67,7 +67,6 @@ const Dashboard = () => {
             });
             setUserStatus(res.data);
         } catch (error) {
-            console.error('Error checking user status:', error);
             showSnackbar('Failed to check user status. Please try again.', 'error');
         }
     };
@@ -83,7 +82,6 @@ const Dashboard = () => {
             if (error.response?.status === 403) {
                 setAccounts([]);
             } else {
-                console.error('Error fetching accounts:', error);
                 showSnackbar('Failed to fetch accounts. Please try again.', 'error');
             }
         }
@@ -100,7 +98,6 @@ const Dashboard = () => {
             if (error.response?.status === 403) {
                 setAssets([]);
             } else {
-                console.error('Error fetching assets:', error);
                 showSnackbar('Failed to fetch assets. Please try again.', 'error');
             }
         }
@@ -120,7 +117,6 @@ const Dashboard = () => {
             });
             setMoneyFlow(response.data);
         } catch (error) {
-            console.error('Error fetching money flow:', error);
             showSnackbar('Failed to fetch money flow data. Please try again.', 'error');
         }
     };
@@ -160,7 +156,6 @@ const Dashboard = () => {
             fetchData(); // Refresh data
             showSnackbar('Expense added successfully!', 'success');
         } catch (error) {
-            console.error('Error adding expense:', error);
             showSnackbar(error.response?.data?.message || 'Failed to add expense. Please try again.', 'error');
         }
     };

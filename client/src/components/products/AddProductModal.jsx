@@ -20,13 +20,11 @@ function AddProductModal({ open, onClose }) {
                 headers: { 'x-auth-token': token }
             });
 
-            console.log('Product added successfully');
             setName('');
             setPrice('');
             setStock('');
             onClose();
         } catch (error) {
-            console.error('Error adding product:', error);
             showSnackbar(error.response?.data?.message || 'Failed to add product. Please try again.', 'error');
         }
     };

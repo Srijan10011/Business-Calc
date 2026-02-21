@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import logger from '../utils/logger';
 import { addProduct, getProducts, getProductById, addStock } from '../controllers/productController';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { loadPermissions, requirePermission } from '../middleware/permissionMiddleware';
@@ -70,7 +71,7 @@ router.delete('/:id', authMiddleware, loadPermissions, requirePermission('produc
         res.json({ msg: 'Product removed successfully' });
     } catch (err: any) {
         await client.query('ROLLBACK');
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     } finally {
         client.release();
@@ -143,7 +144,7 @@ router.delete('/:id', authMiddleware, loadPermissions, requirePermission('produc
         res.json({ msg: 'Product deleted successfully' });
     } catch (err: any) {
         await client.query('ROLLBACK');
-        console.error(err.message);
+        logger.error(err.message);
         res.status(500).send('Server error');
     } finally {
         client.release();

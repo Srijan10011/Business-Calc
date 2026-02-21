@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import * as Cogsdb from '../db/Cogsdb';
 import * as Business_pool from '../db/Business_pool';
@@ -17,7 +18,7 @@ export const getBusinessCategories = async (req: Request, res: Response) => {
 
         res.json(result.map(row => row.name));
     } catch (error: any) {
-        console.error('Error fetching business categories:', error);
+        logger.error('Error fetching business categories:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -53,7 +54,7 @@ export const addCostCategory = async (req: Request, res: Response) => {
             message: 'Cost category and allocation created successfully'
         });
     } catch (error: any) {
-        console.error('Error adding cost category:', error);
+        logger.error('Error adding cost category:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -73,7 +74,7 @@ export const getProductCostAllocations = async (req: Request, res: Response) => 
 
         res.json(getProductCostAllocation);
     } catch (error: any) {
-        console.error('Error fetching product cost allocations:', error);
+        logger.error('Error fetching product cost allocations:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -100,7 +101,7 @@ export const updateCostAllocation = async (req: Request, res: Response) => {
         res.json(updatecostAllocation);
     }
     catch (error: any) {
-        console.error('Error updating cost allocation:', error);
+        logger.error('Error updating cost allocation:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     };
 }
@@ -117,7 +118,7 @@ export const deleteCostAllocation = async (req: Request, res: Response) => {
         const delete_allocation = await Cogsdb.deleteCostAllocation(allocation_id);
         res.json({ message: 'Cost allocation deleted successfully', deleted: delete_allocation });
     } catch (error: any) {
-        console.error('Error deleting cost allocation:', error);
+        logger.error('Error deleting cost allocation:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -138,7 +139,7 @@ export const getCOGSData = async (req: Request, res: Response) => {
             categories: cogsData
         });
     } catch (error: any) {
-        console.error('Error fetching COGS data:', error);
+        logger.error('Error fetching COGS data:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

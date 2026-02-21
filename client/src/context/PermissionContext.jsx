@@ -20,19 +20,18 @@ export const PermissionProvider = ({ children }) => {
   useEffect(() => {
     // Set snackbar function for API interceptor
     setSnackbarFunction(showSnackbar);
+    
+    // Always try to fetch permissions on mount
+    // If not authenticated, it will fail silently
     fetchPermissions();
   }, [showSnackbar]);
 
   const fetchPermissions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await api.get('/business-users/permissions', {
-        headers: { 'x-auth-token': token }
-      });
+      const res = await api.get('/business-users/permissions');
       setPermissions(res.data);
     } catch (err) {
-      console.error('Error fetching permissions:', err);
-      showSnackbar('Failed to fetch permissions. Please try again.', 'error');
+      // Silently fail on 401 (not authenticated) and other errors
     } finally {
       setLoading(false);
     }

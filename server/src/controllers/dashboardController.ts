@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export const getDashboardData = async (req: Request, res: Response) => {
@@ -112,7 +113,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
             inventoryRecovery
         });
     } catch (error) {
-        console.error('Dashboard error:', error);
+        logger.error('Dashboard error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -138,8 +139,6 @@ export const getMoneyFlow = async (req: Request, res: Response) => {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-        console.log('Date range:', startOfMonth, 'to', endOfMonth);
-
         // Get incoming transactions by account type
         const incomingResult = await pool.query(
             `SELECT a.account_name, COALESCE(SUM(t.amount), 0) as total
@@ -154,8 +153,6 @@ export const getMoneyFlow = async (req: Request, res: Response) => {
              GROUP BY a.account_name`,
             [businessId, startOfMonth, endOfMonth]
         );
-
-        console.log('Incoming results:', incomingResult.rows);
 
         // Get outgoing transactions categorized
         const outgoingResult = await pool.query(
@@ -194,7 +191,6 @@ export const getMoneyFlow = async (req: Request, res: Response) => {
             [businessId, startOfMonth, endOfMonth]
         );
 
-        console.log('Outgoing results:', outgoingResult.rows);
 
         // Format incoming data
         const incoming = {
@@ -236,7 +232,7 @@ export const getMoneyFlow = async (req: Request, res: Response) => {
 
         res.json({ incoming, outgoing });
     } catch (error) {
-        console.error('Dashboard error:', error);
+        logger.error('Dashboard error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

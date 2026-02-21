@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import logger from '../utils/logger';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { loadPermissions } from '../middleware/permissionMiddleware';
 import pool from '../db';
@@ -69,7 +70,7 @@ router.get('/accounts', authMiddleware, loadPermissions, async (req: any, res: a
             res.json(result.rows);
         }
     } catch (error: any) {
-        console.error('Error fetching accounts:', error);
+        logger.error('Error fetching accounts:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -110,7 +111,7 @@ router.get('/products', authMiddleware, loadPermissions, async (req: any, res: a
         
         res.json(result.rows);
     } catch (error: any) {
-        console.error('Error fetching products:', error);
+        logger.error('Error fetching products:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -151,7 +152,7 @@ router.get('/customers', authMiddleware, loadPermissions, async (req: any, res: 
         
         res.json(result.rows);
     } catch (error: any) {
-        console.error('Error fetching customers:', error);
+        logger.error('Error fetching customers:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -188,7 +189,7 @@ router.get('/inventory-categories', authMiddleware, loadPermissions, async (req:
         
         res.json(result.rows);
     } catch (error: any) {
-        console.error('Error fetching categories:', error);
+        logger.error('Error fetching categories:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

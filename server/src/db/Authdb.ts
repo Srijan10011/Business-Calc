@@ -220,3 +220,78 @@ export const getUserInfo = async (user_id: string) => {
         permissions
     };
 };
+
+
+// ============================================================================
+// REFRESH TOKEN FUNCTIONS
+// ============================================================================
+
+// Store refresh token in database (hashed)
+export const storeRefreshToken = async (
+    user_id: string,
+    refreshToken: string,
+    expiresAt: Date,
+    ipAddress?: string,
+    userAgent?: string
+) => {
+    const tokenHash = await bcrypt.hash(refreshToken, 10);
+    
+    await pool.query(
+        `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [user_id, tokenHash, expiresAt, ipAddress, userAgent]
+    );
+};
+
+// Validate refresh token
+export const validateRefreshToken = async (refreshToken: string, user_id: string) => {
+    const result = await pool.query(
+        `SELECT token_id, token_hash, expires_at 
+         FROM refresh_tokens 
+         WHERE user_id = $1 AND expires_at > NOW()`,
+        [user_id]
+    );
+
+    for (const row of result.rows) {
+        const isValid = await bcrypt.compare(refreshToken, row.token_hash);
+        if (isValid) {
+            // Update last_used timestamp
+            await pool.query(
+                'UPDATE refresh_tokens SET last_used = NOW() WHERE token_id = $1',
+                [row.token_id]
+            );
+            return true;
+        }
+    }
+    
+    return false;
+};
+
+// Delete specific refresh token (logout)
+export const deleteRefreshToken = async (refreshToken: string, user_id: string) => {
+    const result = await pool.query(
+        'SELECT token_id, token_hash FROM refresh_tokens WHERE user_id = $1',
+        [user_id]
+    );
+
+    for (const row of result.rows) {
+        const isMatch = await bcrypt.compare(refreshToken, row.token_hash);
+        if (isMatch) {
+            await pool.query('DELETE FROM refresh_tokens WHERE token_id = $1', [row.token_id]);
+            return true;
+        }
+    }
+    
+    return false;
+};
+
+// Delete all refresh tokens for a user (force logout all sessions)
+export const deleteAllUserTokens = async (user_id: string) => {
+    await pool.query('DELETE FROM refresh_tokens WHERE user_id = $1', [user_id]);
+};
+
+// Clean up expired tokens (run periodically)
+export const cleanupExpiredTokens = async () => {
+    const result = await pool.query('DELETE FROM refresh_tokens WHERE expires_at < NOW()');
+    return result.rowCount;
+};

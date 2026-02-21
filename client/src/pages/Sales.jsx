@@ -73,7 +73,6 @@ export default function Sales() {
             setTotalPages(response.data.pagination.totalPages);
             setTotalSales(response.data.pagination.totalSales);
         } catch (error) {
-            console.error('Error fetching sales:', error);
             showSnackbar('Failed to fetch sales. Please try again.', 'error');
         }
     };
@@ -86,7 +85,6 @@ export default function Sales() {
             });
             setProducts(response.data);
         } catch (error) {
-            console.error('Error fetching products:', error);
             if (error.response?.status !== 403) {
                 showSnackbar('Failed to fetch products. Please try again.', 'error');
             }
@@ -106,7 +104,6 @@ export default function Sales() {
             );
             setAccounts(filteredAccounts);
         } catch (error) {
-            console.error('Error fetching accounts:', error);
             // Only show error if it's not a permission issue
             if (error.response?.status !== 403) {
                 showSnackbar('Failed to fetch accounts. Please try again.', 'error');
@@ -169,7 +166,6 @@ export default function Sales() {
                 setPaymentError(errorMsg);
                 showSnackbar(errorMsg, 'error');
             } else {
-                console.error('Error recording payment:', error);
                 showSnackbar('Failed to record payment. Please try again.', 'error');
             }
         }
@@ -196,7 +192,6 @@ export default function Sales() {
             setOpen(true);
             showSnackbar('Stock added successfully!', 'success');
         } catch (error) {
-            console.error('Error adding stock:', error);
             showSnackbar(error.response?.data?.msg || error.response?.data?.message || 'Failed to add stock. Please try again.', 'error');
         }
     };

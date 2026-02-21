@@ -48,11 +48,9 @@ function COGSEditor({ productId }) {
                 const data = await response.json();
                 setAllocations(data);
             } else {
-                console.error('Failed to fetch allocations');
                 showSnackbar('Failed to fetch allocations', 'error');
             }
         } catch (error) {
-            console.error('Error fetching allocations:', error);
             showSnackbar('Failed to fetch allocations. Please try again.', 'error');
         } finally {
             setLoading(false);
@@ -74,13 +72,11 @@ function COGSEditor({ productId }) {
                 const categoriesWithSalary = ['Salary', ...data.filter(cat => cat !== 'Salary')];
                 setExistingCategories(categoriesWithSalary);
             } else {
-                console.error('Failed to fetch categories');
                 showSnackbar('Failed to fetch categories', 'error');
                 // If API fails, at least show Salary as default option
                 setExistingCategories(['Salary']);
             }
         } catch (error) {
-            console.error('Error fetching categories:', error);
             showSnackbar('Failed to fetch categories. Please try again.', 'error');
             // If API fails, at least show Salary as default option
             setExistingCategories(['Salary']);
@@ -119,7 +115,6 @@ function COGSEditor({ productId }) {
                 showSnackbar(`Failed to add cost category: ${error.message}`, 'error');
             }
         } catch (error) {
-            console.error('Error adding allocation:', error);
             showSnackbar('Error adding cost category', 'error');
         }
     };
@@ -141,7 +136,6 @@ function COGSEditor({ productId }) {
                 showSnackbar('Failed to delete cost allocation', 'error');
             }
         } catch (error) {
-            console.error('Error deleting allocation:', error);
             showSnackbar('Error deleting cost allocation', 'error');
         }
         

@@ -33,9 +33,11 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../utils/api';
+import { useSnackbar } from '../context/SnackbarContext';
 
 export default function Team() {
     const navigate = useNavigate();
+    const { showSnackbar } = useSnackbar();
     const [teamMembers, setTeamMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
@@ -66,9 +68,7 @@ export default function Team() {
             });
             setTeamMembers(response.data);
         } catch (error) {
-            console.error('Error fetching team members:', error);
             showSnackbar('Failed to fetch team members. Please try again.', 'error');
-            console.error('Error response:', error.response?.data);
         } finally {
             setLoading(false);
         }
@@ -126,18 +126,17 @@ export default function Team() {
             };
 
             if (editingMember) {
-                await api.put(`/team/${editingMember.member_id}`, data, {
-                    headers: { 'x-auth-token': token }
-                });
+                await api.put(`/team/${editingMember.member_id}`, data);
+                showSnackbar('Team member updated successfully!', 'success');
             } else {
-                await api.post('/team', data, {
-                    headers: { 'x-auth-token': token }
-                });
+                await api.post('/team', data);
+                showSnackbar('Team member added successfully!', 'success');
             }
 
-            await fetchTeamMembers();
             handleClose();
+            fetchTeamMembers();
         } catch (error) {
+            console.error('Error saving team member:', error);
             const errorMessage = error.response?.data?.message || 'Error saving team member';
             setError(errorMessage);
         }
@@ -149,13 +148,11 @@ export default function Team() {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            await api.delete(`/team/${memberId}`, {
-                headers: { 'x-auth-token': token }
-            });
+            await api.delete(`/team/${memberId}`);
+            showSnackbar('Team member deleted successfully!', 'success');
             await fetchTeamMembers();
         } catch (error) {
-            console.error('Error deleting team member:', error);
+            showSnackbar('Error deleting team member', 'error');
         }
     };
 
@@ -175,18 +172,14 @@ export default function Team() {
     const handleSalaryDistribution = async () => {
         if (salaryDistributionMode === 'automatic') {
             try {
-                const token = localStorage.getItem('token');
-                const response = await api.post('/team/auto-distribute', {}, {
-                    headers: { 'x-auth-token': token }
-                });
-                showSnackbar(response.data.message, 'success');
+                const response = await api.post('/team/auto-distribute', {});
+                showSnackbar(response.data.message || 'Salary distributed successfully!', 'success');
                 await fetchTeamMembers(); // Refresh to show updated balances
             } catch (error) {
-                console.error('Error auto distributing salaries:', error);
                 showSnackbar('Error distributing salaries', 'error');
             }
         } else {
-            console.log('Opening manual salary distribution...');
+            // Manual salary distribution
         }
     };
 

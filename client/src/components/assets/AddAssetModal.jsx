@@ -11,17 +11,14 @@ function AddAssetModal({ open, onClose }) {
 
     const handleSaveAsset = async () => {
         try {
-            const token = localStorage.getItem('token');
             await api.post('/assets', {
                 name: assetName,
                 category,
                 totalCost: parseFloat(totalCost)
-            }, {
-                headers: { 'x-auth-token': token }
             });
+            showSnackbar('Asset added successfully!', 'success');
             onClose();
         } catch (error) {
-            console.error('Error saving asset:', error);
             showSnackbar(error.response?.data?.message || 'Failed to save asset. Please try again.', 'error');
         }
     };

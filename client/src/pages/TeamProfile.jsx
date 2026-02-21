@@ -58,7 +58,6 @@ export default function TeamProfile() {
             });
             setMember(response.data);
         } catch (error) {
-            console.error('Error fetching member:', error);
             showSnackbar('Failed to fetch member details. Please try again.', 'error');
         }
     };
@@ -71,7 +70,6 @@ export default function TeamProfile() {
             });
             setAccountBalance(response.data.current_balance || 0);
         } catch (error) {
-            console.error('Error fetching account balance:', error);
             showSnackbar('Failed to fetch account balance. Please try again.', 'error');
         }
     };
@@ -84,7 +82,6 @@ export default function TeamProfile() {
             });
             setAttendance(response.data);
         } catch (error) {
-            console.error('Error fetching attendance:', error);
             showSnackbar('Failed to fetch attendance. Please try again.', 'error');
         }
     };
@@ -102,7 +99,6 @@ export default function TeamProfile() {
                 .reduce((sum, payment) => sum + payment.amount, 0);
             setTotalSalaryPaid(total);
         } catch (error) {
-            console.error('Error fetching salary history:', error);
             showSnackbar('Failed to fetch salary history. Please try again.', 'error');
         }
     };
@@ -136,7 +132,6 @@ export default function TeamProfile() {
             fetchAccountBalance();
             showSnackbar('Salary payout processed successfully!', 'success');
         } catch (error) {
-            console.error('Error processing salary payout:', error);
             if (error.response?.data?.error === 'INSUFFICIENT_BALANCE') {
                 setPayoutError(`Balance in salary is ₹${error.response.data.availableBalance.toLocaleString('en-IN')}`);
                 showSnackbar(`Insufficient balance. Available: ₹${error.response.data.availableBalance.toLocaleString('en-IN')}`, 'error');
@@ -162,7 +157,6 @@ export default function TeamProfile() {
             fetchAccountBalance();
             showSnackbar('Salary added successfully!', 'success');
         } catch (error) {
-            console.error('Error adding salary:', error);
             showSnackbar(error.response?.data?.message || 'Failed to add salary. Please try again.', 'error');
         }
     };

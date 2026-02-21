@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 
 import * as Business_pool from '../db/Business_pool';
 import * as Categorydb from '../db/Categorydb';
@@ -21,7 +22,7 @@ export const checkCategory = async (req: Request, res: Response) => {
         const existingCategory = await Categorydb.checkCategory(name, cost_behaviour, product_id, business_id);
         res.json(existingCategory);
     } catch (error: any) {
-        console.error('Error checking category:', error);
+        logger.error('Error checking category:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -41,7 +42,7 @@ export const getCategories = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching categories:', error);
+        logger.error('Error fetching categories:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -66,7 +67,7 @@ export const createCategory = async (req: Request, res: Response) => {
 
         res.status(201).json({ id: result.id });
     } catch (error: any) {
-        console.error('Error creating category:', error);
+        logger.error('Error creating category:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 import * as CostTargetdb from '../db/CostTargetdb';
 import * as Business_pool from '../db/Business_pool';
@@ -20,7 +21,7 @@ export const addCostTarget = async (req: Request, res: Response) => {
 
         res.status(201).json(AddCostTarget);
     } catch (error: any) {
-        console.error('Error adding cost target:', error);
+        logger.error('Error adding cost target:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -39,7 +40,7 @@ export const getCostTargets = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching cost targets:', error);
+        logger.error('Error fetching cost targets:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

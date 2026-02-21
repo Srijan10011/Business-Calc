@@ -92,7 +92,6 @@ const Admin = () => {
       });
       setRequests(res.data);
     } catch (err) {
-      console.error('Error fetching requests:', err);
       showSnackbar('Failed to fetch requests. Please try again.', 'error');
     } finally {
       setLoading(false);
@@ -107,7 +106,6 @@ const Admin = () => {
       });
       setRoles(res.data);
     } catch (err) {
-      console.error('Error fetching roles:', err);
       showSnackbar('Failed to fetch roles. Please try again.', 'error');
     }
   };
@@ -120,7 +118,6 @@ const Admin = () => {
       });
       setPermissions(res.data);
     } catch (err) {
-      console.error('Error fetching permissions:', err);
       showSnackbar('Failed to fetch permissions. Please try again.', 'error');
     }
   };
@@ -133,7 +130,6 @@ const Admin = () => {
       });
       setUsers(res.data);
     } catch (err) {
-      console.error('Error fetching users:', err);
       showSnackbar('Failed to fetch users. Please try again.', 'error');
     }
   };
@@ -146,16 +142,11 @@ const Admin = () => {
       });
       setBusinessId(res.data.business_id);
     } catch (err) {
-      console.error('Error fetching business ID:', err);
+      showSnackbar('Failed to fetch business ID.', 'error');
     }
   };
 
   const handleCreateRole = async () => {
-    console.log('isEditingRole:', isEditingRole);
-    console.log('roleName:', roleName);
-    console.log('originalRoleName:', originalRoleName);
-    console.log('Are they equal?', roleName === originalRoleName);
-    
     // Prevent saving if editing and role name hasn't changed
     if (isEditingRole && roleName === originalRoleName) {
       setMessage('Please change the role name to create a new role');
@@ -183,35 +174,27 @@ const Admin = () => {
           return;
         }
 
-        console.log('Creating new role with name:', roleName);
         // Creating new role and assigning to specific user
         const roleRes = await api.post('/roles', {
           role_name: roleName,
           description: roleDescription,
           permissions: selectedPermissions
-        }, {
-          headers: { 'x-auth-token': token }
         });
         
-        console.log('Role created, updating user...');
         // Update user's role_id
         await api.put(`/business-users/${editingUserId}/role`, {
           role_id: roleRes.data.role_id
-        }, {
-          headers: { 'x-auth-token': token }
         });
         
-        setMessage('New role created and assigned to user');
+        showSnackbar('Role assigned successfully!', 'success');
       } else {
         // Normal role creation
         await api.post('/roles', {
           role_name: roleName,
           description: roleDescription,
           permissions: selectedPermissions
-        }, {
-          headers: { 'x-auth-token': token }
         });
-        setMessage('Role created successfully');
+        showSnackbar('Role created successfully!', 'success');
       }
       
       setRoleDialog(false);
@@ -226,9 +209,7 @@ const Admin = () => {
       fetchUsers();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      console.error('Error creating role:', err);
       showSnackbar(err.response?.data?.message || 'Failed to create role. Please try again.', 'error');
-      console.error('Error response:', err.response?.data);
       
       if (err.response?.data?.msg) {
         setMessage(err.response.data.msg);
@@ -324,7 +305,6 @@ const Admin = () => {
       fetchUsers();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      console.error('Error creating role:', err);
       showSnackbar(err.response?.data?.message || 'Failed to create role. Please try again.', 'error');
       if (err.response?.data?.msg) {
         setMessage(err.response.data.msg);
@@ -339,15 +319,11 @@ const Admin = () => {
     if (!window.confirm('Are you sure you want to delete this role?')) return;
     
     try {
-      const token = localStorage.getItem('token');
-      await api.delete(`/roles/${roleId}`, {
-        headers: { 'x-auth-token': token }
-      });
-      setMessage('Role deleted successfully');
+      await api.delete(`/roles/${roleId}`);
+      showSnackbar('Role deleted successfully!', 'success');
       fetchRoles();
-      setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setMessage('Error deleting role');
+      showSnackbar('Error deleting role', 'error');
     }
   };
 

@@ -76,7 +76,6 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
                 setStockError(quantity > response.data[0].stock);
             }
         } catch (error) {
-            console.error('Error fetching products:', error);
             showSnackbar('Failed to fetch products. Please try again.', 'error');
         }
     };
@@ -92,7 +91,6 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
                 setCustomer(response.data[0].customer_id?.toString() || response.data[0].id?.toString());
             }
         } catch (error) {
-            console.error('Error fetching customers:', error);
             showSnackbar('Failed to fetch customers. Please try again.', 'error');
         }
     };
@@ -122,7 +120,6 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
                 setAccount(accountId?.toString() || '');
             }
         } catch (error) {
-            console.error('Error fetching accounts:', error);
             showSnackbar('Failed to fetch accounts. Please try again.', 'error');
         }
     };
@@ -169,7 +166,6 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             setNewCustomerPhone('');
             setNewCustomerAddress('');
         } catch (error) {
-            console.error('Error adding customer:', error);
             showSnackbar(error.response?.data?.message || 'Failed to add customer. Please try again.', 'error');
         }
     };
@@ -198,7 +194,6 @@ export default function AddSaleModal({ open, onClose, onAddStock, preselectedPro
             showSnackbar('Sale created successfully!', 'success');
             onClose();
         } catch (error) {
-            console.error('Error saving sale:', error);
             showSnackbar(error.response?.data?.message || 'Failed to save sale. Please try again.', 'error');
             const errorMessage = error.response?.data?.message || 'Error saving sale';
             setError(errorMessage);

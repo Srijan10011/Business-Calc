@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 // Extend Request type to include permissions
@@ -56,7 +57,7 @@ export const loadPermissions = async (req: Request, res: Response, next: NextFun
         req.userPermissions = permissions.rows.map(row => row.permission_key);
         next();
     } catch (err: any) {
-        console.error('Permission loading error:', err.message);
+        logger.error('Permission loading error:', err.message);
         res.status(500).send('Server error');
     }
 };

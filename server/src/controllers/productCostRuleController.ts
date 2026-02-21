@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 import pool from '../db';
 
 export const addProductCostRule = async (req: Request, res: Response) => {
@@ -23,7 +24,7 @@ export const addProductCostRule = async (req: Request, res: Response) => {
 
         res.status(201).json(result.rows[0]);
     } catch (error: any) {
-        console.error('Error adding product cost rule:', error);
+        logger.error('Error adding product cost rule:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };

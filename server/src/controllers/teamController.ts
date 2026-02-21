@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import logger from '../utils/logger';
 
 import * as Business_pool from '../db/Business_pool';
 import * as Teamdb from '../db/Teamdb';
@@ -18,7 +19,7 @@ export const getTeamMembers = async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
-        console.error('Error fetching team members:', error);
+        logger.error('Error fetching team members:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -53,7 +54,7 @@ export const addTeamMember = async (req: Request, res: Response) => {
             member: result.rows[0]
         });
     } catch (error: any) {
-        console.error('Error adding team member:', error);
+        logger.error('Error adding team member:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -90,7 +91,7 @@ export const updateTeamMember = async (req: Request, res: Response) => {
             member: result.rows[0]
         });
     } catch (error: any) {
-        console.error('Error updating team member:', error);
+        logger.error('Error updating team member:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -114,7 +115,7 @@ export const getTeamMember = async (req: Request, res: Response) => {
 
         res.json(result.rows[0]);
     } catch (error: any) {
-        console.error('Error fetching team member:', error);
+        logger.error('Error fetching team member:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -152,7 +153,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
         });
     } catch (error: any) {
 
-        console.error('Error processing salary payout:', error);
+        logger.error('Error processing salary payout:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -172,7 +173,7 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
 
         res.json(GetMemberSalaryHistoryResult);
     } catch (error: any) {
-        console.error('Error fetching salary history:', error);
+        logger.error('Error fetching salary history:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -192,7 +193,7 @@ export const deleteTeamMember = async (req: Request, res: Response) => {
 
         res.json({ message: 'Team member deleted successfully', result });
     } catch (error: any) {
-        console.error('Error deleting team member:', error);
+        logger.error('Error deleting team member:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -216,7 +217,7 @@ export const getTeamMemberAccount = async (req: Request, res: Response) => {
 
         res.json(get_teammemberaccount);
     } catch (error: any) {
-        console.error('Error fetching team account:', error);
+        logger.error('Error fetching team account:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -249,7 +250,7 @@ export const distributeSalary = async (req: Request, res: Response) => {
         res.json({ message: 'Salary distributed successfully', data: accountResult });
     } catch (error: any) {
 
-        console.error('Error distributing salary:', error);
+        logger.error('Error distributing salary:', error);
         res.status(500).json({ message: 'Server error', error: error?.message });
     }
 };
@@ -264,7 +265,7 @@ export const autoDistributeSalaries = async (req: Request, res: Response) => {
         return res.json(result);
 
     } catch (error: any) {
-        console.error('Error auto distributing salaries:', error);
+        logger.error('Error auto distributing salaries:', error);
 
         return res.status(error?.status || 500).json({
             message: error?.message || 'Server error',

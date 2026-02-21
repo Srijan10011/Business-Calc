@@ -8,8 +8,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
+const logger_1 = __importDefault(require("../utils/logger"));
 const productController_1 = require("../controllers/productController");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const permissionMiddleware_1 = require("../middleware/permissionMiddleware");
@@ -63,7 +67,7 @@ router.delete('/:id', authMiddleware_1.authMiddleware, permissionMiddleware_1.lo
     }
     catch (err) {
         yield client.query('ROLLBACK');
-        console.error(err.message);
+        logger_1.default.error(err.message);
         res.status(500).send('Server error');
     }
     finally {
@@ -120,7 +124,7 @@ router.delete('/:id', authMiddleware_1.authMiddleware, permissionMiddleware_1.lo
     }
     catch (err) {
         yield client.query('ROLLBACK');
-        console.error(err.message);
+        logger_1.default.error(err.message);
         res.status(500).send('Server error');
     }
     finally {

@@ -41,7 +41,7 @@ export const addTeamMember = async (
     const result = await pool.query(
         `INSERT INTO team_members (business_id, name, email, phone, position, department, salary, enroll_date)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-         RETURNING member_id, name, position`,
+         RETURNING *`,
         [business_id, name, email, phone, position, department, salary, enroll_date || new Date()]
     );
 
@@ -63,7 +63,7 @@ export const updateTeamMember = async (
         `UPDATE team_members
          SET name=$1, email=$2, phone=$3, position=$4, department=$5, salary=$6, status=$7, updated_at=CURRENT_TIMESTAMP
          WHERE member_id=$8 AND business_id=$9
-         RETURNING member_id, name, position`,
+         RETURNING *`,
         [name, email, phone, position, department, salary, status, member_id, business_id]
     );
 
