@@ -21,14 +21,16 @@ import Credits from './pages/Credits';
 import Admin from './pages/Admin';
 import PrivateRoute from './components/PrivateRoute';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import { PermissionProvider } from './context/PermissionContext';
 import { SnackbarProvider } from './context/SnackbarContext';
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <SnackbarProvider>
-        <PermissionProvider>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <SnackbarProvider>
+          <PermissionProvider>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -56,6 +58,7 @@ const App = () => {
         </PermissionProvider>
       </SnackbarProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 

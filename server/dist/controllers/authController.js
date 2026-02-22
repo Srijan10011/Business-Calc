@@ -52,6 +52,7 @@ const securityAudit_1 = require("../utils/securityAudit");
 const Authdb = __importStar(require("../db/Authdb"));
 const Accountdb = __importStar(require("../db/Accountdb"));
 const sanitize_1 = require("../utils/sanitize");
+const constants_1 = require("../constants");
 const checkBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const business_id = req.params.business_id;
     try {
@@ -77,7 +78,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 3600000
+            maxAge: constants_1.AUTH_CONSTANTS.ACCESS_TOKEN_EXPIRY_MS
         });
         res.json(result);
     }

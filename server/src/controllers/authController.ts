@@ -6,6 +6,7 @@ import * as Authdb from '../db/Authdb';
 import { createDefaultAccounts } from './accountController';
 import * as Accountdb from '../db/Accountdb';
 import { sanitizeEmail, sanitizeName } from '../utils/sanitize';
+import { AUTH_CONSTANTS } from '../constants';
 
 export const checkBusiness = async (req: Request, res: Response) => {
     const business_id = req.params.business_id as string;
@@ -32,7 +33,7 @@ export const register = async (req: Request, res: Response) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 3600000
+            maxAge: AUTH_CONSTANTS.ACCESS_TOKEN_EXPIRY_MS
         });
         
         res.json(result);

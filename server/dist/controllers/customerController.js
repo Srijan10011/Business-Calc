@@ -45,14 +45,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addCustomer = exports.getCustomerPayments = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
+exports.deleteCustomer = exports.updateCustomer = exports.addCustomer = exports.getCustomerPayments = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
 const logger_1 = __importDefault(require("../utils/logger"));
 const Customerdb = __importStar(require("../db/Customerdb"));
 const sanitize_1 = require("../utils/sanitize");
 const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const business_id = req.businessId;
-        const result = yield Customerdb.getCustomersByBusiness(business_id);
+        const page = req.query.page ? parseInt(req.query.page) : undefined;
+        const limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+        const result = yield Customerdb.getCustomersByBusiness(business_id, page, limit);
         res.json(result);
     }
     catch (error) {
@@ -134,3 +136,43 @@ const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.addCustomer = addCustomer;
+const updateCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { name, phone, email, address } = req.body;
+        const business_id = req.businessId;
+        const customer_id = req.params.id;
+        if (!name || !phone) {
+            return res.status(400).json({ message: 'Missing required fields: name, phone' });
+        }
+        const sanitizedName = (0, sanitize_1.sanitizeName)(name);
+        const sanitizedPhone = (0, sanitize_1.sanitizePhone)(phone);
+        const sanitizedEmail = email ? (0, sanitize_1.sanitizeEmail)(email) : null;
+        const sanitizedAddress = address ? (0, sanitize_1.sanitizeText)(address) : null;
+        const result = yield Customerdb.updateCustomer(customer_id, business_id, sanitizedName, sanitizedPhone, sanitizedEmail, sanitizedAddress);
+        if (!result) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+        res.json(result);
+    }
+    catch (error) {
+        logger_1.default.error('Error updating customer:', error);
+        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
+    }
+});
+exports.updateCustomer = updateCustomer;
+const deleteCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const business_id = req.businessId;
+        const customer_id = req.params.id;
+        const result = yield Customerdb.deleteCustomer(customer_id, business_id);
+        if (!result) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+        res.json({ message: 'Customer deleted successfully' });
+    }
+    catch (error) {
+        logger_1.default.error('Error deleting customer:', error);
+        res.status(500).json({ message: 'Server error', error: error === null || error === void 0 ? void 0 : error.message });
+    }
+});
+exports.deleteCustomer = deleteCustomer;

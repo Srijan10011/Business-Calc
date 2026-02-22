@@ -1,5 +1,6 @@
 import pool from '../db';
 import * as Business_pool from './Business_pool';
+import { clearPermissionCache } from '../middleware/permissionMiddleware';
 
 // Permissions
 export const getPermissionsByBusiness = async (business_id: string) => {
@@ -121,6 +122,7 @@ export const updateRolePermissions = async (
         }
 
         await client.query('COMMIT');
+        clearPermissionCache(role_id);
     } catch (err) {
         await client.query('ROLLBACK');
         throw err;

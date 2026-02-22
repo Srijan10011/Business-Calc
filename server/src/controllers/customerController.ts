@@ -8,7 +8,10 @@ import { sanitizeName, sanitizePhone, sanitizeEmail, sanitizeText } from '../uti
 export const getCustomers = async (req: Request, res: Response) => {
     try {
         const business_id = req.businessId;
-        const result = await Customerdb.getCustomersByBusiness(business_id)
+        const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+        
+        const result = await Customerdb.getCustomersByBusiness(business_id, page, limit);
         res.json(result);
     } catch (error: any) {
         logger.error('Error fetching customers:', error);
@@ -105,3 +108,57 @@ export const addCustomer = async (req: Request, res: Response) => {
     }
 };
 
+
+
+export const updateCustomer = async (req: Request, res: Response) => {
+    try {
+        const { name, phone, email, address } = req.body;
+        const business_id = req.businessId;
+        const customer_id = req.params.id as string;
+
+        if (!name || !phone) {
+            return res.status(400).json({ message: 'Missing required fields: name, phone' });
+        }
+
+        const sanitizedName = sanitizeName(name);
+        const sanitizedPhone = sanitizePhone(phone);
+        const sanitizedEmail = email ? sanitizeEmail(email) : null;
+        const sanitizedAddress = address ? sanitizeText(address) : null;
+
+        const result = await Customerdb.updateCustomer(
+            customer_id,
+            business_id,
+            sanitizedName!,
+            sanitizedPhone!,
+            sanitizedEmail,
+            sanitizedAddress
+        );
+
+        if (!result) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        res.json(result);
+    } catch (error: any) {
+        logger.error('Error updating customer:', error);
+        res.status(500).json({ message: 'Server error', error: error?.message });
+    }
+};
+
+export const deleteCustomer = async (req: Request, res: Response) => {
+    try {
+        const business_id = req.businessId;
+        const customer_id = req.params.id as string;
+
+        const result = await Customerdb.deleteCustomer(customer_id, business_id);
+
+        if (!result) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        res.json({ message: 'Customer deleted successfully' });
+    } catch (error: any) {
+        logger.error('Error deleting customer:', error);
+        res.status(500).json({ message: 'Server error', error: error?.message });
+    }
+};

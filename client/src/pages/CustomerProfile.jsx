@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { useParams } from 'react-router-dom';
-import { Paper, Box, IconButton, Typography, Avatar, Tabs, Tab, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Paper, Box, IconButton, Typography, Avatar, Tabs, Tab, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import ArrowBack from '@mui/icons-material/ArrowBack';
+import Edit from '@mui/icons-material/Edit';
+import Delete from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import Title from '../components/dashboard/Title';
 import api from '../utils/api';
 import { useSnackbar } from '../context/SnackbarContext';
+import EditCustomerModal from '../components/customers/EditCustomerModal';
 
 function CustomTabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -43,6 +46,8 @@ const CustomerProfile = () => {
     const [sales, setSales] = React.useState([]);
     const [payments, setPayments] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const [editOpen, setEditOpen] = React.useState(false);
+    const [deleteOpen, setDeleteOpen] = React.useState(false);
 
     React.useEffect(() => {
         const fetchCustomer = async () => {
@@ -86,6 +91,31 @@ const CustomerProfile = () => {
         setValue(newValue);
     };
 
+    const handleDelete = async () => {
+        try {
+            await api.delete(`/customers/${customerId}`);
+            showSnackbar('Customer deleted successfully', 'success');
+            navigate('/customers');
+        } catch (error) {
+            showSnackbar('Failed to delete customer', 'error');
+        }
+        setDeleteOpen(false);
+    };
+
+    const handleEditClose = () => {
+        setEditOpen(false);
+        // Refresh customer data
+        const fetchCustomer = async () => {
+            try {
+                const response = await api.get(`/customers/${customerId}`);
+                setCustomer(response.data);
+            } catch (error) {
+                showSnackbar('Failed to refresh customer details', 'error');
+            }
+        };
+        fetchCustomer();
+    };
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -111,9 +141,15 @@ const CustomerProfile = () => {
                     <ArrowBack />
                 </IconButton>
                 <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>{customer.name.charAt(0)}</Avatar>
-                <Typography variant="h4" component="h1">
+                <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
                     {customer.name} (ID: {customerId})
                 </Typography>
+                <IconButton onClick={() => setEditOpen(true)} color="primary">
+                    <Edit />
+                </IconButton>
+                <IconButton onClick={() => setDeleteOpen(true)} color="error">
+                    <Delete />
+                </IconButton>
             </Box>
 
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -197,6 +233,27 @@ const CustomerProfile = () => {
                 <Title>Notes</Title>
                 <Typography variant="body1">Notes about the customer will be displayed here.</Typography>
             </CustomTabPanel>
+
+            <EditCustomerModal 
+                open={editOpen} 
+                onClose={handleEditClose} 
+                customer={customer} 
+            />
+
+            <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+                <DialogTitle>Delete Customer</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete {customer.name}? This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                    <Button onClick={handleDelete} color="error" variant="contained">
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Paper>
     );
 };

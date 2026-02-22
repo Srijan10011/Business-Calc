@@ -194,11 +194,26 @@ app.use('/api/recurring-costs', recurringCostRoutes);
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-const server = app.listen(port, () => {
-  logger.info(`Server running at http://localhost:${port}`);
-  logger.info('Application initialization complete');
-});
+// Database health check
+const checkDatabaseHealth = async () => {
+  try {
+    await pool.query('SELECT 1');
+    logger.info('Database connection healthy');
+  } catch (err: any) {
+    logger.error('Database connection failed:', err.message);
+    logger.error('Cannot start server without database connection');
+    process.exit(1);
+  }
+};
 
+// Start server with database health check
+const startServer = async () => {
+  await checkDatabaseHealth();
+  
+  const server = app.listen(port, () => {
+    logger.info(`Server running at http://localhost:${port}`);
+    logger.info('Application initialization complete');
+  });
+};
 
-
-
+startServer();

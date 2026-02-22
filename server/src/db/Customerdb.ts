@@ -1,8 +1,7 @@
 import pool from '../db';
 
-export const getCustomersByBusiness = async (business_id: string) => {
-    const result = await pool.query(
-        `SELECT 
+export const getCustomersByBusiness = async (business_id: string, page?: number, limit?: number) => {
+    let query = `SELECT 
             ci.customer_id as id,
             ci.customer_id,
             ci.name,
@@ -16,13 +15,21 @@ export const getCustomersByBusiness = async (business_id: string) => {
         FROM customers_info ci
         INNER JOIN business_customers bc ON ci.customer_id = bc.customer_id
         LEFT JOIN customer_purchase_history cph ON ci.customer_id = cph.customer_id
-        WHERE bc.business_id = $1
-        ORDER BY ci.created_at DESC`,
-        [business_id]
-    );
+        WHERE bc.business_id = $1 AND ci.deleted_at IS NULL
+        ORDER BY ci.created_at DESC`;
+    
+    const params: any[] = [business_id];
+    
+    if (page && limit) {
+        const offset = (page - 1) * limit;
+        query += ` LIMIT $2 OFFSET $3`;
+        params.push(limit, offset);
+    }
 
+    const result = await pool.query(query, params);
     return result.rows;
 };
+
 export const getCustomerPaymentsByBusiness = async (customerId: string, businessId: string) => {
     const result = await pool.query(
         `SELECT 
@@ -69,7 +76,7 @@ export const getCustomerById = async (customer_id: string, business_id: string) 
         FROM customers_info ci
         INNER JOIN business_customers bc ON ci.customer_id = bc.customer_id
         LEFT JOIN customer_purchase_history cph ON ci.customer_id = cph.customer_id
-        WHERE bc.business_id = $1 AND ci.customer_id = $2`,
+        WHERE bc.business_id = $1 AND ci.customer_id = $2 AND ci.deleted_at IS NULL`,
         [business_id, customer_id]
     );
 
@@ -121,3 +128,42 @@ export const addCustomer = async (
 };
 
 
+
+export const updateCustomer = async (
+    customer_id: string,
+    business_id: string,
+    name: string,
+    phone: string,
+    email: string | null,
+    address: string | null
+) => {
+    const result = await pool.query(
+        `UPDATE customers_info ci
+         SET name = $1, phone = $2, email = $3, address = $4
+         FROM business_customers bc
+         WHERE ci.customer_id = bc.customer_id
+         AND ci.customer_id = $5
+         AND bc.business_id = $6
+         AND ci.deleted_at IS NULL
+         RETURNING ci.customer_id, ci.name, ci.phone, ci.email, ci.address`,
+        [name, phone, email, address, customer_id, business_id]
+    );
+
+    return result.rows[0] || null;
+};
+
+export const deleteCustomer = async (customer_id: string, business_id: string) => {
+    const result = await pool.query(
+        `UPDATE customers_info ci
+         SET deleted_at = NOW()
+         FROM business_customers bc
+         WHERE ci.customer_id = bc.customer_id
+         AND ci.customer_id = $1
+         AND bc.business_id = $2
+         AND ci.deleted_at IS NULL
+         RETURNING ci.customer_id`,
+        [customer_id, business_id]
+    );
+
+    return result.rows[0] || null;
+};

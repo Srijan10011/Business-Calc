@@ -10,13 +10,12 @@ export const PermissionProvider = ({ children }) => {
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
-    // Set snackbar function for API interceptor
     setSnackbarFunction(showSnackbar);
-    
-    // Always try to fetch permissions on mount
-    // If not authenticated, it will fail silently
-    fetchPermissions();
   }, [showSnackbar]);
+
+  useEffect(() => {
+    fetchPermissions();
+  }, []);
 
   const fetchPermissions = async () => {
     try {

@@ -7,11 +7,16 @@ const PrivateRoute = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(null);
 
     useEffect(() => {
-        // Check authentication by making API call
-        // If cookie is valid, server will respond with 200
-        api.get('/auth/verify')
-            .then(() => setIsAuthenticated(true))
-            .catch(() => setIsAuthenticated(false));
+        const verifyAuth = async () => {
+            try {
+                await api.get('/auth/verify');
+                setIsAuthenticated(true);
+            } catch (err) {
+                console.error('Auth verification failed:', err);
+                setIsAuthenticated(false);
+            }
+        };
+        verifyAuth();
     }, []);
 
     // Loading state

@@ -20,7 +20,7 @@ export const getTeamMembersByBusiness = async (business_id: string) => {
             COALESCE(ta.current_balance, 0) AS account_balance
         FROM team_members tm
         LEFT JOIN team_accounts ta ON tm.member_id = ta.member_id
-        WHERE tm.business_id = $1
+        WHERE tm.business_id = $1 AND tm.deleted_at IS NULL
         ORDER BY tm.enroll_date DESC`,
         [business_id]
     );
@@ -85,7 +85,7 @@ export const getTeamMemberById = async (member_id: string, business_id: string) 
             EXTRACT(YEAR FROM AGE(CURRENT_DATE, enroll_date)) * 12 + 
             EXTRACT(MONTH FROM AGE(CURRENT_DATE, enroll_date)) AS months_working
          FROM team_members
-         WHERE member_id=$1 AND business_id=$2`,
+         WHERE member_id=$1 AND business_id=$2 AND deleted_at IS NULL`,
         [member_id, business_id]
     );
 
@@ -94,7 +94,7 @@ export const getTeamMemberById = async (member_id: string, business_id: string) 
 
 export const deleteTeamMember = async (member_id: string, business_id: string) => {
     const result = await pool.query(
-        'DELETE FROM team_members WHERE member_id=$1 AND business_id=$2 RETURNING name',
+        'UPDATE team_members SET deleted_at = NOW() WHERE member_id=$1 AND business_id=$2 AND deleted_at IS NULL RETURNING name',
         [member_id, business_id]
     );
 
@@ -103,7 +103,7 @@ export const deleteTeamMember = async (member_id: string, business_id: string) =
 
 export const getTeamMemberAccount = async (member_id: string, business_id: string) => {
     const memberCheck = await pool.query(
-        'SELECT member_id FROM team_members WHERE member_id=$1 AND business_id=$2',
+        'SELECT member_id FROM team_members WHERE member_id=$1 AND business_id=$2 AND deleted_at IS NULL',
         [member_id, business_id]
     );
 
@@ -176,7 +176,7 @@ export const autoDistributeSalaries: (
     const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
     const membersResult = await pool.query(
-        'SELECT member_id, name, salary FROM team_members WHERE business_id = $1 AND status = $2 AND salary > 0',
+        'SELECT member_id, name, salary FROM team_members WHERE business_id = $1 AND status = $2 AND salary > 0 AND deleted_at IS NULL',
         [business_id, 'active']
     );
 
@@ -263,7 +263,7 @@ export const payoutSalary = async (member_id: string, amount: number, trimmedMon
 
         // Get team member name
         const memberResult = await pool.query(
-            'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2',
+            'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2 AND deleted_at IS NULL',
             [member_id, business_id]
         );
 
@@ -309,7 +309,7 @@ export const payoutSalary = async (member_id: string, amount: number, trimmedMon
 
 export const getTeamMemberSalaryHistory = async (member_id: string, business_id: string) => {
     const memberResult = await pool.query(
-        'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2',
+        'SELECT name FROM team_members WHERE member_id = $1 AND business_id = $2 AND deleted_at IS NULL',
         [member_id, business_id]
     );
 

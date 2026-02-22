@@ -12,6 +12,34 @@ declare global {
     }
 }
 
+// Permission cache
+interface CachedPermission {
+    permissions: string[];
+    expiresAt: number;
+}
+
+const permissionCache = new Map<string, CachedPermission>();
+const CACHE_TTL = 60000; // 1 minute
+
+// Clear expired cache entries periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of permissionCache.entries()) {
+        if (now > value.expiresAt) {
+            permissionCache.delete(key);
+        }
+    }
+}, 60000);
+
+// Helper to clear cache for a specific role (call when permissions change)
+export const clearPermissionCache = (roleId?: string) => {
+    if (roleId) {
+        permissionCache.delete(`role:${roleId}`);
+    } else {
+        permissionCache.clear();
+    }
+};
+
 // Middleware to load user permissions
 export const loadPermissions = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -28,31 +56,35 @@ export const loadPermissions = async (req: Request, res: Response, next: NextFun
         );
 
         if (businessUser.rows.length === 0) {
-            // User not associated with any business - deny access
             logger.warn(`User ${user_id} attempted access without business association`);
             return res.status(403).json({ msg: 'User not associated with any business' });
         }
 
         const { role, role_id, business_id } = businessUser.rows[0];
-
-        // Store business_id for cross-tenant isolation
         (req as any).user.businessId = business_id;
 
-        // Owners bypass permission checks (case-insensitive, trimmed)
+        // Owners bypass permission checks
         const normalizedRole = role?.trim().toLowerCase();
         if (normalizedRole === 'owner') {
-            req.userPermissions = ['*']; // Wildcard = all permissions
-            logger.debug(`Owner access granted for user ${user_id}`);
+            req.userPermissions = ['*'];
             return next();
         }
 
-        // If no role_id assigned, deny access (not just empty permissions)
         if (!role_id) {
             logger.warn(`User ${user_id} has no role assigned in business ${business_id}`);
             return res.status(403).json({ msg: 'No role assigned. Contact administrator.' });
         }
 
-        // Get permissions for the role
+        // Check cache first
+        const cacheKey = `role:${role_id}`;
+        const cached = permissionCache.get(cacheKey);
+        
+        if (cached && Date.now() < cached.expiresAt) {
+            req.userPermissions = cached.permissions;
+            return next();
+        }
+
+        // Cache miss - fetch from DB
         const permissions = await pool.query(
             `SELECT p.permission_key 
              FROM role_permissions rp
@@ -61,14 +93,20 @@ export const loadPermissions = async (req: Request, res: Response, next: NextFun
             [role_id]
         );
 
-        req.userPermissions = permissions.rows.map(row => row.permission_key);
+        const permissionList = permissions.rows.map(row => row.permission_key);
         
-        // If user has a role but no permissions, deny access
-        if (req.userPermissions.length === 0) {
+        if (permissionList.length === 0) {
             logger.warn(`User ${user_id} has role ${role_id} but no permissions assigned`);
             return res.status(403).json({ msg: 'No permissions assigned to your role. Contact administrator.' });
         }
-        
+
+        // Store in cache
+        permissionCache.set(cacheKey, {
+            permissions: permissionList,
+            expiresAt: Date.now() + CACHE_TTL
+        });
+
+        req.userPermissions = permissionList;
         next();
     } catch (err: any) {
         logger.error('Permission loading error:', err.message);

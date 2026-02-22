@@ -1,7 +1,10 @@
 import pool from '../db';
 import logger from '../utils/logger';
 
-export const createDefaultAccount = async (business_id: string) => {
+export const createDefaultAccount = async (clientOrBusinessId: any, business_id?: string) => {
+    const isClient = business_id !== undefined;
+    const client = isClient ? clientOrBusinessId : pool;
+    const bizId = isClient ? business_id : clientOrBusinessId;
 
     try {
         const defaultAccounts = [
@@ -12,28 +15,24 @@ export const createDefaultAccount = async (business_id: string) => {
         ];
 
         for (const accountName of defaultAccounts) {
-            // Create account
-            const accountResult = await pool.query(
+            const accountResult = await client.query(
                 'INSERT INTO accounts (account_name) VALUES ($1) RETURNING account_id',
                 [accountName]
             );
 
             const account_id = accountResult.rows[0].account_id;
 
-            // Link account to business
-            await pool.query(
+            await client.query(
                 'INSERT INTO business_account (account_id, business_id, balance) VALUES ($1, $2, $3)',
-                [account_id, business_id, 0]
+                [account_id, bizId, 0]
             );
         }
 
-        logger.info(`Default accounts created for business_id: ${business_id}`);
+        logger.info(`Default accounts created for business_id: ${bizId}`);
     } catch (error) {
         logger.error('Error creating default accounts:', error);
         throw error;
     }
-
-
 }
 export const getAccount = async (user_id: string, business_id: string) => {
 

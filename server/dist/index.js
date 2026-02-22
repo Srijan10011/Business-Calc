@@ -221,7 +221,24 @@ app.use('/api', roleRoutes_1.default);
 app.use('/api/recurring-costs', recurringCostRoutes_1.default);
 // Error handling middleware (must be last)
 app.use(errorHandler_1.errorHandler);
-const server = app.listen(port, () => {
-    logger_1.default.info(`Server running at http://localhost:${port}`);
-    logger_1.default.info('Application initialization complete');
+// Database health check
+const checkDatabaseHealth = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield db_1.default.query('SELECT 1');
+        logger_1.default.info('Database connection healthy');
+    }
+    catch (err) {
+        logger_1.default.error('Database connection failed:', err.message);
+        logger_1.default.error('Cannot start server without database connection');
+        process.exit(1);
+    }
 });
+// Start server with database health check
+const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
+    yield checkDatabaseHealth();
+    const server = app.listen(port, () => {
+        logger_1.default.info(`Server running at http://localhost:${port}`);
+        logger_1.default.info('Application initialization complete');
+    });
+});
+startServer();

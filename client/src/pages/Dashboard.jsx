@@ -4,6 +4,7 @@ import Title from '../components/dashboard/Title';
 import api from '../utils/api';
 import { usePermissions } from '../context/PermissionContext';
 import { useSnackbar } from '../context/SnackbarContext';
+import ErrorTest from '../components/ErrorTest';
 
 function SummaryCard({ title, value }) {
     return (

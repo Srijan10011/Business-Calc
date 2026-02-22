@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict FgRDf8Dyqam17vQB4ax9bFy4AboDzQDx8xY5Oeze2vnozRxxXyvEl7ifJfvfRdP
+\restrict CJyppBibBTiBx2q8l26PQanvDvRBWputCEj9kTjKBo5ZkvWxAWKhFGzrdzISsGJ
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
@@ -650,6 +650,52 @@ CREATE TABLE public.sales_info (
 ALTER TABLE public.sales_info OWNER TO srijanacharya22;
 
 --
+-- Name: security_audit_log; Type: TABLE; Schema: public; Owner: srijanacharya22
+--
+
+CREATE TABLE public.security_audit_log (
+    audit_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_type character varying(50) NOT NULL,
+    user_id uuid,
+    ip_address inet,
+    user_agent text,
+    details jsonb,
+    severity character varying(20) DEFAULT 'medium'::character varying,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.security_audit_log OWNER TO srijanacharya22;
+
+--
+-- Name: TABLE security_audit_log; Type: COMMENT; Schema: public; Owner: srijanacharya22
+--
+
+COMMENT ON TABLE public.security_audit_log IS 'Tracks all security-related events for audit and compliance';
+
+
+--
+-- Name: COLUMN security_audit_log.event_type; Type: COMMENT; Schema: public; Owner: srijanacharya22
+--
+
+COMMENT ON COLUMN public.security_audit_log.event_type IS 'Type of security event (login_success, permission_denied, etc.)';
+
+
+--
+-- Name: COLUMN security_audit_log.details; Type: COMMENT; Schema: public; Owner: srijanacharya22
+--
+
+COMMENT ON COLUMN public.security_audit_log.details IS 'Additional event-specific data in JSON format';
+
+
+--
+-- Name: COLUMN security_audit_log.severity; Type: COMMENT; Schema: public; Owner: srijanacharya22
+--
+
+COMMENT ON COLUMN public.security_audit_log.severity IS 'Event severity: low, medium, high, critical';
+
+
+--
 -- Name: team_accounts; Type: TABLE; Schema: public; Owner: srijanacharya22
 --
 
@@ -941,6 +987,14 @@ ALTER TABLE ONLY public.salary_transactions
 
 ALTER TABLE ONLY public.sales_info
     ADD CONSTRAINT sales_info_pkey PRIMARY KEY (sale_id);
+
+
+--
+-- Name: security_audit_log security_audit_log_pkey; Type: CONSTRAINT; Schema: public; Owner: srijanacharya22
+--
+
+ALTER TABLE ONLY public.security_audit_log
+    ADD CONSTRAINT security_audit_log_pkey PRIMARY KEY (audit_id);
 
 
 --
@@ -1408,6 +1462,48 @@ CREATE INDEX idx_sales_sale_id ON public.sales USING btree (sale_id);
 
 
 --
+-- Name: idx_security_audit_created_at; Type: INDEX; Schema: public; Owner: srijanacharya22
+--
+
+CREATE INDEX idx_security_audit_created_at ON public.security_audit_log USING btree (created_at DESC);
+
+
+--
+-- Name: idx_security_audit_event_type; Type: INDEX; Schema: public; Owner: srijanacharya22
+--
+
+CREATE INDEX idx_security_audit_event_type ON public.security_audit_log USING btree (event_type);
+
+
+--
+-- Name: idx_security_audit_ip; Type: INDEX; Schema: public; Owner: srijanacharya22
+--
+
+CREATE INDEX idx_security_audit_ip ON public.security_audit_log USING btree (ip_address);
+
+
+--
+-- Name: idx_security_audit_severity; Type: INDEX; Schema: public; Owner: srijanacharya22
+--
+
+CREATE INDEX idx_security_audit_severity ON public.security_audit_log USING btree (severity);
+
+
+--
+-- Name: idx_security_audit_user_event; Type: INDEX; Schema: public; Owner: srijanacharya22
+--
+
+CREATE INDEX idx_security_audit_user_event ON public.security_audit_log USING btree (user_id, event_type, created_at DESC);
+
+
+--
+-- Name: idx_security_audit_user_id; Type: INDEX; Schema: public; Owner: srijanacharya22
+--
+
+CREATE INDEX idx_security_audit_user_id ON public.security_audit_log USING btree (user_id);
+
+
+--
 -- Name: idx_team_accounts_member_id; Type: INDEX; Schema: public; Owner: srijanacharya22
 --
 
@@ -1815,6 +1911,14 @@ ALTER TABLE ONLY public.sales
 
 
 --
+-- Name: security_audit_log security_audit_log_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: srijanacharya22
+--
+
+ALTER TABLE ONLY public.security_audit_log
+    ADD CONSTRAINT security_audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE SET NULL;
+
+
+--
 -- Name: team_accounts team_accounts_member_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: srijanacharya22
 --
 
@@ -1865,5 +1969,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict FgRDf8Dyqam17vQB4ax9bFy4AboDzQDx8xY5Oeze2vnozRxxXyvEl7ifJfvfRdP
+\unrestrict CJyppBibBTiBx2q8l26PQanvDvRBWputCEj9kTjKBo5ZkvWxAWKhFGzrdzISsGJ
 

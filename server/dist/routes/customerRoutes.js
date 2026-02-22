@@ -11,4 +11,6 @@ router.get('/:id', authMiddleware_1.authMiddleware, loadUserBusiness_1.loadUserB
 router.get('/:id/sales', authMiddleware_1.authMiddleware, loadUserBusiness_1.loadUserBusiness, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.view'), customerController_1.getCustomerSales);
 router.get('/:id/payments', authMiddleware_1.authMiddleware, loadUserBusiness_1.loadUserBusiness, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.view'), customerController_1.getCustomerPayments);
 router.post('/', authMiddleware_1.authMiddleware, loadUserBusiness_1.loadUserBusiness, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.create'), customerController_1.addCustomer);
+router.put('/:id', authMiddleware_1.authMiddleware, loadUserBusiness_1.loadUserBusiness, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.edit'), customerController_1.updateCustomer);
+router.delete('/:id', authMiddleware_1.authMiddleware, loadUserBusiness_1.loadUserBusiness, permissionMiddleware_1.loadPermissions, (0, permissionMiddleware_1.requirePermission)('customers.delete'), customerController_1.deleteCustomer);
 exports.default = router;

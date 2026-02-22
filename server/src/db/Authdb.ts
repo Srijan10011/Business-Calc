@@ -4,12 +4,13 @@ import jwt from 'jsonwebtoken';
 import logger from '../utils/logger';
 import * as Accountdb from './Accountdb';
 
+import { AUTH_CONSTANTS, STATUS } from '../constants';
 // Helper function to generate JWT token
 const generateToken = (userId: string): string => {
     return jwt.sign(
         { user: { id: userId } },
         process.env.JWT_SECRET as string,
-        { expiresIn: 3600 }
+        { expiresIn: AUTH_CONSTANTS.ACCESS_TOKEN_EXPIRY }
     );
 };
 
@@ -124,7 +125,7 @@ export const loginUser = async (email: string, password: string) => {
     const token = jwt.sign(
         { user: { id: user.user_id } },
         process.env.JWT_SECRET as string,
-        { expiresIn: 3600 } // 1 hour
+        { expiresIn: AUTH_CONSTANTS.ACCESS_TOKEN_EXPIRY } // 1 hour
     );
 
     // 4️⃣ Check business access
@@ -181,8 +182,8 @@ export const setupBusiness = async (user_id: string, businessName: string, curre
             'INSERT INTO business_users (user_id, business_id, role) VALUES ($1, $2, $3)',
             [user_id, business_id, 'Owner']
         );
-        await client.query("COMMIT");
-        await Accountdb.createDefaultAccount(business_id);
+
+        await createDefaultAccount(client, business_id);
 
         await client.query('COMMIT');
 
