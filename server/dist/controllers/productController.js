@@ -16,10 +16,9 @@ exports.addStock = exports.getProductById = exports.getProducts = exports.addPro
 const logger_1 = __importDefault(require("../utils/logger"));
 const db_1 = __importDefault(require("../db"));
 const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { name, price, stock } = req.body;
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         if (!name || price === undefined || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: name, price, stock' });
         }
@@ -29,15 +28,6 @@ const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (parseInt(stock) < 0) {
             return res.status(400).json({ message: 'Stock cannot be negative' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        // Get business_id from business_users table
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
         // Insert into products table
         const productResult = yield db_1.default.query('INSERT INTO products (name, price, stock) VALUES ($1, $2, $3) RETURNING product_id, name, price, stock, created_at', [name, price, stock]);
         const product_id = productResult.rows[0].product_id;
@@ -52,18 +42,8 @@ const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.addProduct = addProduct;
 const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        // Get business_id from business_users table
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = req.businessId;
         const result = yield db_1.default.query(`SELECT 
                 p.product_id as id,
                 p.product_id,
@@ -85,19 +65,9 @@ const getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.getProducts = getProducts;
 const getProductById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { id } = req.params;
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        // Get business_id from business_users table
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = req.businessId;
         const result = yield db_1.default.query(`SELECT 
                 p.product_id as id,
                 p.product_id,
@@ -121,21 +91,12 @@ const getProductById = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.getProductById = getProductById;
 const addStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { product_id, stock } = req.body;
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         if (!product_id || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: product_id, stock' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const businessResult = yield db_1.default.query('SELECT business_id FROM business_users WHERE user_id = $1', [user_id]);
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        const business_id = businessResult.rows[0].business_id;
         // Update stock for product that belongs to user's business
         const result = yield db_1.default.query(`UPDATE products SET stock = stock + $1 
              WHERE product_id = $2 

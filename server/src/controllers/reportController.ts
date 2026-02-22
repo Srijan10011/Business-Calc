@@ -1,26 +1,17 @@
 import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
 
 export const getMonthlyReport = async (req: Request, res: Response) => {
     try {
-        const user_id = (req as any).user?.id;
+        const business_id = (req as any).businessId;
         const { month } = req.query;
 
         if (!month) {
             return res.status(400).json({ message: 'Month parameter is required' });
         }
 
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
         const [year, monthNum] = (month as string).split('-');
         const startDate = `${year}-${monthNum}-01`;
         const endDate = new Date(parseInt(year), parseInt(monthNum), 0).toISOString().split('T')[0];

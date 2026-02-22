@@ -1,22 +1,11 @@
 import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
 
 export const getDashboardData = async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user.id;
-
-        // Get business_id from business_users table
-        const userResult = await pool.query('SELECT business_id FROM business_users WHERE user_id = $1', [userId]);
-        
-        if (userResult.rows.length === 0) {
-            return res.json({ 
-                assets: [], 
-                message: 'No business access yet' 
-            });
-        }
-        
-        const businessId = userResult.rows[0].business_id;
+        const businessId = (req as any).businessId;
 
         // Get assets recovery progress
         const assetsResult = await pool.query(
@@ -31,7 +20,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
             const remaining = asset.total_cost - asset.recovered;
             const progress = (asset.recovered / asset.total_cost) * 100;
             const status = progress >= 100 ? 'Retired' : 'Active';
-            
+
             return {
                 id: asset.id,
                 name: asset.name,
@@ -120,19 +109,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
 export const getMoneyFlow = async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user.id;
-
-        // Get business_id from business_users table
-        const userResult = await pool.query('SELECT business_id FROM business_users WHERE user_id = $1', [userId]);
-        
-        if (userResult.rows.length === 0) {
-            return res.json({ 
-                incoming: {}, 
-                outgoing: {} 
-            });
-        }
-        
-        const businessId = userResult.rows[0].business_id;
+        const businessId = (req as any).businessId;
 
         // Get current month's start and end dates
         const now = new Date();

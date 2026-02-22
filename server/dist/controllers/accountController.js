@@ -48,7 +48,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.transferCOGS = exports.transferFunds = exports.getTransactions = exports.getAccounts = exports.createDefaultAccounts = void 0;
 const logger_1 = __importDefault(require("../utils/logger"));
 const Accountdb = __importStar(require("../db/Accountdb"));
-const Business_pool = __importStar(require("../db/Business_pool"));
 const createDefaultAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { business_id } = req.body;
     if (!business_id) {
@@ -65,13 +64,9 @@ const createDefaultAccounts = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.createDefaultAccounts = createDefaultAccounts;
 const getAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const user_id = req.userId;
+        const business_id = req.businessId;
         const result = yield Accountdb.getAccount(user_id, business_id);
         res.json(result);
     }
@@ -82,13 +77,9 @@ const getAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.getAccounts = getAccounts;
 const getTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const user_id = req.userId;
+        const business_id = req.businessId;
         // Get transactions for this business
         const gettransaction = yield Accountdb.getTransactions(user_id, business_id);
         res.json(gettransaction);
@@ -100,14 +91,10 @@ const getTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getTransactions = getTransactions;
 const transferFunds = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { fromAccountId, toAccountId, amount } = req.body;
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const user_id = req.userId;
+        const business_id = req.businessId;
         const result = yield Accountdb.transferFund(user_id, fromAccountId, toAccountId, amount, business_id);
         res.json(result);
     }
@@ -119,14 +106,10 @@ const transferFunds = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.transferFunds = transferFunds;
 const transferCOGS = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { categoryId, accountId, amount, direction } = req.body; // direction: 'to-cogs' or 'from-cogs'
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const user_id = req.userId;
+        const business_id = req.businessId;
         const transfercog = yield Accountdb.transferCOGS(user_id, categoryId, accountId, amount, direction, business_id);
         res.json(transfercog);
     }

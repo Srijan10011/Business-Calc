@@ -19,12 +19,8 @@ export const createDefaultAccounts = async (req: Request, res: Response) => {
 };
 export const getAccounts = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const user_id = (req as any).userId;
+        const business_id = (req as any).businessId;
         const result = await Accountdb.getAccount(user_id, business_id);
 
         res.json(result);
@@ -36,14 +32,8 @@ export const getAccounts = async (req: Request, res: Response) => {
 
 export const getTransactions = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const user_id = (req as any).userId;
+        const business_id = (req as any).businessId;
 
         // Get transactions for this business
         const gettransaction = await Accountdb.getTransactions(user_id, business_id);
@@ -58,16 +48,8 @@ export const getTransactions = async (req: Request, res: Response) => {
 export const transferFunds = async (req: Request, res: Response) => {
     try {
         const { fromAccountId, toAccountId, amount } = req.body;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-
-
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const user_id = (req as any).userId;
+        const business_id = (req as any).businessId;
         const result = await Accountdb.transferFund(user_id, fromAccountId, toAccountId, amount, business_id);
 
         res.json(result);
@@ -81,16 +63,8 @@ export const transferFunds = async (req: Request, res: Response) => {
 export const transferCOGS = async (req: Request, res: Response) => {
     try {
         const { categoryId, accountId, amount, direction } = req.body; // direction: 'to-cogs' or 'from-cogs'
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-
-
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const user_id = (req as any).userId;
+        const business_id = (req as any).businessId;
 
         const transfercog = await Accountdb.transferCOGS(user_id, categoryId, accountId, amount, direction, business_id);
 

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
 import * as Roledb from '../db/Roledb';
+import * as Business_pool from '../db/Business_pool';
 
 // ============================================
 // OLD IMPLEMENTATION - COMMENTED OUT
@@ -12,16 +13,7 @@ export const getPermissions = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
 
     try {
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(403).json({ msg: 'No business access' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         const permissions = await pool.query(
             `SELECT * FROM permissions 
@@ -115,16 +107,7 @@ export const getRoles = async (req: Request, res: Response) => {
     const user_id = req.user?.id;
 
     try {
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(403).json({ msg: 'No business access' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         const roles = await pool.query(
             `SELECT r.*, 
@@ -244,16 +227,7 @@ export const checkDuplicateRole = async (req: Request, res: Response) => {
     const { permissions, exclude_role_id } = req.body;
 
     try {
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(403).json({ msg: 'No business access' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         if (!permissions || permissions.length === 0) {
             return res.json({ exists: false });
@@ -329,16 +303,7 @@ export const getRoleDetails = async (req: Request, res: Response) => {
     const { role_id } = req.params;
 
     try {
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(403).json({ msg: 'No business access' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = await Business_pool.Get_Business_id(user_id);
 
         const role = await pool.query(
             `SELECT * FROM roles WHERE role_id = $1 AND business_id = $2`,

@@ -5,19 +5,13 @@ import * as Business_pool from '../db/Business_pool';
 import * as Salesdb from '../db/Salesdb';
 export const getSales = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
+        const business_id = (req as any).businessId;
 
         const { status, product, date_from, date_to } = req.query;
 
         // Normalize pagination safely
         const page = Math.max(1, Number(req.query.page) || 1);
         const limit = Math.max(1, Number(req.query.limit) || 20);
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
 
         const result = await Salesdb.getSalesWithPagination(
             business_id,
@@ -48,9 +42,6 @@ export const addSale = async (req: Request, res: Response) => {
         const user_id = req.user?.id;
 
         if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
         if (!customer_id) {
             return res.status(400).json({ message: 'Customer selection is required' });
         }
@@ -63,8 +54,7 @@ export const addSale = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Quantity cannot be negative' });
         }
 
-        // Get business_id from business_users table
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         // Get product name for transaction note
         const productResult = await Salesdb.productResult(product_id);
@@ -339,7 +329,7 @@ export const addSale = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Quantity cannot be negative' });
         }
 
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const client = await pool.connect();
         try {
@@ -634,13 +624,7 @@ export const recordPayment = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const { amount, account_id } = req.body;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const client = await pool.connect();
         try {

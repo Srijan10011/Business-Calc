@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
 
 export const addProduct = async (req: Request, res: Response) => {
     try {
         const { name, price, stock } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
         
         if (!name || price === undefined || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: name, price, stock' });
@@ -18,22 +19,6 @@ export const addProduct = async (req: Request, res: Response) => {
         if (parseInt(stock) < 0) {
             return res.status(400).json({ message: 'Stock cannot be negative' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        // Get business_id from business_users table
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
 
         // Insert into products table
         const productResult = await pool.query(
@@ -58,23 +43,7 @@ export const addProduct = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        // Get business_id from business_users table
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = (req as any).businessId;
 
         const result = await pool.query(
             `SELECT 
@@ -102,23 +71,7 @@ export const getProducts = async (req: Request, res: Response) => {
 export const getProductById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        // Get business_id from business_users table
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = (req as any).businessId;
 
         const result = await pool.query(
             `SELECT 
@@ -149,26 +102,11 @@ export const getProductById = async (req: Request, res: Response) => {
 export const addStock = async (req: Request, res: Response) => {
     try {
         const { product_id, stock } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
         if (!product_id || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: product_id, stock' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
 
         // Update stock for product that belongs to user's business
         const result = await pool.query(

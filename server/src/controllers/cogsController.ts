@@ -6,13 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 
 export const getBusinessCategories = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const result = await Cogsdb.getBusinessCategories(business_id);
 
@@ -26,7 +20,7 @@ export const getBusinessCategories = async (req: Request, res: Response) => {
 export const addCostCategory = async (req: Request, res: Response) => {
     try {
         const { category, type, value, product_id } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
         if (!category || !type || value === undefined || !product_id) {
             return res.status(400).json({ message: 'Missing required fields: category, type, value, product_id' });
@@ -39,13 +33,6 @@ export const addCostCategory = async (req: Request, res: Response) => {
         if (!['variable', 'fixed'].includes(type)) {
             return res.status(400).json({ message: 'Type must be either "variable" or "fixed"' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        // Get business_id from business_users table
-        const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Get product price and validate COGS first
         const addCostcategory = await Cogsdb.addCostCategory(category, type, Number(value), product_id, business_id);
@@ -62,14 +49,8 @@ export const addCostCategory = async (req: Request, res: Response) => {
 export const getProductCostAllocations = async (req: Request, res: Response) => {
     try {
         const product_id = req.params.product_id as string;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        // Get business_id from business_users table
-        const business_id = await Business_pool.Get_Business_id(user_id);
         const getProductCostAllocation = await Cogsdb.getProductCostAllocations(product_id, business_id);
 
         res.json(getProductCostAllocation);
@@ -83,18 +64,11 @@ export const updateCostAllocation = async (req: Request, res: Response) => {
     try {
         const allocation_id = req.params.allocation_id as string;
         const { value } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
         if (value === undefined) {
             return res.status(400).json({ message: 'Missing required field: value' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        // Get business_id from business_users table
-        const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Get product info and current allocation
         const updatecostAllocation = await Cogsdb.updateCostAllocation(allocation_id, Number(value), business_id);
@@ -108,11 +82,6 @@ export const updateCostAllocation = async (req: Request, res: Response) => {
 export const deleteCostAllocation = async (req: Request, res: Response) => {
     try {
         const allocation_id = req.params.allocation_id as string;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
 
         // Delete allocation
         const delete_allocation = await Cogsdb.deleteCostAllocation(allocation_id);
@@ -125,10 +94,7 @@ export const deleteCostAllocation = async (req: Request, res: Response) => {
 
 export const getCOGSData = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-        if (!user_id) return res.status(401).json({ message: 'User ID not found in token' });
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
         const cogsData = await Cogsdb.getCOGSData(business_id);
 
         // Sum balances correctly

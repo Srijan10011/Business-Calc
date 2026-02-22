@@ -47,20 +47,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCategory = exports.getCategories = exports.checkCategory = void 0;
 const logger_1 = __importDefault(require("../utils/logger"));
-const Business_pool = __importStar(require("../db/Business_pool"));
 const Categorydb = __importStar(require("../db/Categorydb"));
 const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { name, cost_behaviour, product_id } = req.body;
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         if (!name || !cost_behaviour) {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
         // Check if category exists
         const existingCategory = yield Categorydb.checkCategory(name, cost_behaviour, product_id, business_id);
         res.json(existingCategory);
@@ -72,14 +66,8 @@ const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.checkCategory = checkCategory;
 const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
-        res.json({ business_id });
+        const business_id = req.businessId;
         const result = yield Categorydb.getCategoriesByBusiness(business_id);
         res.json(result);
     }
@@ -90,17 +78,12 @@ const getCategories = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.getCategories = getCategories;
 const createCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { name, cost_behaviour, type, product_id } = req.body;
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         if (!name || !cost_behaviour || !type) {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour, type' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
         // Create new category with product_id
         const result = yield Categorydb.createCategory(name, cost_behaviour, type, product_id, business_id);
         res.status(201).json({ id: result.id });

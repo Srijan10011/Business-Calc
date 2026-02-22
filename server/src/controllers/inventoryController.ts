@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
 
 export const addInventoryItem = async (req: Request, res: Response) => {
     try {
         const { name, stock, unit_cost, type, payment_account, total_amount, party_name } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
         if (!name || stock === undefined || unit_cost === undefined || !type) {
             return res.status(400).json({ message: 'Missing required fields: name, stock, unit_cost, type' });
@@ -24,21 +25,6 @@ export const addInventoryItem = async (req: Request, res: Response) => {
         if (!['Raw_material', 'Other'].includes(dbType)) {
             return res.status(400).json({ message: 'Invalid type. Must be Raw_material or Other' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
 
         const client = await pool.connect();
         try {
@@ -151,20 +137,7 @@ export const getInventoryItems = async (req: Request, res: Response) => {
     try {
         const user_id = req.user?.id;
 
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = (req as any).businessId;
 
         const result = await pool.query(
             `SELECT ii.inventory_id as id, ii.name, ii.stock, ii.type, ii.unit_cost
@@ -218,20 +191,7 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
             }
         }
 
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = (req as any).businessId;
 
         const client = await pool.connect();
         try {

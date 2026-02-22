@@ -10,17 +10,18 @@ import {
     deleteRole 
 } from '../controllers/roleController';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { loadUserBusiness } from '../middleware/loadUserBusiness';
 
 const router = express.Router();
 
-router.get('/permissions', authMiddleware, getPermissions);
-router.post('/permissions', authMiddleware, createPermission);
+router.get('/permissions', authMiddleware, loadUserBusiness, getPermissions);
+router.post('/permissions', authMiddleware, loadUserBusiness, createPermission);
 
-router.get('/roles', authMiddleware, getRoles);
-router.post('/roles', authMiddleware, createRole);
-router.post('/roles/check-duplicate', authMiddleware, checkDuplicateRole);
-router.get('/roles/:role_id', authMiddleware, getRoleDetails);
-router.put('/roles/:role_id/permissions', authMiddleware, updateRolePermissions);
-router.delete('/roles/:role_id', authMiddleware, deleteRole);
+router.get('/roles', authMiddleware, loadUserBusiness, getRoles);
+router.post('/roles', authMiddleware, loadUserBusiness, createRole);
+router.post('/roles/check-duplicate', authMiddleware, loadUserBusiness, checkDuplicateRole);
+router.get('/roles/:role_id', authMiddleware, loadUserBusiness, getRoleDetails);
+router.put('/roles/:role_id/permissions', authMiddleware, loadUserBusiness, updateRolePermissions);
+router.delete('/roles/:role_id', authMiddleware, loadUserBusiness, deleteRole);
 
 export default router;

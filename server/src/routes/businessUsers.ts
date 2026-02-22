@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
 import { authMiddleware } from '../middleware/authMiddleware';
+import * as Business_pool from '../db/Business_pool';
 
 const router = express.Router();
 
@@ -15,16 +16,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     }
 
     // Get the business_id for the current user
-    const businessResult = await pool.query(
-      'SELECT business_id FROM business_users WHERE user_id = $1',
-      [user_id]
-    );
-
-    if (businessResult.rows.length === 0) {
-      return res.status(400).json({ message: 'User not associated with any business' });
-    }
-
-    const business_id = businessResult.rows[0].business_id;
+    const business_id = await Business_pool.Get_Business_id(user_id);
 
     // Get all users in the same business
     const result = await pool.query(

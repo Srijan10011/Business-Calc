@@ -6,11 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 
 export const getAssets = async (req: Request, res: Response) => {
     try {
-        const userId = (req as any).user.id;
-
-
-
-        const businessId = await Business_pool.Get_Business_id(userId);
+        const businessId = (req as any).businessId;
 
         // Get assets data
         const assets = await Assetdb.getAssets(businessId);
@@ -25,7 +21,7 @@ export const getAssets = async (req: Request, res: Response) => {
 export const createAsset = async (req: Request, res: Response) => {
     try {
         const { name, category, totalCost } = req.body;
-        const userId = (req as any).user.id;
+        const businessId = (req as any).businessId;
 
         if (!name || !category || totalCost === undefined) {
             return res.status(400).json({ message: 'Missing required fields: name, category, totalCost' });
@@ -34,8 +30,6 @@ export const createAsset = async (req: Request, res: Response) => {
         if (parseFloat(totalCost) < 0) {
             return res.status(400).json({ message: 'Cost cannot be negative' });
         }
-
-        const businessId = await Business_pool.Get_Business_id(userId);
 
         // Insert into cost_categories with type = category (from frontend)
         const categoryResult = await Assetdb.createAsset(name, category, (totalCost), businessId);

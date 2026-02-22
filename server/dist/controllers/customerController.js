@@ -47,16 +47,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addCustomer = exports.getCustomerPayments = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
 const logger_1 = __importDefault(require("../utils/logger"));
-const Business_pool = __importStar(require("../db/Business_pool"));
 const Customerdb = __importStar(require("../db/Customerdb"));
 const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
+        const business_id = req.businessId;
         const result = yield Customerdb.getCustomersByBusiness(business_id);
         res.json(result);
     }
@@ -67,17 +61,12 @@ const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.getCustomers = getCustomers;
 const getCustomerById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         const id = req.params.id;
         if (!id || id === 'undefined') {
             return res.status(400).json({ message: 'Invalid customer ID provided' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
         const result = yield Customerdb.getCustomerById(id, business_id);
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Customer not found' });
@@ -91,17 +80,12 @@ const getCustomerById = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getCustomerById = getCustomerById;
 const getCustomerSales = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         const id = req.params.id;
         if (!id || id === 'undefined') {
             return res.status(400).json({ message: 'Invalid customer ID provided' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
         const result = yield Customerdb.getCustomerSales(id, business_id);
         res.json(result);
     }
@@ -112,17 +96,12 @@ const getCustomerSales = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.getCustomerSales = getCustomerSales;
 const getCustomerPayments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         const id = req.params.id;
         if (!id || id === 'undefined') {
             return res.status(400).json({ message: 'Invalid customer ID provided' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        const business_id = yield Business_pool.Get_Business_id(user_id);
         const result = yield Customerdb.getCustomerPaymentsByBusiness(id, business_id);
         res.json(result);
     }
@@ -133,18 +112,12 @@ const getCustomerPayments = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.getCustomerPayments = getCustomerPayments;
 const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
         const { name, phone, email, address } = req.body;
-        const user_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const business_id = req.businessId;
         if (!name || !phone) {
             return res.status(400).json({ message: 'Missing required fields: name, phone' });
         }
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-        // Get business_id from business_users table
-        const business_id = yield Business_pool.Get_Business_id(user_id);
         // Insert into customers_info table
         const customerResult = yield Customerdb.addCustomer(name, phone, email, address, business_id);
         res.status(201).json(customerResult);

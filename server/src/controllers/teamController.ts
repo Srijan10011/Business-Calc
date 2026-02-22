@@ -6,16 +6,9 @@ import * as Teamdb from '../db/Teamdb';
 
 export const getTeamMembers = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const result = await Teamdb.getTeamMembersByBusiness(business_id);
-
 
         res.json(result);
     } catch (error: any) {
@@ -29,15 +22,11 @@ export const addTeamMember = async (req: Request, res: Response) => {
         const { name, email, phone, position, department, salary, enroll_date } = req.body;
         const user_id = req.user?.id;
 
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
         if (!name || !position) {
             return res.status(400).json({ message: 'Name and position are required' });
         }
 
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const result = await Teamdb.addTeamMember(
             business_id,
@@ -63,13 +52,7 @@ export const updateTeamMember = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const { name, email, phone, position, department, salary, status } = req.body;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const result = await Teamdb.updateTeamMember(
             id,
@@ -99,13 +82,7 @@ export const updateTeamMember = async (req: Request, res: Response) => {
 export const getTeamMember = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const result = await Teamdb.getTeamMemberById(id, business_id);
 
@@ -124,11 +101,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
     try {
 
         const { member_id, memberId, id, amount, month, description } = req.body;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
+        const business_id = (req as any).businessId;
 
         const finalMemberId = member_id || memberId || id;
         const trimmedMonth = month?.trim();
@@ -141,8 +114,6 @@ export const payoutSalary = async (req: Request, res: Response) => {
         if (parseFloat(amount) <= 0) {
             return res.status(400).json({ message: 'Amount must be positive' });
         }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
 
         // Get COGS account for salary category only
         const cogsResult = await Teamdb.payoutSalary(finalMemberId, parseFloat(amount), trimmedMonth, business_id);
@@ -161,15 +132,9 @@ export const payoutSalary = async (req: Request, res: Response) => {
 export const getTeamMemberSalaryHistory = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
         const GetMemberSalaryHistoryResult = await Teamdb.getTeamMemberSalaryHistory(id, business_id);
-
 
         res.json(GetMemberSalaryHistoryResult);
     } catch (error: any) {
@@ -181,13 +146,7 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
 export const deleteTeamMember = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const result = await Teamdb.deleteTeamMember(id, business_id);
 
@@ -202,18 +161,10 @@ export const deleteTeamMember = async (req: Request, res: Response) => {
 export const getTeamMemberAccount = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         // Verify member belongs to business
         const get_teammemberaccount = await Teamdb.getTeamMemberAccount(id, business_id);
-
-
 
         res.json(get_teammemberaccount);
     } catch (error: any) {
@@ -226,11 +177,7 @@ export const getTeamMemberAccount = async (req: Request, res: Response) => {
 export const distributeSalary = async (req: Request, res: Response) => {
     try {
         const { member_id, amount, month } = req.body;
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
+        const business_id = (req as any).businessId;
 
         if (!amount) {
             return res.status(400).json({ message: 'Amount is required' });
@@ -240,10 +187,6 @@ export const distributeSalary = async (req: Request, res: Response) => {
         if (parseFloat(amount) === 0) {
             return res.status(400).json({ message: 'Amount cannot be zero' });
         }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
-
-
 
         // Get or create account
         let accountResult = await Teamdb.distributeSalary(member_id, amount, month, business_id);

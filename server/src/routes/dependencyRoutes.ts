@@ -3,11 +3,13 @@ import logger from '../utils/logger';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { loadPermissions } from '../middleware/permissionMiddleware';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
+import { loadUserBusiness } from '../middleware/loadUserBusiness';
 
 const router = Router();
 
 // Shared dependency endpoint for accounts - accessible by multiple permissions
-router.get('/accounts', authMiddleware, loadPermissions, async (req: any, res: any) => {
+router.get('/accounts', authMiddleware, loadUserBusiness, loadPermissions, async (req: any, res: any) => {
     try {
         const userPermissions = req.userPermissions || [];
         
@@ -31,17 +33,7 @@ router.get('/accounts', authMiddleware, loadPermissions, async (req: any, res: a
             return res.status(403).json({ msg: 'Permission denied' });
         }
 
-        const user_id = req.user.id;
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-        
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = req.businessId;
         
         // Check if user has finance.view permission to see balances
         const hasFinanceView = userPermissions.includes('*') || userPermissions.includes('finance.view');
@@ -76,7 +68,7 @@ router.get('/accounts', authMiddleware, loadPermissions, async (req: any, res: a
 });
 
 // Products endpoint - accessible by sales.create, sales.edit
-router.get('/products', authMiddleware, loadPermissions, async (req: any, res: any) => {
+router.get('/products', authMiddleware, loadUserBusiness, loadPermissions, async (req: any, res: any) => {
     try {
         const userPermissions = req.userPermissions || [];
         
@@ -89,17 +81,7 @@ router.get('/products', authMiddleware, loadPermissions, async (req: any, res: a
             return res.status(403).json({ msg: 'Permission denied' });
         }
 
-        const user_id = req.user.id;
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-        
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = req.businessId;
         const result = await pool.query(
             `SELECT p.product_id as id, p.name, p.price, p.stock 
              FROM products p
@@ -117,7 +99,7 @@ router.get('/products', authMiddleware, loadPermissions, async (req: any, res: a
 });
 
 // Customers endpoint - accessible by sales.create, sales.edit, credits.view, credits.manage
-router.get('/customers', authMiddleware, loadPermissions, async (req: any, res: any) => {
+router.get('/customers', authMiddleware, loadUserBusiness, loadPermissions, async (req: any, res: any) => {
     try {
         const userPermissions = req.userPermissions || [];
         
@@ -130,17 +112,7 @@ router.get('/customers', authMiddleware, loadPermissions, async (req: any, res: 
             return res.status(403).json({ msg: 'Permission denied' });
         }
 
-        const user_id = req.user.id;
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-        
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = req.businessId;
         const result = await pool.query(
             `SELECT c.customer_id, c.name, c.phone, c.email
              FROM customers_info c
@@ -158,7 +130,7 @@ router.get('/customers', authMiddleware, loadPermissions, async (req: any, res: 
 });
 
 // Inventory/COGS categories - accessible by products.create
-router.get('/inventory-categories', authMiddleware, loadPermissions, async (req: any, res: any) => {
+router.get('/inventory-categories', authMiddleware, loadUserBusiness, loadPermissions, async (req: any, res: any) => {
     try {
         const userPermissions = req.userPermissions || [];
         
@@ -168,17 +140,7 @@ router.get('/inventory-categories', authMiddleware, loadPermissions, async (req:
             return res.status(403).json({ msg: 'Permission denied' });
         }
 
-        const user_id = req.user.id;
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-        
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-        
-        const business_id = businessResult.rows[0].business_id;
+        const business_id = req.businessId;
         const result = await pool.query(
             `SELECT category_id, name, type
              FROM cost_categories

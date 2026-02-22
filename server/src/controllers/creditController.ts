@@ -6,13 +6,7 @@ import * as Creditdb from '../db/Creditdb';
 
 export const getCreditPayables = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id;
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
+        const business_id = (req as any).businessId;
 
         const result = await Creditdb.getCreditsByBusiness(business_id);
 
@@ -26,7 +20,7 @@ export const getCreditPayables = async (req: Request, res: Response) => {
 export const payCreditAmount = async (req: Request, res: Response) => {
     try {
         const { payable_id, amount, payment_account } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
         if (!payable_id || !amount || !payment_account) {
             return res.status(400).json({ message: 'Missing required fields: payable_id, amount, payment_account' });
@@ -35,12 +29,6 @@ export const payCreditAmount = async (req: Request, res: Response) => {
         if (parseFloat(amount) <= 0) {
             return res.status(400).json({ message: 'Amount must be positive' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const business_id = await Business_pool.Get_Business_id(user_id);
 
         const client = await pool.connect();
         try {

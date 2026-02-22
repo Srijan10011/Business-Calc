@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
+import * as Business_pool from '../db/Business_pool';
 
 export const addExpense = async (req: Request, res: Response) => {
     try {
         const { account_id, amount, note } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
         if (!account_id || !amount || !note) {
             return res.status(400).json({ message: 'Missing required fields: account_id, amount, note' });
@@ -14,21 +15,6 @@ export const addExpense = async (req: Request, res: Response) => {
         if (parseFloat(amount) <= 0) {
             return res.status(400).json({ message: 'Amount must be positive' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
 
         const client = await pool.connect();
         try {
@@ -94,7 +80,7 @@ export const addExpense = async (req: Request, res: Response) => {
 export const cogsPayout = async (req: Request, res: Response) => {
     try {
         const { category_id, amount, note } = req.body;
-        const user_id = req.user?.id;
+        const business_id = (req as any).businessId;
 
         if (!category_id || !amount || !note) {
             return res.status(400).json({ message: 'Missing required fields: category_id, amount, note' });
@@ -103,21 +89,6 @@ export const cogsPayout = async (req: Request, res: Response) => {
         if (parseFloat(amount) <= 0) {
             return res.status(400).json({ message: 'Amount must be positive' });
         }
-
-        if (!user_id) {
-            return res.status(401).json({ message: 'User ID not found in token' });
-        }
-
-        const businessResult = await pool.query(
-            'SELECT business_id FROM business_users WHERE user_id = $1',
-            [user_id]
-        );
-
-        if (businessResult.rows.length === 0) {
-            return res.status(400).json({ message: 'User not associated with any business' });
-        }
-
-        const business_id = businessResult.rows[0].business_id;
 
         const client = await pool.connect();
         try {
