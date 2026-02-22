@@ -7,7 +7,7 @@ import { get } from 'node:http';
 export const checkCategory = async (req: Request, res: Response) => {
     try {
         const { name, cost_behaviour, product_id } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!name || !cost_behaviour) {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour' });
@@ -24,7 +24,7 @@ export const checkCategory = async (req: Request, res: Response) => {
 
 export const getCategories = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Categorydb.getCategoriesByBusiness(business_id);
 
@@ -38,7 +38,7 @@ export const getCategories = async (req: Request, res: Response) => {
 export const createCategory = async (req: Request, res: Response) => {
     try {
         const { name, cost_behaviour, type, product_id } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!name || !cost_behaviour || !type) {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour, type' });

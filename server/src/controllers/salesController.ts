@@ -5,7 +5,7 @@ import * as Business_pool from '../db/Business_pool';
 import * as Salesdb from '../db/Salesdb';
 export const getSales = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const { status, product, date_from, date_to } = req.query;
 
@@ -54,7 +54,7 @@ export const addSale = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Quantity cannot be negative' });
         }
 
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         // Get product name for transaction note
         const productResult = await Salesdb.productResult(product_id);
@@ -329,7 +329,7 @@ export const addSale = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Quantity cannot be negative' });
         }
 
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const client = await pool.connect();
         try {
@@ -624,7 +624,7 @@ export const recordPayment = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const { amount, account_id } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const client = await pool.connect();
         try {

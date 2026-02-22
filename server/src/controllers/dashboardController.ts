@@ -5,7 +5,7 @@ import * as Business_pool from '../db/Business_pool';
 
 export const getDashboardData = async (req: Request, res: Response) => {
     try {
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
 
         // Get assets recovery progress
         const assetsResult = await pool.query(
@@ -109,7 +109,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
 export const getMoneyFlow = async (req: Request, res: Response) => {
     try {
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
 
         // Get current month's start and end dates
         const now = new Date();

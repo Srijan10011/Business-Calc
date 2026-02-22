@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 
 export const getAssets = async (req: Request, res: Response) => {
     try {
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
 
         // Get assets data
         const assets = await Assetdb.getAssets(businessId);
@@ -21,7 +21,7 @@ export const getAssets = async (req: Request, res: Response) => {
 export const createAsset = async (req: Request, res: Response) => {
     try {
         const { name, category, totalCost } = req.body;
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
 
         if (!name || !category || totalCost === undefined) {
             return res.status(400).json({ message: 'Missing required fields: name, category, totalCost' });

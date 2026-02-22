@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 import * as Customerdb from '../db/Customerdb';
 export const getCustomers = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
         const result = await Customerdb.getCustomersByBusiness(business_id)
         res.json(result);
     } catch (error: any) {
@@ -17,7 +17,7 @@ export const getCustomers = async (req: Request, res: Response) => {
 
 export const getCustomerById = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
         const id = req.params.id as string;
 
         if (!id || id === 'undefined') {
@@ -39,7 +39,7 @@ export const getCustomerById = async (req: Request, res: Response) => {
 
 export const getCustomerSales = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
         const id = req.params.id as string;
 
         if (!id || id === 'undefined') {
@@ -57,7 +57,7 @@ export const getCustomerSales = async (req: Request, res: Response) => {
 
 export const getCustomerPayments = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
         const id = req.params.id as string;
 
         if (!id || id === 'undefined') {
@@ -76,7 +76,7 @@ export const getCustomerPayments = async (req: Request, res: Response) => {
 export const addCustomer = async (req: Request, res: Response) => {
     try {
         const { name, phone, email, address } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!name || !phone) {
             return res.status(400).json({ message: 'Missing required fields: name, phone' });

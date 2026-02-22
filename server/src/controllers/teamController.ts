@@ -6,7 +6,7 @@ import * as Teamdb from '../db/Teamdb';
 
 export const getTeamMembers = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Teamdb.getTeamMembersByBusiness(business_id);
 
@@ -26,7 +26,7 @@ export const addTeamMember = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Name and position are required' });
         }
 
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Teamdb.addTeamMember(
             business_id,
@@ -52,7 +52,7 @@ export const updateTeamMember = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
         const { name, email, phone, position, department, salary, status } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Teamdb.updateTeamMember(
             id,
@@ -82,7 +82,7 @@ export const updateTeamMember = async (req: Request, res: Response) => {
 export const getTeamMember = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Teamdb.getTeamMemberById(id, business_id);
 
@@ -101,7 +101,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
     try {
 
         const { member_id, memberId, id, amount, month, description } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const finalMemberId = member_id || memberId || id;
         const trimmedMonth = month?.trim();
@@ -132,7 +132,7 @@ export const payoutSalary = async (req: Request, res: Response) => {
 export const getTeamMemberSalaryHistory = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const GetMemberSalaryHistoryResult = await Teamdb.getTeamMemberSalaryHistory(id, business_id);
 
@@ -146,7 +146,7 @@ export const getTeamMemberSalaryHistory = async (req: Request, res: Response) =>
 export const deleteTeamMember = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Teamdb.deleteTeamMember(id, business_id);
 
@@ -161,7 +161,7 @@ export const deleteTeamMember = async (req: Request, res: Response) => {
 export const getTeamMemberAccount = async (req: Request, res: Response) => {
     try {
         const id = req.params.id as string;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         // Verify member belongs to business
         const get_teammemberaccount = await Teamdb.getTeamMemberAccount(id, business_id);
@@ -177,7 +177,7 @@ export const getTeamMemberAccount = async (req: Request, res: Response) => {
 export const distributeSalary = async (req: Request, res: Response) => {
     try {
         const { member_id, amount, month } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!amount) {
             return res.status(400).json({ message: 'Amount is required' });

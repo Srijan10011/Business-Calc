@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 export const addCostTarget = async (req: Request, res: Response) => {
     try {
         const { category_id, asset_id, name, target_amount, reset_period } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!name || !target_amount) {
             return res.status(400).json({ message: 'Missing required fields: name, target_amount' });
@@ -23,7 +23,7 @@ export const addCostTarget = async (req: Request, res: Response) => {
 
 export const getCostTargets = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await CostTargetdb.getCostTargets(business_id);
 

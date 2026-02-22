@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 export const createRecurringCost = async (req: Request, res: Response) => {
     try {
         const { name, type, monthlyTarget } = req.body;
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
 
         if (!name || !type || !monthlyTarget) {
             return res.status(400).json({ message: 'Missing required fields: name, type, monthlyTarget' });
@@ -27,7 +27,7 @@ export const createRecurringCost = async (req: Request, res: Response) => {
 
 export const getRecurringCosts = async (req: Request, res: Response) => {
     try {
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
         const costs = await RecurringCostdb.getRecurringCosts(businessId);
 
         res.json(costs);
@@ -39,7 +39,7 @@ export const getRecurringCosts = async (req: Request, res: Response) => {
 
 export const getRecurringCostHistory = async (req: Request, res: Response) => {
     try {
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
         const { categoryId } = req.query;
         
         const history = await RecurringCostdb.getRecurringCostHistory(businessId, categoryId as string);
@@ -53,7 +53,7 @@ export const getRecurringCostHistory = async (req: Request, res: Response) => {
 
 export const transitionMonth = async (req: Request, res: Response) => {
     try {
-        const businessId = (req as any).businessId;
+        const businessId = req.businessId;
         const result = await RecurringCostdb.transitionToNewMonth(businessId);
 
         res.json({ message: 'Month transition completed', data: result });

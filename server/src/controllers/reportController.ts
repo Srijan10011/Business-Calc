@@ -5,7 +5,7 @@ import * as Business_pool from '../db/Business_pool';
 
 export const getMonthlyReport = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
         const { month } = req.query;
 
         if (!month) {

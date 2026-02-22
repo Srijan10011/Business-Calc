@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 export const addInventoryItem = async (req: Request, res: Response) => {
     try {
         const { name, stock, unit_cost, type, payment_account, total_amount, party_name } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!name || stock === undefined || unit_cost === undefined || !type) {
             return res.status(400).json({ message: 'Missing required fields: name, stock, unit_cost, type' });
@@ -137,7 +137,7 @@ export const getInventoryItems = async (req: Request, res: Response) => {
     try {
         const user_id = req.user?.id;
 
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await pool.query(
             `SELECT ii.inventory_id as id, ii.name, ii.stock, ii.type, ii.unit_cost
@@ -191,7 +191,7 @@ export const updateInventoryStock = async (req: Request, res: Response) => {
             }
         }
 
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const client = await pool.connect();
         try {

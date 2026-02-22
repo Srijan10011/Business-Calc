@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 
 export const getBusinessCategories = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Cogsdb.getBusinessCategories(business_id);
 
@@ -20,7 +20,7 @@ export const getBusinessCategories = async (req: Request, res: Response) => {
 export const addCostCategory = async (req: Request, res: Response) => {
     try {
         const { category, type, value, product_id } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!category || !type || value === undefined || !product_id) {
             return res.status(400).json({ message: 'Missing required fields: category, type, value, product_id' });
@@ -49,7 +49,7 @@ export const addCostCategory = async (req: Request, res: Response) => {
 export const getProductCostAllocations = async (req: Request, res: Response) => {
     try {
         const product_id = req.params.product_id as string;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const getProductCostAllocation = await Cogsdb.getProductCostAllocations(product_id, business_id);
 
@@ -64,7 +64,7 @@ export const updateCostAllocation = async (req: Request, res: Response) => {
     try {
         const allocation_id = req.params.allocation_id as string;
         const { value } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (value === undefined) {
             return res.status(400).json({ message: 'Missing required field: value' });
@@ -94,7 +94,7 @@ export const deleteCostAllocation = async (req: Request, res: Response) => {
 
 export const getCOGSData = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
         const cogsData = await Cogsdb.getCOGSData(business_id);
 
         // Sum balances correctly

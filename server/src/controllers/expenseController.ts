@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 export const addExpense = async (req: Request, res: Response) => {
     try {
         const { account_id, amount, note } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!account_id || !amount || !note) {
             return res.status(400).json({ message: 'Missing required fields: account_id, amount, note' });
@@ -80,7 +80,7 @@ export const addExpense = async (req: Request, res: Response) => {
 export const cogsPayout = async (req: Request, res: Response) => {
     try {
         const { category_id, amount, note } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!category_id || !amount || !note) {
             return res.status(400).json({ message: 'Missing required fields: category_id, amount, note' });

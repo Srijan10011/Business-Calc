@@ -6,7 +6,7 @@ import * as Creditdb from '../db/Creditdb';
 
 export const getCreditPayables = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await Creditdb.getCreditsByBusiness(business_id);
 
@@ -20,7 +20,7 @@ export const getCreditPayables = async (req: Request, res: Response) => {
 export const payCreditAmount = async (req: Request, res: Response) => {
     try {
         const { payable_id, amount, payment_account } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!payable_id || !amount || !payment_account) {
             return res.status(400).json({ message: 'Missing required fields: payable_id, amount, payment_account' });

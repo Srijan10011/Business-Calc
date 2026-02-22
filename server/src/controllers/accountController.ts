@@ -19,8 +19,8 @@ export const createDefaultAccounts = async (req: Request, res: Response) => {
 };
 export const getAccounts = async (req: Request, res: Response) => {
     try {
-        const user_id = (req as any).userId;
-        const business_id = (req as any).businessId;
+        const user_id = req.userId;
+        const business_id = req.businessId;
         const result = await Accountdb.getAccount(user_id, business_id);
 
         res.json(result);
@@ -32,8 +32,8 @@ export const getAccounts = async (req: Request, res: Response) => {
 
 export const getTransactions = async (req: Request, res: Response) => {
     try {
-        const user_id = (req as any).userId;
-        const business_id = (req as any).businessId;
+        const user_id = req.userId;
+        const business_id = req.businessId;
 
         // Get transactions for this business
         const gettransaction = await Accountdb.getTransactions(user_id, business_id);
@@ -48,8 +48,8 @@ export const getTransactions = async (req: Request, res: Response) => {
 export const transferFunds = async (req: Request, res: Response) => {
     try {
         const { fromAccountId, toAccountId, amount } = req.body;
-        const user_id = (req as any).userId;
-        const business_id = (req as any).businessId;
+        const user_id = req.userId;
+        const business_id = req.businessId;
         const result = await Accountdb.transferFund(user_id, fromAccountId, toAccountId, amount, business_id);
 
         res.json(result);
@@ -63,8 +63,8 @@ export const transferFunds = async (req: Request, res: Response) => {
 export const transferCOGS = async (req: Request, res: Response) => {
     try {
         const { categoryId, accountId, amount, direction } = req.body; // direction: 'to-cogs' or 'from-cogs'
-        const user_id = (req as any).userId;
-        const business_id = (req as any).businessId;
+        const user_id = req.userId;
+        const business_id = req.businessId;
 
         const transfercog = await Accountdb.transferCOGS(user_id, categoryId, accountId, amount, direction, business_id);
 

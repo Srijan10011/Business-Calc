@@ -6,7 +6,7 @@ import * as Business_pool from '../db/Business_pool';
 export const addProduct = async (req: Request, res: Response) => {
     try {
         const { name, price, stock } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
         
         if (!name || price === undefined || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: name, price, stock' });
@@ -43,7 +43,7 @@ export const addProduct = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
     try {
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await pool.query(
             `SELECT 
@@ -71,7 +71,7 @@ export const getProducts = async (req: Request, res: Response) => {
 export const getProductById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         const result = await pool.query(
             `SELECT 
@@ -102,7 +102,7 @@ export const getProductById = async (req: Request, res: Response) => {
 export const addStock = async (req: Request, res: Response) => {
     try {
         const { product_id, stock } = req.body;
-        const business_id = (req as any).businessId;
+        const business_id = req.businessId;
 
         if (!product_id || stock === undefined) {
             return res.status(400).json({ message: 'Missing required fields: product_id, stock' });
