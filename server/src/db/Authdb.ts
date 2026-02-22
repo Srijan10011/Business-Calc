@@ -4,6 +4,15 @@ import jwt from 'jsonwebtoken';
 import logger from '../utils/logger';
 import * as Accountdb from './Accountdb';
 
+// Helper function to generate JWT token
+const generateToken = (userId: string): string => {
+    return jwt.sign(
+        { user: { id: userId } },
+        process.env.JWT_SECRET as string,
+        { expiresIn: 3600 }
+    );
+};
+
 interface User {
     user_id: string;
     name: string;
@@ -76,7 +85,7 @@ export const registerUser = async (
         await client.query('COMMIT');
 
         // Generate JWT
-        const token = jwt.sign({ user: { id: user_id } }, process.env.JWT_SECRET as string, { expiresIn: 3600 });
+        const token = generateToken(user_id);
 
         return {
             user_id,
