@@ -51,6 +51,7 @@ const logger_1 = __importDefault(require("../utils/logger"));
 const securityAudit_1 = require("../utils/securityAudit");
 const Authdb = __importStar(require("../db/Authdb"));
 const Accountdb = __importStar(require("../db/Accountdb"));
+const sanitize_1 = require("../utils/sanitize");
 const checkBusiness = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const business_id = req.params.business_id;
     try {
@@ -68,7 +69,9 @@ exports.checkBusiness = checkBusiness;
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password, business_id } = req.body;
     try {
-        const result = yield Authdb.registerUser(name, email, password, business_id);
+        const sanitizedName = (0, sanitize_1.sanitizeName)(name);
+        const sanitizedEmail = (0, sanitize_1.sanitizeEmail)(email);
+        const result = yield Authdb.registerUser(sanitizedName, sanitizedEmail, password, business_id);
         // Set httpOnly cookie
         res.cookie('token', result.token, {
             httpOnly: true,
@@ -87,8 +90,8 @@ exports.register = register;
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     try {
-        // Get user first to extract user_id
-        const normalizedEmail = email.toLowerCase().trim();
+        // Sanitize email
+        const normalizedEmail = (0, sanitize_1.sanitizeEmail)(email);
         const user = yield Authdb.getUserByEmail(normalizedEmail);
         if (!user) {
             // Log failed login attempt

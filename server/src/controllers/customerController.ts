@@ -4,6 +4,7 @@ import pool from '../db';
 import jwt from 'jsonwebtoken';
 import * as Business_pool from '../db/Business_pool';
 import * as Customerdb from '../db/Customerdb';
+import { sanitizeName, sanitizePhone, sanitizeEmail, sanitizeText } from '../utils/sanitize';
 export const getCustomers = async (req: Request, res: Response) => {
     try {
         const business_id = req.businessId;
@@ -82,8 +83,20 @@ export const addCustomer = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: name, phone' });
         }
 
+        // Sanitize inputs
+        const sanitizedName = sanitizeName(name);
+        const sanitizedPhone = sanitizePhone(phone);
+        const sanitizedEmail = email ? sanitizeEmail(email) : null;
+        const sanitizedAddress = address ? sanitizeText(address) : null;
+
         // Insert into customers_info table
-        const customerResult = await Customerdb.addCustomer(name, phone, email, address, business_id);
+        const customerResult = await Customerdb.addCustomer(
+            sanitizedName!,
+            sanitizedPhone!,
+            sanitizedEmail,
+            sanitizedAddress,
+            business_id
+        );
 
         res.status(201).json(customerResult);
     } catch (error: any) {

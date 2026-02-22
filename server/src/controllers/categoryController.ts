@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import * as Business_pool from '../db/Business_pool';
 import * as Categorydb from '../db/Categorydb';
 import { get } from 'node:http';
+import { sanitizeText } from '../utils/sanitize';
 export const checkCategory = async (req: Request, res: Response) => {
     try {
         const { name, cost_behaviour, product_id } = req.body;
@@ -44,8 +45,11 @@ export const createCategory = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour, type' });
         }
 
+        const sanitizedName = sanitizeText(name);
+        const sanitizedType = sanitizeText(type);
+
         // Create new category with product_id
-        const result = await Categorydb.createCategory(name, cost_behaviour, type, product_id, business_id);
+        const result = await Categorydb.createCategory(sanitizedName!, cost_behaviour, sanitizedType!, product_id, business_id);
 
         res.status(201).json({ id: result.id });
     } catch (error: any) {

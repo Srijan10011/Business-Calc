@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.addStock = exports.getProductById = exports.getProducts = exports.addProduct = void 0;
 const logger_1 = __importDefault(require("../utils/logger"));
 const db_1 = __importDefault(require("../db"));
+const sanitize_1 = require("../utils/sanitize");
 const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { name, price, stock } = req.body;
@@ -28,8 +29,9 @@ const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (parseInt(stock) < 0) {
             return res.status(400).json({ message: 'Stock cannot be negative' });
         }
+        const sanitizedName = (0, sanitize_1.sanitizeText)(name);
         // Insert into products table
-        const productResult = yield db_1.default.query('INSERT INTO products (name, price, stock) VALUES ($1, $2, $3) RETURNING product_id, name, price, stock, created_at', [name, price, stock]);
+        const productResult = yield db_1.default.query('INSERT INTO products (name, price, stock) VALUES ($1, $2, $3) RETURNING product_id, name, price, stock, created_at', [sanitizedName, price, stock]);
         const product_id = productResult.rows[0].product_id;
         // Link product to business in products_business table
         yield db_1.default.query('INSERT INTO products_business (product_id, business_id) VALUES ($1, $2)', [product_id, business_id]);

@@ -48,6 +48,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.addCustomer = exports.getCustomerPayments = exports.getCustomerSales = exports.getCustomerById = exports.getCustomers = void 0;
 const logger_1 = __importDefault(require("../utils/logger"));
 const Customerdb = __importStar(require("../db/Customerdb"));
+const sanitize_1 = require("../utils/sanitize");
 const getCustomers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const business_id = req.businessId;
@@ -118,8 +119,13 @@ const addCustomer = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (!name || !phone) {
             return res.status(400).json({ message: 'Missing required fields: name, phone' });
         }
+        // Sanitize inputs
+        const sanitizedName = (0, sanitize_1.sanitizeName)(name);
+        const sanitizedPhone = (0, sanitize_1.sanitizePhone)(phone);
+        const sanitizedEmail = email ? (0, sanitize_1.sanitizeEmail)(email) : null;
+        const sanitizedAddress = address ? (0, sanitize_1.sanitizeText)(address) : null;
         // Insert into customers_info table
-        const customerResult = yield Customerdb.addCustomer(name, phone, email, address, business_id);
+        const customerResult = yield Customerdb.addCustomer(sanitizedName, sanitizedPhone, sanitizedEmail, sanitizedAddress, business_id);
         res.status(201).json(customerResult);
     }
     catch (error) {

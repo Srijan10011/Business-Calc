@@ -48,6 +48,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCategory = exports.getCategories = exports.checkCategory = void 0;
 const logger_1 = __importDefault(require("../utils/logger"));
 const Categorydb = __importStar(require("../db/Categorydb"));
+const sanitize_1 = require("../utils/sanitize");
 const checkCategory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { name, cost_behaviour, product_id } = req.body;
@@ -84,8 +85,10 @@ const createCategory = (req, res) => __awaiter(void 0, void 0, void 0, function*
         if (!name || !cost_behaviour || !type) {
             return res.status(400).json({ message: 'Missing required fields: name, cost_behaviour, type' });
         }
+        const sanitizedName = (0, sanitize_1.sanitizeText)(name);
+        const sanitizedType = (0, sanitize_1.sanitizeText)(type);
         // Create new category with product_id
-        const result = yield Categorydb.createCategory(name, cost_behaviour, type, product_id, business_id);
+        const result = yield Categorydb.createCategory(sanitizedName, cost_behaviour, sanitizedType, product_id, business_id);
         res.status(201).json({ id: result.id });
     }
     catch (error) {

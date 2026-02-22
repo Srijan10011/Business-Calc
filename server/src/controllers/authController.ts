@@ -5,6 +5,7 @@ import { logSecurityEvent } from '../utils/securityAudit';
 import * as Authdb from '../db/Authdb';
 import { createDefaultAccounts } from './accountController';
 import * as Accountdb from '../db/Accountdb';
+import { sanitizeEmail, sanitizeName } from '../utils/sanitize';
 
 export const checkBusiness = async (req: Request, res: Response) => {
     const business_id = req.params.business_id as string;
@@ -21,7 +22,10 @@ export const checkBusiness = async (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
     const { name, email, password, business_id } = req.body;
     try {
-        const result = await Authdb.registerUser(name, email, password, business_id);
+        const sanitizedName = sanitizeName(name);
+        const sanitizedEmail = sanitizeEmail(email);
+        
+        const result = await Authdb.registerUser(sanitizedName!, sanitizedEmail!, password, business_id);
         
         // Set httpOnly cookie
         res.cookie('token', result.token, {
@@ -41,9 +45,9 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
     try {
-        // Get user first to extract user_id
-        const normalizedEmail = email.toLowerCase().trim();
-        const user = await Authdb.getUserByEmail(normalizedEmail);
+        // Sanitize email
+        const normalizedEmail = sanitizeEmail(email);
+        const user = await Authdb.getUserByEmail(normalizedEmail!);
         
         if (!user) {
             // Log failed login attempt

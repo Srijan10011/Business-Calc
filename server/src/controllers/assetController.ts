@@ -3,6 +3,7 @@ import logger from '../utils/logger';
 
 import * as Assetdb from '../db/Assetdb';
 import * as Business_pool from '../db/Business_pool';
+import { sanitizeText } from '../utils/sanitize';
 
 export const getAssets = async (req: Request, res: Response) => {
     try {
@@ -31,8 +32,12 @@ export const createAsset = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Cost cannot be negative' });
         }
 
+        const sanitizedName = sanitizeText(name);
+        const sanitizedCategory = sanitizeText(category);
+
         // Insert into cost_categories with type = category (from frontend)
-        const categoryResult = await Assetdb.createAsset(name, category, (totalCost), businessId);
+        const categoryResult = await Assetdb.createAsset(sanitizedName!, sanitizedCategory!, (totalCost), businessId);
+        res.json(categoryResult);
         res.json(categoryResult);
     } catch (error) {
         logger.error(error);

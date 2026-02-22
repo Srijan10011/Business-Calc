@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import logger from '../utils/logger';
 import pool from '../db';
 import * as Business_pool from '../db/Business_pool';
+import { sanitizeText } from '../utils/sanitize';
 
 export const addProduct = async (req: Request, res: Response) => {
     try {
@@ -20,10 +21,12 @@ export const addProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Stock cannot be negative' });
         }
 
+        const sanitizedName = sanitizeText(name);
+
         // Insert into products table
         const productResult = await pool.query(
             'INSERT INTO products (name, price, stock) VALUES ($1, $2, $3) RETURNING product_id, name, price, stock, created_at',
-            [name, price, stock]
+            [sanitizedName, price, stock]
         );
 
         const product_id = productResult.rows[0].product_id;

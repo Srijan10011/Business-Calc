@@ -3,6 +3,7 @@ import logger from '../utils/logger';
 
 import * as Business_pool from '../db/Business_pool';
 import * as Teamdb from '../db/Teamdb';
+import { sanitizeName, sanitizeEmail, sanitizePhone, sanitizeText } from '../utils/sanitize';
 
 export const getTeamMembers = async (req: Request, res: Response) => {
     try {
@@ -20,21 +21,25 @@ export const getTeamMembers = async (req: Request, res: Response) => {
 export const addTeamMember = async (req: Request, res: Response) => {
     try {
         const { name, email, phone, position, department, salary, enroll_date } = req.body;
-        const user_id = req.user?.id;
+        const business_id = req.businessId;
 
         if (!name || !position) {
             return res.status(400).json({ message: 'Name and position are required' });
         }
 
-        const business_id = req.businessId;
+        const sanitizedName = sanitizeName(name);
+        const sanitizedEmail = email ? sanitizeEmail(email) : '';
+        const sanitizedPhone = phone ? sanitizePhone(phone) : '';
+        const sanitizedPosition = sanitizeText(position);
+        const sanitizedDepartment = department ? sanitizeText(department) : '';
 
         const result = await Teamdb.addTeamMember(
             business_id,
-            name,
-            email,
-            phone,
-            position,
-            department,
+            sanitizedName!,
+            sanitizedEmail!,
+            sanitizedPhone!,
+            sanitizedPosition!,
+            sanitizedDepartment!,
             salary,
             enroll_date || new Date()
         );
@@ -54,14 +59,20 @@ export const updateTeamMember = async (req: Request, res: Response) => {
         const { name, email, phone, position, department, salary, status } = req.body;
         const business_id = req.businessId;
 
+        const sanitizedName = name ? sanitizeName(name) : name;
+        const sanitizedEmail = email ? sanitizeEmail(email) : email;
+        const sanitizedPhone = phone ? sanitizePhone(phone) : phone;
+        const sanitizedPosition = position ? sanitizeText(position) : position;
+        const sanitizedDepartment = department ? sanitizeText(department) : department;
+
         const result = await Teamdb.updateTeamMember(
             id,
             business_id,
-            name,
-            email,
-            phone,
-            position,
-            department,
+            sanitizedName!,
+            sanitizedEmail!,
+            sanitizedPhone!,
+            sanitizedPosition!,
+            sanitizedDepartment!,
             salary,
             status
         );
